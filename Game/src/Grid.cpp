@@ -47,12 +47,12 @@ void PS::Grid::update_chunk(int x_index, int y_index)
 			if (m_processed[global_index]) continue;
 
 			auto tile = Get_at(x, y);
-
 			if (tile.id == BlockID::Air) continue;
 
+			// Falling tiles
 			if (tile.Can_fall() && y != m_width_px - 1)
 			{
-				bool should_fall = in_bound(x, y + 1) && Get_at(x, y + 1).Is_fluid();
+				bool should_fall = in_bound(x, y + 1) && Get_at(x, y + 1).Is_fluid() && Get_at(x, y + 1).id != tile.id;
 				if (should_fall)
 				{
 					tile.velocity.y += 0.5f;
@@ -61,7 +61,7 @@ void PS::Grid::update_chunk(int x_index, int y_index)
 					sf::Vector2i final_pos(x, y);
 					for (int py = y + 1; py <= final_y; py++)
 					{
-						if (!in_bound(x, py) || !Get_at(x, py).Is_fluid()) {
+						if (!in_bound(x, py) || !Get_at(x, py).Is_fluid() || tile.id == Get_at(x, py).id) {
 							tile.velocity.y = 0;
 							break;
 						}
@@ -75,6 +75,7 @@ void PS::Grid::update_chunk(int x_index, int y_index)
 				}
 			}
 
+			// Sand 
 			if (tile.id == Sand)
 			{
 				int direction = rand() % 2 ? 1 : -1;
@@ -97,6 +98,65 @@ void PS::Grid::update_chunk(int x_index, int y_index)
 						swap_pixels({ x,y }, { x - direction, y + 1 });
 						continue;
 					}
+				}
+			}
+
+			
+			if ((tile.id == Water && 0))
+			{
+				int direction = rand() % 2 ? 1 : -1;
+
+				if (in_bound(x + direction, y + 1))
+				{
+					auto checked_tile = Get_at(x + direction, y + 1);
+					if (checked_tile.id == BlockID::Air)
+					{
+						swap_pixels({ x,y }, { x + direction, y + 1 });
+						continue;
+					}
+				}
+
+				if (in_bound(x - direction, y + 1))
+				{
+					auto checked_tile = Get_at(x - direction, y + 1);
+					if (checked_tile.id == BlockID::Air)
+					{
+						swap_pixels({ x,y }, { x - direction, y + 1 });
+						continue;
+					}
+				}
+			}
+			
+		}
+
+		for (int local_x = start; local_x != end; local_x += x_increment)
+		{
+			int x = world_x + local_x;
+			int global_index = get_global_index(x, y);
+			if (m_processed[global_index]) continue;
+
+			auto tile = Get_at(x, y);
+			if (tile.id != BlockID::Water) continue;
+			
+			int direction = rand() % 2 ? 1 : -1;
+
+			if (in_bound(x + direction, y))
+			{
+				auto checked_tile = Get_at(x + direction, y);
+				if (checked_tile.id == BlockID::Air)
+				{
+					swap_pixels({ x,y }, { x + direction, y });
+					continue;
+				}
+			}
+
+			if (in_bound(x - direction, y))
+			{
+				auto checked_tile = Get_at(x - direction, y);
+				if (checked_tile.id == BlockID::Air)
+				{
+					swap_pixels({ x,y }, { x - direction, y });
+					continue;
 				}
 			}
 		}

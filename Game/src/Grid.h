@@ -46,6 +46,23 @@ namespace PS
 			return m_chunks.at(chunk_index).Get_at(local_x, local_y);
 		}
 
+		std::vector<sf::Vector2i> Get_active_chunk_positions()
+		{
+			std::vector<sf::Vector2i> active_chunks;
+
+			for (int i = 0; i < m_chunks.size(); i++)
+			{
+				if (m_chunks[i].is_active)
+				{
+					int x = i % m_width_ch;
+					int y = i / m_width_ch;
+					active_chunks.push_back({ x, y });
+				}
+			}
+
+			return active_chunks;
+		}
+
 		// Helper functions
 		bool in_bound(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 		int get_chunk_index(int x, int y)	const	{	return y * m_width_ch + x;	}

@@ -14,6 +14,11 @@ PS::Game::Game()
 	frame.setOutlineColor(sf::Color::White);
 	frame.setOutlineThickness(5);
 
+	chunk_debug_shape.setSize(sf::Vector2f(CHUNK_SIZE, CHUNK_SIZE));
+	chunk_debug_shape.setFillColor(sf::Color::Transparent);
+	chunk_debug_shape.setOutlineColor(sf::Color::Red);
+	chunk_debug_shape.setOutlineThickness(1);
+
 	grid.Create(GridSize, GridSize);
 	
 	srand(time(NULL));
@@ -21,6 +26,8 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
+	active_chunks.clear();
+	active_chunks = grid.Get_active_chunk_positions();
 	grid.update_active_chunks();
 }
 
@@ -39,7 +46,14 @@ void PS::Game::render()
 	tex.loadFromImage(render_tex); 
 	frame.setTexture(&tex);
 	window.draw(frame);
-	
+
+	auto topLeft = frame.getPosition();
+	for (sf::Vector2i chunk: active_chunks)
+	{
+		chunk_debug_shape.setPosition(topLeft + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
+		window.draw(chunk_debug_shape);
+	}
+
 	UI();
 	ImGui::SFML::Render(window);
 
@@ -146,8 +160,6 @@ void PS::Game::run()
 
 void PS::Game::draw_curser(sf::Vector2i pos, BlockID material)
 {
-	int curser_radius = 15;
-
 	for (int x_offset = 0; x_offset < curser_radius; x_offset++)
 	{
 		for (int y_offset = 0; y_offset < curser_radius; y_offset++)

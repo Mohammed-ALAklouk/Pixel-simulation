@@ -45,5 +45,9 @@ namespace PS
 
 		bool is_drawing_curser = false;
 		sf::Vector2i curser_start;
+		int curser_radius = 15;
+
+		sf::RectangleShape chunk_debug_shape;
+		std::vector<sf::Vector2i> active_chunks;
 	};
 }
