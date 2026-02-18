@@ -1,0 +1,86 @@
+﻿  imgui-SFML.cpp
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+  imgui_tables.cpp
+  imgui_widgets.cpp
+  Game.cpp
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(36,15): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  (compiling source file 'src/Game.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(37,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Game.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(38,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Game.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(39,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Game.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,56): warning C4244: 'argument': conversion from 'T' to 'unsigned int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,56): warning C4244:         with
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,56): warning C4244:         [
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,56): warning C4244:             T=float
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,56): warning C4244:         ]
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,41): warning C4244: 'argument': conversion from 'T' to 'unsigned int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,41): warning C4244:         with
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,41): warning C4244:         [
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,41): warning C4244:             T=float
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(5,41): warning C4244:         ]
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(19,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(35,45): warning C4267: 'argument': conversion from 'size_t' to 'uint16_t', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(35,42): warning C4267: 'argument': conversion from 'size_t' to 'uint16_t', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(35,27): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(35,24): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(71,14): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(71,48): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(175,11): warning C4244: 'initializing': conversion from 'T' to 'float', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(175,11): warning C4244:         with
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(175,11): warning C4244:         [
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(175,11): warning C4244:             T=int
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(175,11): warning C4244:         ]
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(176,11): warning C4244: 'initializing': conversion from 'T' to 'float', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(176,11): warning C4244:         with
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(176,11): warning C4244:         [
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(176,11): warning C4244:             T=int
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(176,11): warning C4244:         ]
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(178,12): warning C4244: 'initializing': conversion from 'const _Ty' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(178,12): warning C4244:         with
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(178,12): warning C4244:         [
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(178,12): warning C4244:             _Ty=float
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(178,12): warning C4244:         ]
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(185,15): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Game.cpp(186,15): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  Grid.cpp
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(36,15): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  (compiling source file 'src/Grid.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(37,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Grid.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(38,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Grid.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(39,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/Grid.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Grid.cpp(5,19): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Grid.cpp(6,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Grid.cpp(23,32): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Grid.cpp(25,18): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Grid.cpp(59,18): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  main.cpp
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(36,15): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  (compiling source file 'src/main.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(37,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/main.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(38,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/main.cpp')
+  
+C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\src\Block.h(39,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  (compiling source file 'src/main.cpp')
+  
+  Generating Code...
+  Game.vcxproj -> C:\Users\alknh\Desktop\random\Flash data\temp\Others\repos\other\Pixel simulation\Game\bin\Release\Game.exe

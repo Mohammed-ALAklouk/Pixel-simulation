@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Dependencies">
+      <UniqueIdentifier>{6C01343A-5864-C3DE-01EA-FB94ED2B8F61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependencies\ImGui">
+      <UniqueIdentifier>{96D70AF8-82BB-CB4D-EB1B-C6A0D71EB6CF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependencies\ImGui\ImGui">
+      <UniqueIdentifier>{4025380E-2C4A-878E-5595-6C1E411986AC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imconfig-SFML.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imconfig.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imgui-SFML.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imgui-SFML_export.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imgui.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imgui_internal.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imstb_rectpack.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imstb_textedit.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\ImGui\ImGui\imstb_truetype.h">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Block.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Chunk.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Game.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Grid.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui-SFML.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui_demo.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui_draw.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui_tables.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\ImGui\ImGui\imgui_widgets.cpp">
+      <Filter>Dependencies\ImGui\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Game.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Grid.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
