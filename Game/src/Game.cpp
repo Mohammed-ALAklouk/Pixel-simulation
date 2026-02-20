@@ -26,12 +26,8 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
-#if USE_CHUNK_SYSTEM
 	active_chunks = grid.Get_active_chunk_positions();
 	grid.update_active_chunks();
-#else
-	grid.update();
-#endif
 }
 
 void PS::Game::render()
@@ -50,14 +46,12 @@ void PS::Game::render()
 	frame.setTexture(&tex);
 	window.draw(frame);
 
-#if USE_CHUNK_SYSTEM
 	auto topLeft = frame.getPosition();
 	for (sf::Vector2i chunk: active_chunks)
 	{
 		chunk_debug_shape.setPosition(topLeft + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
 		//window.draw(chunk_debug_shape);
 	}
-#endif
 	UI();
 	ImGui::SFML::Render(window);
 
