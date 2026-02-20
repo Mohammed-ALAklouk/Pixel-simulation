@@ -3,8 +3,11 @@
 #include "Block.h"
 #include <vector>
 
+#define USE_CHUNK_SYSTEM 1
+
 namespace PS
 {
+#if USE_CHUNK_SYSTEM
 	class Grid
 	{
 	public:
@@ -70,13 +73,41 @@ namespace PS
 
 	private:
 		std::vector<Chunk> m_chunks;
-		std::vector<uint8_t> m_processed;
-
 		// Dimensions in chunks 
 		int	m_width_ch = 0;
 		int	m_height_ch = 0;
+
+		std::vector<uint8_t> m_processed;
+
 		// Dimensions in pixels
 		int m_width_px = 0;
 		int m_height_px = 0;
 	};
+#else
+	class Grid
+	{
+		public:
+		Grid() = default;
+		void Create(std::uint16_t width, std::uint16_t height);
+		void update();
+		void Set_at(std::uint16_t x, std::uint16_t y, Block block) { m_tiles.at(get_index(x,y)) = block; }
+		Block Get_at(std::uint16_t x, std::uint16_t y) const { return m_tiles.at(get_index(x, y)); }
+		bool in_bound(int x, int y) const { return (x >= 0 && y >= 0 && x < m_width && y < m_height); }
+		void swap_pixels(sf::Vector2i pos1, sf::Vector2i pos2)
+		{
+			auto temp = Get_at(pos1.x, pos1.y);
+			Set_at(pos1.x, pos1.y, Get_at(pos2.x, pos2.y));
+			Set_at(pos2.x, pos2.y, temp);
+			m_processed[get_index(pos1.x, pos1.y)] = true;
+			m_processed[get_index(pos2.x, pos2.y)] = true;
+		}
+		int get_index(int x, int y) const { return y * m_width + x; }
+
+	private:
+		std::vector<Block> m_tiles;
+		int m_width = 0;
+		int m_height = 0;
+		std::vector<uint8_t> m_processed;
+	};
+#endif // USE_CHUNK_SYSTEM
 }

@@ -13,7 +13,7 @@ PS::Game::Game()
 	frame.setPosition(Grid_offset);
 	frame.setOutlineColor(sf::Color::White);
 	frame.setOutlineThickness(5);
-
+	
 	chunk_debug_shape.setSize(sf::Vector2f(CHUNK_SIZE, CHUNK_SIZE));
 	chunk_debug_shape.setFillColor(sf::Color::Transparent);
 	chunk_debug_shape.setOutlineColor(sf::Color::Red);
@@ -26,9 +26,12 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
-	active_chunks.clear();
+#if USE_CHUNK_SYSTEM
 	active_chunks = grid.Get_active_chunk_positions();
 	grid.update_active_chunks();
+#else
+	grid.update();
+#endif
 }
 
 void PS::Game::render()
@@ -47,13 +50,14 @@ void PS::Game::render()
 	frame.setTexture(&tex);
 	window.draw(frame);
 
+#if USE_CHUNK_SYSTEM
 	auto topLeft = frame.getPosition();
 	for (sf::Vector2i chunk: active_chunks)
 	{
 		chunk_debug_shape.setPosition(topLeft + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
-		window.draw(chunk_debug_shape);
+		//window.draw(chunk_debug_shape);
 	}
-
+#endif
 	UI();
 	ImGui::SFML::Render(window);
 
