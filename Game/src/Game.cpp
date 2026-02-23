@@ -26,8 +26,10 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
-	active_chunks = grid.Get_active_chunk_positions();
-	grid.update_active_chunks();
+	//active_chunks = grid.Get_active_chunk_positions();
+	for (size_t i = 0; i < 3; i++)
+		grid.update_active_chunks();
+	
 }
 
 void PS::Game::render()

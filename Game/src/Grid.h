@@ -28,9 +28,7 @@ namespace PS
 
 		void Set_at(std::uint16_t x, std::uint16_t y, Block block)
 		{
-			std::uint16_t chunk_x = x / CHUNK_SIZE;
-			std::uint16_t chunk_y = y / CHUNK_SIZE;
-			std::uint16_t chunk_index = chunk_y * m_width_ch + chunk_x;
+			std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 			std::uint16_t local_x = x % CHUNK_SIZE;
 			std::uint16_t local_y = y % CHUNK_SIZE;
 			m_chunks.at(chunk_index).Set_at(local_x, local_y, block);
@@ -39,9 +37,7 @@ namespace PS
 
 		Block Get_at(std::uint16_t x, std::uint16_t y) const
 		{
-			std::uint16_t chunk_x = x / CHUNK_SIZE;
-			std::uint16_t chunk_y = y / CHUNK_SIZE;
-			std::uint16_t chunk_index = chunk_y * m_width_ch + chunk_x;
+			std::uint16_t chunk_index = get_chunk_index_from_pixel(x,y);
 			std::uint16_t local_x = x % CHUNK_SIZE;
 			std::uint16_t local_y = y % CHUNK_SIZE;
 			return m_chunks.at(chunk_index).Get_at(local_x, local_y);
@@ -67,6 +63,7 @@ namespace PS
 		// Helper functions
 		bool in_bound(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 		int get_chunk_index(int x, int y)	const	{	return y * m_width_ch + x;	}
+		int get_chunk_index_from_pixel(int x, int y)	const { return get_chunk_index(x / CHUNK_SIZE, y / CHUNK_SIZE); }
 		int get_global_index(int x, int y)	const	{	return y * m_width_px + x;	}
 
 	private:

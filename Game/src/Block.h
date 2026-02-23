@@ -75,6 +75,16 @@ namespace PS
 			}
 		}
 
+		bool Can_cascade()
+		{
+			switch (id)
+			{
+			case PS::Sand:	return true;
+			case PS::Water:	return true;
+			default:		return false;
+			}
+		}
+
 		float Get_density()
 		{
 			switch (id)
@@ -89,6 +99,5 @@ namespace PS
 
 		BlockID id;
 		sf::Color color;
-		sf::Vector2f velocity = sf::Vector2f(0,0);
 	};
 }
