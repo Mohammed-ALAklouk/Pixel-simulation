@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Grid.h"
+#include "Simulation.h"
 
 #include <ImGui/imgui.h>
 #include <ImGui/imgui-SFML.h>
