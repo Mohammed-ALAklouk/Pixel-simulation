@@ -1,5 +1,6 @@
 #pragma once
 #include "Grid.h"
+#include "MaterialRegistry.h"
 
 namespace PS
 {

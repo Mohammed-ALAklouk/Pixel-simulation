@@ -77,6 +77,7 @@ namespace PS
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x % CHUNK_SIZE;
 		std::uint16_t local_y = y % CHUNK_SIZE;
+		
 		return m_chunks.at(chunk_index).Get_at(local_x, local_y);
 	}
 }

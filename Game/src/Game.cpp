@@ -2,6 +2,8 @@
 
 PS::Game::Game()
 {
+	MaterialRegistry::Create_materials();
+
 	window.create(sf::VideoMode(Window_size.x, Window_size.y), "window", sf::Style::Default);
 	Grid_offset = (Window_size - sf::Vector2f(GridSize, GridSize) * TileSize) / 2.0f;
 	window.setFramerateLimit(60);
@@ -20,6 +22,7 @@ PS::Game::Game()
 	chunk_debug_shape.setOutlineThickness(1);
 
 	grid.Create(GridSize, GridSize);
+
 	
 	srand(time(NULL));
 }
