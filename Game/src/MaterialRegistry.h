@@ -45,6 +45,11 @@ namespace PS
 		{
 			return m_mateials.at(id);
 		}
+
+		static int Get_materials_count()
+		{
+			return m_mateials.size();
+		}
 		
 	private:
 		inline static std::vector<BlockData> m_mateials;

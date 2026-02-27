@@ -108,36 +108,13 @@ void PS::Game::UI()
 {
 	ImGui::Begin("debug");
 
-	if (ImGui::Button("Air"))
-		SelectedMaterial = Air;
-	if (ImGui::Button("Sand"))
-		SelectedMaterial = Sand;
-	if (ImGui::Button("Stone"))
-		SelectedMaterial = Stone;
-	if (ImGui::Button("Water"))
-		SelectedMaterial = Water;
-
-	std::string mat_name;
-	switch (SelectedMaterial)
+	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
 	{
-	case PS::Air:
-		mat_name = "Air";
-		break;
-	case PS::Sand:
-		mat_name = "Sand";
-		break;
-	case PS::Stone:
-		mat_name = "Stone";
-		break;
-	case PS::Water:
-		mat_name = "Water";
-		break;
-	default:
-		mat_name = "Nothing";
-		break;
+		if (ImGui::Button(MaterialRegistry::Get(BlockID(i)).Name.c_str()))
+			SelectedMaterial = BlockID(i);
 	}
 
-	ImGui::Text(mat_name.c_str());
+	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
 
 	ImGui::End();
 }
