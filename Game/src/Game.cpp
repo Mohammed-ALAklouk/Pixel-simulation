@@ -29,10 +29,8 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
-	for (size_t i = 0; i < 3; i++)
+	for (size_t i = 0; i < updates_per_frame; i++)
 		Simulation::Update_grid(grid);
-		//grid.update_active_chunks();
-	
 }
 
 void PS::Game::render()
@@ -114,6 +112,8 @@ void PS::Game::UI()
 	}
 
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
+
+	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 
 	ImGui::End();
 }

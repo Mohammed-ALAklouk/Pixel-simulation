@@ -50,5 +50,7 @@ namespace PS
 
 		sf::RectangleShape chunk_debug_shape;
 		std::vector<sf::Vector2i> active_chunks;
+
+		int  updates_per_frame = 3;
 	};
 }

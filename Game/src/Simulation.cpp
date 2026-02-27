@@ -3,8 +3,17 @@
 void PS::Simulation::Update_grid(Grid& grid)
 {
 	grid.Reset_proccessed();
+	Update_grid_drectional(grid, 1);
+	Update_grid_drectional(grid, -1);
+}
 
-	for (int y = grid.Get_height_px() - 1; y >= 0; y--)
+void PS::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
+{
+	int y_increment = gravityDirection == 1 ? -1 : 1;
+	int y_start = y_increment == 1 ? 0 : grid.Get_height_px() - 1;
+	int y_end = y_increment == 1 ? grid.Get_height_px() : -1;
+
+	for (int y = y_start; y != y_end; y += y_increment)
 	{
 		int x_increment = rand() % 2 ? 1 : -1;
 		int start = x_increment == 1 ? 0 : grid.Get_width_px() - 1;
@@ -20,26 +29,28 @@ void PS::Simulation::Update_grid(Grid& grid)
 				continue;
 			}
 
-			Update_pixel(grid, x, y);
+			Update_pixel(grid, x, y, gravityDirection);
 		}
 	}
 }
 
-void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
+void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection)
 {
 	if (grid.Is_processed(x, y)) return;
 
 	auto tile = grid.Get_at(x, y);
-	if (tile.id == 0) return;
+	if (tile.id == MaterialRegistry::AIR_ID) return;
+	if (MaterialRegistry::Get(tile.id).gravity != gravityDirection) return;
+
 	auto tile_material = MaterialRegistry::Get(tile.id);
 
 	// Falling tiles
-	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + 1))
+	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
 	{
-		auto next_tile = grid.Get_at(x, y + 1);
+		auto next_tile = grid.Get_at(x, y + gravityDirection);
 		if (MaterialRegistry::Get(next_tile.id).Is_fluid && next_tile.id != tile.id)
 		{
-			grid.swap_pixels({ x,y }, { x, y + 1 });
+			grid.swap_pixels({ x,y }, { x, y + gravityDirection });
 			return;
 		}
 	}
@@ -51,40 +62,39 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 		{
 			int direction = rand() % 2 ? 1 : -1;
 
-			if (grid.Is_in_bounds(x + direction, y + 1))
+			if (grid.Is_in_bounds(x + direction, y + gravityDirection))
 			{
-				auto checked_tile = grid.Get_at(x + direction, y + 1);
+				auto checked_tile = grid.Get_at(x + direction, y + gravityDirection);
 				auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
 				if (checked_tile_material.Is_fluid && checked_tile_material.Density < tile_material.Density)
 				{
-					grid.swap_pixels({ x,y }, { x + direction, y + 1 });
+					grid.swap_pixels({ x,y }, { x + direction, y + gravityDirection });
 					return;
 				}
 			}
 
-			if (grid.Is_in_bounds(x - direction, y + 1))
+			if (grid.Is_in_bounds(x - direction, y + gravityDirection))
 			{
-				auto checked_tile = grid.Get_at(x - direction, y + 1);
+				auto checked_tile = grid.Get_at(x - direction, y + gravityDirection);
 				auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
 				if (checked_tile_material.Is_fluid && checked_tile_material.Density < tile_material.Density)
 				{
-					grid.swap_pixels({ x,y }, { x - direction, y + 1 });
+					grid.swap_pixels({ x,y }, { x - direction, y + gravityDirection });
 					return;
 				}
 			}
 		}
 	}
 
-	// water
-	if ((tile.id == 3))
+	// Fluid tiles
+	if ((MaterialRegistry::Get(tile.id).Is_fluid))
 	{
 		int direction = rand() % 2 ? 1 : -1;
 
-		// side to side
 		if (grid.Is_in_bounds(x + direction, y))
 		{
 			auto checked_tile = grid.Get_at(x + direction, y);
-			if (checked_tile.id == 0)
+			if (checked_tile.id == MaterialRegistry::AIR_ID)
 			{
 				grid.swap_pixels({ x,y }, { x + direction, y });
 				return;
@@ -94,7 +104,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 		if (grid.Is_in_bounds(x - direction, y))
 		{
 			auto checked_tile = grid.Get_at(x - direction, y);
-			if (checked_tile.id == 0)
+			if (checked_tile.id == MaterialRegistry::AIR_ID)
 			{
 				grid.swap_pixels({ x,y }, { x - direction, y });
 				return;

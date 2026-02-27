@@ -10,7 +10,8 @@ namespace PS
 		Simulation() = default;
 		
 		static void Update_grid(Grid& grid);
-		static void Update_pixel(Grid& grid, int x, int y);
+		static void Update_grid_drectional(Grid& grid, int gravityDirection);
+		static void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
 	private:
 	};
 }

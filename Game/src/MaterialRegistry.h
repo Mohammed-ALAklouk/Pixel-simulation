@@ -14,6 +14,7 @@ namespace PS
 		bool Can_caascade;
 		bool Is_fluid;
 		float Density;
+		int gravity;
 
 
 		sf::Color Min_color;
@@ -36,18 +37,26 @@ namespace PS
 				exit(1);
 			}
 			nlohmann::json data = nlohmann::json::parse(file);
+			int index = 0;
 			for (auto material: data["materials"])
 			{
+				if (material["name"] == "Air")
+					AIR_ID = index;
+
 				m_mateials.push_back({
 					material["name"],
 					material["can_fall"],
 					material["can_cascade"],
 					material["is_fluid"],
 					material["density"],
+					material["gravity"],
+
+
 					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
 					sf::Color(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
 					material["steps"],
-					});
+				});
+				index++;
 			}
 		}
 
@@ -61,6 +70,8 @@ namespace PS
 			return m_mateials.size();
 		}
 		
+		inline static int AIR_ID;
+
 	private:
 		inline static std::vector<BlockData> m_mateials;
 	};
