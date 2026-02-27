@@ -19,13 +19,13 @@ namespace PS
 			return min + sf::Color(r, g, b);
 		}
 
-		static Block Create(BlockID id)
+		static Block Create(int id)
 		{
 			auto data = MaterialRegistry::Get(id);
 			return Block(id, Random_step(data.Min_color, data.Max_color, data.Number_of_steps));
 		}
 
-		BlockID id;
+		int id;
 		sf::Color color;
 	};
 }

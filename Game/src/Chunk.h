@@ -1,6 +1,5 @@
 #pragma once
 #define CHUNK_SIZE 32
-#define USE_CHUNKS true
 
 #include "Block.h"
 
@@ -20,7 +19,7 @@ namespace PS
 			{
 				for (size_t x = 0; x < CHUNK_SIZE; x++)
 				{
-					data[y][x] = PS::Block::Create(PS::Air);
+					data[y][x] = PS::Block::Create(0);
 				}
 			}
 
@@ -42,5 +41,4 @@ namespace PS
 	private:
 		PS::Block data[CHUNK_SIZE][CHUNK_SIZE];
 	};
-
 }

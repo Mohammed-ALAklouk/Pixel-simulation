@@ -2,17 +2,11 @@
 #include <vector>
 #include <string>
 #include <SFML/Graphics.hpp>
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 namespace PS
 {
-	enum BlockID
-	{
-		Air,
-		Sand,
-		Stone,
-		Water
-	};
-
 	struct BlockData
 	{
 		std::string Name;
@@ -35,13 +29,29 @@ namespace PS
 
 		static void Create_materials()
 		{
-			m_mateials.push_back({"Air", true, false, true, 0, sf::Color(0, 0, 0), sf::Color(0, 0, 0), 1});
-			m_mateials.push_back({"Sand", true, true, false, 1.5f, sf::Color(150, 150, 0), sf::Color(255, 255, 0), 8});
-			m_mateials.push_back({"Stone", false, false, false, 2.5f, sf::Color(100, 100, 100), sf::Color(120, 120, 120), 4});
-			m_mateials.push_back({"Water", true, true, true, 1.0f, sf::Color(0, 0, 200), sf::Color(0, 0, 250), 8});
+			std::ifstream file("materials.json");
+			if (!file.is_open())
+			{
+				printf("Failed to open materials.json file\n");
+				exit(1);
+			}
+			nlohmann::json data = nlohmann::json::parse(file);
+			for (auto material: data["materials"])
+			{
+				m_mateials.push_back({
+					material["name"],
+					material["can_fall"],
+					material["can_cascade"],
+					material["is_fluid"],
+					material["density"],
+					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
+					sf::Color(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
+					material["steps"],
+					});
+			}
 		}
 
-		static BlockData Get(BlockID id) 
+		static BlockData Get(int id)
 		{
 			return m_mateials.at(id);
 		}

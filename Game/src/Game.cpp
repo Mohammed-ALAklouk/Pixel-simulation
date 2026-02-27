@@ -68,10 +68,9 @@ void PS::Game::proccessInputs()
 
 		if (event.type == sf::Event::MouseWheelScrolled)
 		{
-			if (SelectedMaterial == Sand)
-				SelectedMaterial = Stone;
-			else
-				SelectedMaterial = Sand;
+			SelectedMaterial += 1;
+			if (SelectedMaterial >= MaterialRegistry::Get_materials_count())
+				SelectedMaterial = 0;
 		}
 	}
 
@@ -94,7 +93,7 @@ void PS::Game::proccessInputs()
 	{
 		sf::Vector2i curser_end = mouse_pos;
 		auto line = GetLine(curser_start, curser_end);
-		PS::BlockID material = mouse_left_down ? SelectedMaterial : Air;
+		int material = mouse_left_down ? SelectedMaterial : 0;
 
 		for (auto point: line)
 			draw_curser(point, material);
@@ -110,8 +109,8 @@ void PS::Game::UI()
 
 	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
 	{
-		if (ImGui::Button(MaterialRegistry::Get(BlockID(i)).Name.c_str()))
-			SelectedMaterial = BlockID(i);
+		if (ImGui::Button(MaterialRegistry::Get(i).Name.c_str()))
+			SelectedMaterial = i;
 	}
 
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
@@ -132,7 +131,7 @@ void PS::Game::run()
 	}
 }
 
-void PS::Game::draw_curser(sf::Vector2i pos, BlockID material)
+void PS::Game::draw_curser(sf::Vector2i pos, int material)
 {
 	for (int x_offset = 0; x_offset < curser_radius; x_offset++)
 	{
@@ -145,7 +144,7 @@ void PS::Game::draw_curser(sf::Vector2i pos, BlockID material)
 				continue;
 
 
-			if (material == Air || grid.Get_at(x,y).id == Air)
+			if (material == 0 || grid.Get_at(x,y).id == 0)
 				grid.Set_at(x, y, Block::Create(material));
 		}
 

@@ -30,7 +30,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 	if (grid.Is_processed(x, y)) return;
 
 	auto tile = grid.Get_at(x, y);
-	if (tile.id == BlockID::Air) return;
+	if (tile.id == 0) return;
 	auto tile_material = MaterialRegistry::Get(tile.id);
 
 	// Falling tiles
@@ -76,7 +76,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 	}
 
 	// water
-	if ((tile.id == Water))
+	if ((tile.id == 3))
 	{
 		int direction = rand() % 2 ? 1 : -1;
 
@@ -84,7 +84,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 		if (grid.Is_in_bounds(x + direction, y))
 		{
 			auto checked_tile = grid.Get_at(x + direction, y);
-			if (checked_tile.id == BlockID::Air)
+			if (checked_tile.id == 0)
 			{
 				grid.swap_pixels({ x,y }, { x + direction, y });
 				return;
@@ -94,7 +94,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y)
 		if (grid.Is_in_bounds(x - direction, y))
 		{
 			auto checked_tile = grid.Get_at(x - direction, y);
-			if (checked_tile.id == BlockID::Air)
+			if (checked_tile.id == 0)
 			{
 				grid.swap_pixels({ x,y }, { x - direction, y });
 				return;

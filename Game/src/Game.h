@@ -21,7 +21,7 @@ namespace PS
 		void proccessInputs();
 		void UI();
 		void run();
-		void draw_curser(sf::Vector2i pos, BlockID material);
+		void draw_curser(sf::Vector2i pos, int material);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
@@ -35,7 +35,7 @@ namespace PS
 
 		sf::RenderWindow window;
 		Grid grid;
-		BlockID SelectedMaterial = Stone;
+		int SelectedMaterial = 0;
 
 		sf::Texture tex;
 		sf::Image render_tex;
