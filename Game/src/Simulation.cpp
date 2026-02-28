@@ -48,7 +48,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
 	{
 		auto next_tile = grid.Get_at(x, y + gravityDirection);
-		if (MaterialRegistry::Get(next_tile.id).Is_fluid && next_tile.id != tile.id)
+		auto next_tile_material = MaterialRegistry::Get(next_tile.id);
+		if (tile_material.Density > next_tile_material.Density)
 		{
 			grid.swap_pixels({ x,y }, { x, y + gravityDirection });
 			return;
@@ -61,6 +62,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		if (rand() % 100 <= 50)
 		{
 			int direction = rand() % 2 ? 1 : -1;
+			
 
 			if (grid.Is_in_bounds(x + direction, y + gravityDirection))
 			{
