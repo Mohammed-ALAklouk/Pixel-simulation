@@ -11,7 +11,8 @@
       "is_liquid": false,
       "density": 0.0,
       "gravity": 1,
-      "should_decay": false
+      "should_decay": false,
+      "is_corrodable": false
     },
     {
       "name": "Sand",
@@ -24,7 +25,8 @@
       "is_liquid": false,
       "density": 80.0,
       "gravity": 1,
-      "should_decay": false
+      "should_decay": false,
+      "is_corrodable": true
     },
     {
       "name": "Stone",
@@ -37,7 +39,8 @@
       "is_liquid": false,
       "density": 100.0,
       "gravity": 1,
-      "should_decay": false
+      "should_decay": false,
+      "is_corrodable": true
     },
     {
       "name": "Water",
@@ -50,7 +53,8 @@
       "is_liquid": true,
       "density": 30.0,
       "gravity": 1,
-      "should_decay": false
+      "should_decay": false,
+      "is_corrodable": true
     },
     {
       "name": "Smoke",
@@ -63,7 +67,22 @@
       "is_liquid": true,
       "density": 10.0,
       "gravity": -1,
-      "should_decay": true
+      "should_decay": true,
+      "is_corrodable": false
+    },
+    {
+      "name": "Acid",
+      "color_min": [ 0, 150, 0 ],
+      "color_max": [ 0, 150, 0 ],
+      "steps": 8,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": true,
+      "is_liquid": true,
+      "density": 30.0,
+      "gravity": 1,
+      "should_decay": false,
+      "is_corrodable": false
     }
   ]
 }

@@ -54,6 +54,73 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		grid.set_chunk_active_at_pixel(x, y);
 	}
 
+	// Acid interactions
+	if (tile.id == MaterialRegistry::ACID_ID)
+	{
+		int direction = rand() % 2 ? 1 : -1;
+
+		if (grid.Is_in_bounds(x, y + direction))
+		{
+			auto checked_tile = grid.Get_at(x, y + direction);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (checked_tile_material.is_corrodable)
+			{
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y);
+
+				grid.Set_at(x, y + direction, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y + direction);
+				return;
+			}
+		}
+
+		if (grid.Is_in_bounds(x, y - direction))
+		{
+			auto checked_tile = grid.Get_at(x, y - direction);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (checked_tile_material.is_corrodable)
+			{
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y);
+
+				grid.Set_at(x, y - direction, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y - direction);
+				return;
+			}
+		}
+
+		if (grid.Is_in_bounds(x + direction, y))
+		{
+			auto checked_tile = grid.Get_at(x + direction, y);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (checked_tile_material.is_corrodable)
+			{
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y);
+
+				grid.Set_at(x + direction, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x + direction, y);
+				return;
+			}
+		}
+		
+		if (grid.Is_in_bounds(x - direction, y))
+		{
+			auto checked_tile = grid.Get_at(x - direction, y);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (checked_tile_material.is_corrodable)
+			{
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y);
+
+				grid.Set_at(x - direction, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x - direction, y);
+				return;
+			}
+		}
+		
+	}
+
 	// Falling tiles
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
 	{

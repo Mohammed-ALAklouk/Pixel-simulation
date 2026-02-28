@@ -16,6 +16,7 @@ namespace PS
 		float Density;
 		int Gravity_direction;
 		bool Should_decay;
+		bool is_corrodable;
 
 
 		sf::Color Min_color;
@@ -43,6 +44,8 @@ namespace PS
 			{
 				if (material["name"] == "Air")
 					AIR_ID = index;
+				if (material["name"] == "Acid")
+					ACID_ID = index;
 
 				m_mateials.push_back({
 					material["name"],
@@ -52,7 +55,7 @@ namespace PS
 					material["density"],
 					material["gravity"],
 					material["should_decay"],
-
+					material["is_corrodable"],
 
 					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
 					sf::Color(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
@@ -73,6 +76,7 @@ namespace PS
 		}
 		
 		inline static int AIR_ID;
+		inline static int ACID_ID;
 
 	private:
 		inline static std::vector<BlockData> m_mateials;
