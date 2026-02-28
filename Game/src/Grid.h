@@ -23,6 +23,8 @@ namespace PS
 
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
 		inline void swap_pixels(sf::Vector2i pos1, sf::Vector2i pos2);
+		inline void set_processed(int x, int y) { m_processed[get_global_index(x, y)] = true; }
+		inline void set_chunk_active_at_pixel(int x, int y) { m_chunks.at(get_chunk_index_from_pixel(x, y)).is_active = true; }
 
 	private:
 		// Helper functions

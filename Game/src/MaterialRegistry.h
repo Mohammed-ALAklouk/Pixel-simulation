@@ -14,7 +14,8 @@ namespace PS
 		bool Can_caascade;
 		bool Is_fluid;
 		float Density;
-		int gravity;
+		int Gravity_direction;
+		bool Should_decay;
 
 
 		sf::Color Min_color;
@@ -50,6 +51,7 @@ namespace PS
 					material["is_fluid"],
 					material["density"],
 					material["gravity"],
+					material["should_decay"],
 
 
 					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),

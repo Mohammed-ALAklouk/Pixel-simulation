@@ -40,9 +40,19 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 	auto tile = grid.Get_at(x, y);
 	if (tile.id == MaterialRegistry::AIR_ID) return;
-	if (MaterialRegistry::Get(tile.id).gravity != gravityDirection) return;
+	if (MaterialRegistry::Get(tile.id).Gravity_direction != gravityDirection) return;
 
 	auto tile_material = MaterialRegistry::Get(tile.id);
+	if (tile_material.Should_decay && rand() % 10000 == 0)
+	{
+		grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+		grid.set_processed(x, y);
+		return;
+	}
+	else
+	{
+		grid.set_chunk_active_at_pixel(x, y);
+	}
 
 	// Falling tiles
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))

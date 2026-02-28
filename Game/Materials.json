@@ -10,7 +10,8 @@
       "can_cascade": false,
       "is_liquid": false,
       "density": 0.0,
-      "gravity": 1
+      "gravity": 1,
+      "should_decay": false
     },
     {
       "name": "Sand",
@@ -22,7 +23,8 @@
       "can_cascade": true,
       "is_liquid": false,
       "density": 80.0,
-      "gravity": 1
+      "gravity": 1,
+      "should_decay": false
     },
     {
       "name": "Stone",
@@ -34,7 +36,8 @@
       "can_cascade": false,
       "is_liquid": false,
       "density": 100.0,
-      "gravity": 1
+      "gravity": 1,
+      "should_decay": false
     },
     {
       "name": "Water",
@@ -46,7 +49,8 @@
       "can_cascade": true,
       "is_liquid": true,
       "density": 30.0,
-      "gravity": 1
+      "gravity": 1,
+      "should_decay": false
     },
     {
       "name": "Smoke",
@@ -58,7 +62,8 @@
       "can_cascade": true,
       "is_liquid": true,
       "density": 10.0,
-      "gravity": -1
+      "gravity": -1,
+      "should_decay": true
     }
   ]
 }
