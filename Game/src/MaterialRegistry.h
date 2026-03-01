@@ -81,9 +81,9 @@ namespace PS
 			Create_materials();
 		}
 
-		static BlockData Get(int id)
+		static const BlockData& Get(int id)
 		{
-			return m_mateials.at(id);
+			return m_mateials[id];
 		}
 
 		static int Get_materials_count()

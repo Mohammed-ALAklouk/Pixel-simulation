@@ -17,8 +17,8 @@ namespace PS
 		inline int Get_width_px() const { return m_width_px; }
 		inline int Get_height_px() const { return m_height_px; }
 
-		inline bool Is_processed(int x, int y) const { return m_processed.at(get_global_index(x, y)); }
-		inline bool Is_chunk_active_at_pixel(int x, int y) const { return m_chunks.at(get_chunk_index_from_pixel(x, y)).is_active; }
+		inline bool Is_processed(int x, int y) const { return m_processed[get_global_index(x, y)]; }
+		inline bool Is_chunk_active_at_pixel(int x, int y) const { return m_chunks[get_chunk_index_from_pixel(x, y)].is_active; }
 		inline bool Is_in_bounds(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
@@ -38,7 +38,7 @@ namespace PS
 	private:
 		// Helper functions
 		int get_chunk_index(int x, int y)	const	{	return y * m_width_ch + x;	}
-		int get_chunk_index_from_pixel(int x, int y)	const { return get_chunk_index(x / CHUNK_SIZE, y / CHUNK_SIZE); }
+		int get_chunk_index_from_pixel(int x, int y)	const { return get_chunk_index(x >> 5, y >> 5); }
 		int get_global_index(int x, int y)	const	{	return y * m_width_px + x;	}
 		
 		std::vector<Chunk> m_chunks;
@@ -76,28 +76,28 @@ namespace PS
 
 	inline void Grid::set_chunk_active_at_pixel(int x, int y)
 	{
-		m_chunks.at(get_chunk_index_from_pixel(x, y)).is_active_next_frame = true;
-		int local_x = x % CHUNK_SIZE;
-		int local_y = y % CHUNK_SIZE;
-		int chunk_x = x / CHUNK_SIZE;
-		int chunk_y = y / CHUNK_SIZE;
+		m_chunks[get_chunk_index_from_pixel(x, y)].is_active_next_frame = true;
+		int local_x = x & 31;
+		int local_y = y & 31;
+		int chunk_x = x >> 5;
+		int chunk_y = y >> 5;
 
 		if (local_x == 0 && chunk_x != 0) 
-			m_chunks.at(get_chunk_index(chunk_x - 1, chunk_y)).is_active_next_frame = true;
+			m_chunks[get_chunk_index(chunk_x - 1, chunk_y)].is_active_next_frame = true;
 		else if (local_x == CHUNK_SIZE - 1 && chunk_x != m_width_ch - 1) 
-			m_chunks.at(get_chunk_index(chunk_x + 1, chunk_y)).is_active_next_frame = true;
+			m_chunks[get_chunk_index(chunk_x + 1, chunk_y)].is_active_next_frame = true;
 
 		if (local_y == 0 && chunk_y != 0)
-			m_chunks.at(get_chunk_index(chunk_x, chunk_y - 1)).is_active_next_frame = true;
+			m_chunks[get_chunk_index(chunk_x, chunk_y - 1)].is_active_next_frame = true;
 		else if (local_y == CHUNK_SIZE - 1 && chunk_y != m_height_ch - 1)
-			m_chunks.at(get_chunk_index(chunk_x, chunk_y + 1)).is_active_next_frame = true;
+			m_chunks[get_chunk_index(chunk_x, chunk_y + 1)].is_active_next_frame = true;
 	}
 
 	inline void Grid::Get_active_chunks(std::vector<sf::Vector2i>& active_chunks) const
 	{
 		for (size_t i = 0; i < m_chunks.size(); i++)
 		{
-			if (m_chunks.at(i).is_active)
+			if (m_chunks[i].is_active)
 			{
 				int x = i % m_width_ch;
 				int y = i / m_width_ch;
@@ -109,18 +109,18 @@ namespace PS
 	inline void Grid::Set_at(std::uint16_t x, std::uint16_t y, Block block)
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
-		std::uint16_t local_x = x % CHUNK_SIZE;
-		std::uint16_t local_y = y % CHUNK_SIZE;
-		m_chunks.at(chunk_index).Set_at(local_x, local_y, block);
+		std::uint16_t local_x = x & 31;
+		std::uint16_t local_y = y & 31;
+		m_chunks[chunk_index].Set_at(local_x, local_y, block);
 		set_chunk_active_at_pixel(x, y);
 	}
 
 	inline Block Grid::Get_at(std::uint16_t x, std::uint16_t y) const
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
-		std::uint16_t local_x = x % CHUNK_SIZE;
-		std::uint16_t local_y = y % CHUNK_SIZE;
+		std::uint16_t local_x = x & 31;
+		std::uint16_t local_y = y & 31;
 		
-		return m_chunks.at(chunk_index).Get_at(local_x, local_y);
+		return m_chunks[chunk_index].Get_at(local_x, local_y);
 	}
 }

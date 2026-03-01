@@ -142,10 +142,7 @@ void PS::Game::run()
 	sf::Clock delta_clock;
 	sf::Clock bench_clock;
 	while (window.isOpen())
-	{
-		if (!window.hasFocus())
-			continue;
-
+	{	
 		bench_clock.restart();
 		proccessInputs();
 		input_time = bench_clock.restart().asSeconds();
@@ -155,6 +152,7 @@ void PS::Game::run()
 
 		update();
 		update_time = bench_clock.restart().asSeconds();
+
 
 		render();
 		render_time = bench_clock.restart().asSeconds();

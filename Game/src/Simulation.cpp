@@ -16,7 +16,7 @@ void PS::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
 
 	for (int y = y_start; y != y_end; y += y_increment)
 	{
-		int x_increment = rand() % 2 ? 1 : -1;
+		int x_increment = fast_rand() & 1 ? 1 : -1;
 		int start = x_increment == 1 ? 0 : grid.Get_width_px() - 1;
 		int end = x_increment == 1 ? grid.Get_width_px() : -1;
 
@@ -43,7 +43,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	if (MaterialRegistry::Get(tile.id).Gravity_direction != gravityDirection) return;
 
 	auto tile_material = MaterialRegistry::Get(tile.id);
-	if (rand() % 10000 < tile_material.Decay_rate )
+	if (fast_rand() % 10000 < tile_material.Decay_rate )
 	{
 		grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
 		grid.set_processed(x, y);
@@ -57,7 +57,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Acid interactions
 	if (tile.id == MaterialRegistry::ACID_ID)
 	{
-		int direction = rand() % 2 ? 1 : -1;
+		int direction = fast_rand() & 1 ? 1 : -1;
 
 		if (grid.Is_in_bounds(x, y + direction))
 		{
@@ -124,8 +124,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Fire interactions
 	if (tile.id == MaterialRegistry::FIRE_ID)
 	{
-		int direction = rand() % 2 ? 1 : -1;
-		int axis = rand() % 2 ? 0 : 1;
+		int direction = fast_rand() & 1 ? 1 : -1;
+		int axis = fast_rand() & 1 ? 0 : 1;
 
 		int next_x = axis == 0 ? x + direction : x;
 		int next_y = axis == 1 ? y + direction : y;
@@ -134,7 +134,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		{
 			auto checked_tile = grid.Get_at(next_x, next_y);
 			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (rand() % 100 < checked_tile_material.burn_chance)
+			if (fast_rand() % 100 < checked_tile_material.burn_chance)
 			{
 				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
 				grid.set_processed(next_x, next_y);
@@ -158,9 +158,9 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Cacading tiles 
 	if (tile_material.Can_caascade)
 	{
-		if (rand() % 100 <= 50)
+		if (fast_rand() & 1)
 		{
-			int direction = rand() % 2 ? 1 : -1;
+			int direction = fast_rand() & 1 ? 1 : -1;
 			
 
 			if (grid.Is_in_bounds(x + direction, y + gravityDirection))
@@ -190,7 +190,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Liquid tiles
 	if ((MaterialRegistry::Get(tile.id).Is_liquid))
 	{
-		int direction = rand() % 2 ? 1 : -1;
+		int direction = fast_rand() & 1 ? 1 : -1;
 
 		if (grid.Is_in_bounds(x + direction, y))
 		{
@@ -198,16 +198,6 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			if (checked_tile.id == MaterialRegistry::AIR_ID)
 			{
 				grid.swap_pixels({ x,y }, { x + direction, y });
-				return;
-			}
-		}
-
-		if (grid.Is_in_bounds(x - direction, y))
-		{
-			auto checked_tile = grid.Get_at(x - direction, y);
-			if (checked_tile.id == MaterialRegistry::AIR_ID)
-			{
-				grid.swap_pixels({ x,y }, { x - direction, y });
 				return;
 			}
 		}
