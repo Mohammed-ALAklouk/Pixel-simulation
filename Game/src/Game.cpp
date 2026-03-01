@@ -29,8 +29,10 @@ PS::Game::Game()
 
 void PS::Game::update()
 {
+	sf::Clock clock;
 	for (size_t i = 0; i < updates_per_frame; i++)
 		Simulation::Update_grid(grid);
+	update_time = clock.getElapsedTime().asSeconds() / updates_per_frame;
 }
 
 void PS::Game::render()
@@ -48,6 +50,14 @@ void PS::Game::render()
 	tex.loadFromImage(render_tex); 
 	frame.setTexture(&tex);
 	window.draw(frame);
+
+	active_chunks.clear();
+	grid.Get_active_chunks(active_chunks);
+	for (auto chunk: active_chunks)
+	{
+		chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
+		window.draw(chunk_debug_shape);
+	}
 
 	UI();
 	ImGui::SFML::Render(window);
@@ -104,6 +114,12 @@ void PS::Game::proccessInputs()
 void PS::Game::UI()
 {
 	ImGui::Begin("debug");
+	
+	ImGui::Text(("FPS: " + std::to_string(1.0f/delta)).c_str());
+	ImGui::Text(("Update time: " + std::to_string(update_time)).c_str());
+	ImGui::Text(("Input time: " + std::to_string(input_time)).c_str());
+	ImGui::Text(("UI time: " + std::to_string(UI_time)).c_str());
+	ImGui::Text(("Render time: " + std::to_string(render_time)).c_str());
 
 	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
 	{
@@ -122,14 +138,27 @@ void PS::Game::UI()
 
 void PS::Game::run()
 {
-	sf::Clock deltaClock;
+	sf::Clock UI_clock;
+	sf::Clock delta_clock;
+	sf::Clock bench_clock;
 	while (window.isOpen())
 	{
+		if (!window.hasFocus())
+			continue;
+
+		bench_clock.restart();
 		proccessInputs();
-		ImGui::SFML::Update(window, deltaClock.restart());
+		input_time = bench_clock.restart().asSeconds();
+
+		ImGui::SFML::Update(window, UI_clock.restart());
+		UI_time = bench_clock.restart().asSeconds();
 
 		update();
+		update_time = bench_clock.restart().asSeconds();
+
 		render();
+		render_time = bench_clock.restart().asSeconds();
+		delta = delta_clock.restart().asSeconds();
 	}
 }
 

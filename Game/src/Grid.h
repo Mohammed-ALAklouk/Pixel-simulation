@@ -24,7 +24,16 @@ namespace PS
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
 		inline void swap_pixels(sf::Vector2i pos1, sf::Vector2i pos2);
 		inline void set_processed(int x, int y) { m_processed[get_global_index(x, y)] = true; }
-		inline void set_chunk_active_at_pixel(int x, int y) { m_chunks.at(get_chunk_index_from_pixel(x, y)).is_active = true; }
+		inline void set_chunk_active_at_pixel(int x, int y);
+		inline void Get_active_chunks(std::vector<sf::Vector2i>& active_chunks) const;
+		inline void Mark_chunks_for_next_update()
+		{
+			for (auto& chunk : m_chunks)
+			{
+				chunk.is_active = chunk.is_active_next_frame;
+				chunk.is_active_next_frame = false;
+			}
+		}
 
 	private:
 		// Helper functions
@@ -65,13 +74,45 @@ namespace PS
 		m_processed[get_global_index(pos2.x, pos2.y)] = true;
 	}
 
+	inline void Grid::set_chunk_active_at_pixel(int x, int y)
+	{
+		m_chunks.at(get_chunk_index_from_pixel(x, y)).is_active_next_frame = true;
+		int local_x = x % CHUNK_SIZE;
+		int local_y = y % CHUNK_SIZE;
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+
+		if (local_x == 0 && chunk_x != 0) 
+			m_chunks.at(get_chunk_index(chunk_x - 1, chunk_y)).is_active_next_frame = true;
+		else if (local_x == CHUNK_SIZE - 1 && chunk_x != m_width_ch - 1) 
+			m_chunks.at(get_chunk_index(chunk_x + 1, chunk_y)).is_active_next_frame = true;
+
+		if (local_y == 0 && chunk_y != 0)
+			m_chunks.at(get_chunk_index(chunk_x, chunk_y - 1)).is_active_next_frame = true;
+		else if (local_y == CHUNK_SIZE - 1 && chunk_y != m_height_ch - 1)
+			m_chunks.at(get_chunk_index(chunk_x, chunk_y + 1)).is_active_next_frame = true;
+	}
+
+	inline void Grid::Get_active_chunks(std::vector<sf::Vector2i>& active_chunks) const
+	{
+		for (size_t i = 0; i < m_chunks.size(); i++)
+		{
+			if (m_chunks.at(i).is_active)
+			{
+				int x = i % m_width_ch;
+				int y = i / m_width_ch;
+				active_chunks.push_back({ x, y });
+			}
+		}
+	}
+
 	inline void Grid::Set_at(std::uint16_t x, std::uint16_t y, Block block)
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x % CHUNK_SIZE;
 		std::uint16_t local_y = y % CHUNK_SIZE;
 		m_chunks.at(chunk_index).Set_at(local_x, local_y, block);
-		m_chunks.at(chunk_index).is_active = true;
+		set_chunk_active_at_pixel(x, y);
 	}
 
 	inline Block Grid::Get_at(std::uint16_t x, std::uint16_t y) const

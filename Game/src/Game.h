@@ -52,5 +52,11 @@ namespace PS
 		std::vector<sf::Vector2i> active_chunks;
 
 		int  updates_per_frame = 3;
+
+		float input_time = 0;
+		float UI_time = 0;
+		float update_time = 0;
+		float render_time = 0;
+		float delta = 0;
 	};
 }
