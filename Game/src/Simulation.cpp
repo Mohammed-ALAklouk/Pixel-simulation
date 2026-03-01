@@ -58,67 +58,25 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	if (tile.id == MaterialRegistry::ACID_ID)
 	{
 		int direction = fast_rand() & 1 ? 1 : -1;
+		int axis = fast_rand() & 1 ? 0 : 1;
 
-		if (grid.Is_in_bounds(x, y + direction))
+		int next_x = axis == 0 ? x + direction : x;
+		int next_y = axis == 1 ? y + direction : y;
+
+		if (grid.Is_in_bounds(next_x, next_y))
 		{
-			auto checked_tile = grid.Get_at(x, y + direction);
+			auto checked_tile = grid.Get_at(next_x, next_y);
 			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
 			if (checked_tile_material.is_corrodable)
 			{
 				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
 				grid.set_processed(x, y);
 
-				grid.Set_at(x, y + direction, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x, y + direction);
+				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(next_x, next_y);
 				return;
 			}
 		}
-
-		if (grid.Is_in_bounds(x, y - direction))
-		{
-			auto checked_tile = grid.Get_at(x, y - direction);
-			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (checked_tile_material.is_corrodable)
-			{
-				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x, y);
-
-				grid.Set_at(x, y - direction, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x, y - direction);
-				return;
-			}
-		}
-
-		if (grid.Is_in_bounds(x + direction, y))
-		{
-			auto checked_tile = grid.Get_at(x + direction, y);
-			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (checked_tile_material.is_corrodable)
-			{
-				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x, y);
-
-				grid.Set_at(x + direction, y, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x + direction, y);
-				return;
-			}
-		}
-		
-		if (grid.Is_in_bounds(x - direction, y))
-		{
-			auto checked_tile = grid.Get_at(x - direction, y);
-			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (checked_tile_material.is_corrodable)
-			{
-				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x, y);
-
-				grid.Set_at(x - direction, y, Block::Create(MaterialRegistry::AIR_ID));
-				grid.set_processed(x - direction, y);
-				return;
-			}
-		}
-		
 	}
 
 	// Fire interactions
