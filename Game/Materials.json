@@ -11,9 +11,10 @@
       "is_liquid": false,
       "density": 0.0,
       "gravity": 1,
-      "should_decay": false,
-      "is_corrodable": false
-    },
+      "decay_rate": -1,
+      "is_corrodable": false,
+    	"burn_chance": -1
+		},
     {
       "name": "Sand",
       "color_min": [ 150, 150, 0 ],
@@ -25,9 +26,10 @@
       "is_liquid": false,
       "density": 80.0,
       "gravity": 1,
-      "should_decay": false,
-      "is_corrodable": true
-    },
+      "decay_rate": -1,
+      "is_corrodable": true,
+    	"burn_chance": -1
+		},
     {
       "name": "Stone",
       "color_min": [ 100, 100, 100 ],
@@ -39,9 +41,10 @@
       "is_liquid": false,
       "density": 100.0,
       "gravity": 1,
-      "should_decay": false,
-      "is_corrodable": true
-    },
+      "decay_rate": -1,
+      "is_corrodable": true,
+    	"burn_chance": -1
+		},
     {
       "name": "Water",
       "color_min": [ 0, 0, 200 ],
@@ -53,9 +56,10 @@
       "is_liquid": true,
       "density": 30.0,
       "gravity": 1,
-      "should_decay": false,
-      "is_corrodable": true
-    },
+      "decay_rate": -1,
+      "is_corrodable": true,
+    	"burn_chance": -1
+		},
     {
       "name": "Smoke",
       "color_min": [ 200, 200, 200 ],
@@ -67,9 +71,10 @@
       "is_liquid": true,
       "density": 10.0,
       "gravity": -1,
-      "should_decay": true,
-      "is_corrodable": false
-    },
+      "decay_rate": 1,
+      "is_corrodable": false,
+    	"burn_chance": -1
+		},
     {
       "name": "Acid",
       "color_min": [ 0, 150, 0 ],
@@ -81,8 +86,24 @@
       "is_liquid": true,
       "density": 30.0,
       "gravity": 1,
-      "should_decay": false,
-      "is_corrodable": false
-    }
+      "decay_rate": -1,
+      "is_corrodable": false,
+    	"burn_chance": -1
+		},
+    {
+      "name": "Fire",
+      "color_min": [ 200, 0, 0 ],
+      "color_max": [ 200, 0, 0 ],
+      "steps": 8,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": false,
+      "is_liquid": false,
+      "density": 0.01,
+      "gravity": -1,
+      "decay_rate": 300,
+      "is_corrodable": false,
+    	"burn_chance": -1
+		}
   ]
 }

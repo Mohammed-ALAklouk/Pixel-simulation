@@ -114,6 +114,8 @@ void PS::Game::UI()
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
 
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
+	if (ImGui::Button("Reload material file"))
+		MaterialRegistry::Reload_materials();
 
 	ImGui::End();
 }

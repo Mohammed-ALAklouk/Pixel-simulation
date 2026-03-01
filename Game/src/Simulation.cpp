@@ -43,7 +43,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	if (MaterialRegistry::Get(tile.id).Gravity_direction != gravityDirection) return;
 
 	auto tile_material = MaterialRegistry::Get(tile.id);
-	if (tile_material.Should_decay && rand() % 10000 == 0)
+	if (rand() % 10000 < tile_material.Decay_rate )
 	{
 		grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
 		grid.set_processed(x, y);
@@ -121,6 +121,79 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		
 	}
 
+	// Fire interactions
+	if (tile.id == MaterialRegistry::FIRE_ID)
+	{
+		int direction = rand() % 2 ? 1 : -1;
+		int axis = rand() % 2 ? 0 : 1;
+
+		int next_x = axis == 0 ? x + direction : x;
+		int next_y = axis == 1 ? y + direction : y;
+
+		if (grid.Is_in_bounds(next_x, next_y))
+		{
+			auto checked_tile = grid.Get_at(next_x, next_y);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (rand() % 100 < checked_tile_material.burn_chance)
+			{
+				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(next_x, next_y);
+				return;
+			}
+		}
+
+
+#if false
+		if (grid.Is_in_bounds(x, y + direction))
+		{
+			auto checked_tile = grid.Get_at(x, y + direction);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (rand() % 100 < checked_tile_material.burn_chance)
+			{
+				grid.Set_at(x, y + direction, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(x, y + direction);
+				return;
+			}
+		}
+
+		if (grid.Is_in_bounds(x, y - direction))
+		{
+			auto checked_tile = grid.Get_at(x, y - direction);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (rand() % 100 < checked_tile_material.burn_chance)
+			{
+				grid.Set_at(x, y - direction, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(x, y - direction);
+				return;
+			}
+		}
+
+		if (grid.Is_in_bounds(x + direction, y))
+		{
+			auto checked_tile = grid.Get_at(x + direction, y);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (rand() % 100 < checked_tile_material.burn_chance)
+			{
+				grid.Set_at(x + direction, y, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(x + direction, y);
+				return;
+			}
+		}
+
+		if (grid.Is_in_bounds(x - direction, y))
+		{
+			auto checked_tile = grid.Get_at(x - direction, y);
+			auto checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (rand() % 100 < checked_tile_material.burn_chance)
+			{
+				grid.Set_at(x - direction, y, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(x - direction, y);
+				return;
+			}
+		}
+#endif
+	}
+
 	// Falling tiles
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
 	{
@@ -165,8 +238,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 	}
 
-	// Fluid tiles
-	if ((MaterialRegistry::Get(tile.id).Is_fluid))
+	// Liquid tiles
+	if ((MaterialRegistry::Get(tile.id).Is_liquid))
 	{
 		int direction = rand() % 2 ? 1 : -1;
 
