@@ -11,8 +11,8 @@
       "is_liquid": false,
       "density": 0.0,
       "gravity": 1,
-      "decay_rate": -1,
-      "is_corrodable": false,
+      "decay_chance": -1,
+      "corrosion_chance": -1,
     	"burn_chance": -1
 		},
     {
@@ -26,8 +26,8 @@
       "is_liquid": false,
       "density": 80.0,
       "gravity": 1,
-      "decay_rate": -1,
-      "is_corrodable": true,
+      "decay_chance": -1,
+      "corrosion_chance": 5,
     	"burn_chance": -1
 		},
     {
@@ -41,8 +41,8 @@
       "is_liquid": false,
       "density": 100.0,
       "gravity": 1,
-      "decay_rate": -1,
-      "is_corrodable": true,
+      "decay_chance": -1,
+      "corrosion_chance": 5,
     	"burn_chance": -1
 		},
     {
@@ -56,8 +56,8 @@
       "is_liquid": true,
       "density": 30.0,
       "gravity": 1,
-      "decay_rate": -1,
-      "is_corrodable": true,
+      "decay_chance": -1,
+      "corrosion_chance": 5,
     	"burn_chance": -1
 		},
     {
@@ -71,8 +71,8 @@
       "is_liquid": true,
       "density": 10.0,
       "gravity": -1,
-      "decay_rate": 1,
-      "is_corrodable": false,
+      "decay_chance": 1,
+      "corrosion_chance": -1,
     	"burn_chance": -1
 		},
     {
@@ -86,8 +86,8 @@
       "is_liquid": true,
       "density": 30.0,
       "gravity": 1,
-      "decay_rate": -1,
-      "is_corrodable": false,
+      "decay_chance": -1,
+      "corrosion_chance": -1,
     	"burn_chance": -1
 		},
     {
@@ -101,8 +101,8 @@
       "is_liquid": false,
       "density": 0.01,
       "gravity": -1,
-      "decay_rate": 300,
-      "is_corrodable": false,
+      "decay_chance": 300,
+      "corrosion_chance": -1,
     	"burn_chance": -1
 		}
   ]

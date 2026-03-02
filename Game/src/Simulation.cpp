@@ -68,7 +68,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		{
 			auto& checked_tile = grid.Get_at(next_x, next_y);
 			auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (checked_tile_material.is_corrodable)
+			if (fast_rand() % 100 < checked_tile_material.Corrosion_chance)
 			{
 				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
 				grid.set_processed(x, y);
@@ -93,7 +93,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		{
 			auto& checked_tile = grid.Get_at(next_x, next_y);
 			auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (fast_rand() % 100 < checked_tile_material.burn_chance)
+			if (fast_rand() % 100 < checked_tile_material.Burn_chance)
 			{
 				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
 				grid.set_processed(next_x, next_y);

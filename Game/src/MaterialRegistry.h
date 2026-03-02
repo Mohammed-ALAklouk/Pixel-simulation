@@ -17,8 +17,8 @@ namespace PS
 		float Density;
 		int Gravity_direction;
 		int Decay_rate;
-		bool is_corrodable;
-		int burn_chance;
+		int Corrosion_chance;
+		int Burn_chance;
 
 
 		sf::Color Min_color;
@@ -61,8 +61,8 @@ namespace PS
 					material["is_liquid"],
 					material["density"],
 					material["gravity"],
-					material["decay_rate"],
-					material["is_corrodable"],
+					material["decay_chance"],
+					material["corrosion_chance"],
 					material["burn_chance"],
 
 					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
