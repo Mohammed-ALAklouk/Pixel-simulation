@@ -3,6 +3,7 @@
 *.suo
 *.ipch
 *.aps
+imgui.ini
 
 bin/
 bin-int/

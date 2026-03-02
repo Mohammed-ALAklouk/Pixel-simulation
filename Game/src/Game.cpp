@@ -30,8 +30,11 @@ PS::Game::Game()
 void PS::Game::update()
 {
 	sf::Clock clock;
-	for (size_t i = 0; i < updates_per_frame; i++)
-		Simulation::Update_grid(grid);
+	if (!paused)
+	{
+		for (size_t i = 0; i < updates_per_frame; i++)
+			Simulation::Update_grid(grid);
+	}
 	update_time = clock.getElapsedTime().asSeconds() / updates_per_frame;
 }
 
@@ -126,6 +129,10 @@ void PS::Game::UI()
 
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
 
+	if (ImGui::Button("Clear"))
+		grid.Clear();
+
+	ImGui::Checkbox("Pause", &paused);
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 	if (ImGui::Button("Reload material file"))
 		MaterialRegistry::Reload_materials();

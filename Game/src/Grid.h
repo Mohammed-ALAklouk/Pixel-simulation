@@ -34,6 +34,13 @@ namespace PS
 				chunk.is_active_next_frame = false;
 			}
 		}
+		
+		inline void Clear()
+		{
+			for (auto& chunk : m_chunks)
+				chunk.Reset();
+			std::fill(m_processed.begin(), m_processed.end(), false);
+		}
 
 	private:
 		// Helper functions

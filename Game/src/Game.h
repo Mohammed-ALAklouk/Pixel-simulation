@@ -61,5 +61,6 @@ namespace PS
 
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;
+		bool paused = false;
 	};
 }
