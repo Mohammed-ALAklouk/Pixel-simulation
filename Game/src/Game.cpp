@@ -175,19 +175,23 @@ void PS::Game::run()
 
 void PS::Game::draw_curser(sf::Vector2i pos, int material)
 {
-	for (int x_offset = 0; x_offset < curser_radius; x_offset++)
+	for (int x = -curser_radius; x < curser_radius; x++)
 	{
-		for (int y_offset = 0; y_offset < curser_radius; y_offset++)
+		for (int y = -curser_radius; y < curser_radius; y++)
 		{
-			int x = pos.x + x_offset - int(curser_radius / 2);
-			int y = pos.y + y_offset - int(curser_radius / 2);
-
-			if (!in_bound(x, y))
+			int world_x = pos.x + x;
+			int world_y = pos.y + y;
+			
+			if (!in_bound(world_x, world_y))
 				continue;
 
 
-			if (material == 0 || grid.Get_at(x,y).id == 0)
-				grid.Set_at(x, y, Block::Create(material));
+			int radiusSquared = curser_radius * curser_radius;
+			if (x * x + y * y < radiusSquared && 
+				(material == MaterialRegistry::AIR_ID || grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID))
+			{
+					grid.Set_at(world_x, world_y, Block::Create(material));
+			}
 		}
 
 	}
