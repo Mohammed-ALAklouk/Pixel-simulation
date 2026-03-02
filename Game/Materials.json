@@ -134,6 +134,21 @@
       "decay_chance": -1,
       "corrosion_chance": 50,
       "burn_chance": 50
+    },
+    {
+      "name": "Lava",
+      "color_min": [ 200, 40, 0 ],
+      "color_max": [ 255, 170, 0 ],
+      "steps": 6,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": true,
+      "is_liquid": true,
+      "density": 30.0,
+      "gravity": 1,
+      "decay_chance": -1,
+      "corrosion_chance": 1,
+      "burn_chance": -1
     }
 
   ]

@@ -48,6 +48,8 @@ namespace PS
 			{
 				if (material["name"] == "Air")
 					AIR_ID = index;
+				else if (material["name"] == "Stone")
+					STONE_ID = index;
 				else if (material["name"] == "Acid")
 					ACID_ID = index; 
 				else if (material["name"] == "Fire")
@@ -56,6 +58,8 @@ namespace PS
 					WATER_ID = index;
 				else if (material["name"] == "Steam")
 					STEAM_ID = index;
+				else if (material["name"] == "Lava")
+					LAVA_ID = index;
 
 				m_mateials.push_back({
 					material["name"],
@@ -100,6 +104,8 @@ namespace PS
 		inline static int FIRE_ID;
 		inline static int WATER_ID;
 		inline static int STEAM_ID;
+		inline static int LAVA_ID;
+		inline static int STONE_ID;
 
 	private:
 		inline static std::vector<BlockData> m_mateials;

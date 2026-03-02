@@ -112,6 +112,55 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 	}
 
+	if (tile.id == MaterialRegistry::LAVA_ID)
+	{
+		int direction = fast_rand() & 1 ? 1 : -1;
+		int axis = fast_rand() & 1 ? 0 : 1;
+
+		int next_x = axis == 0 ? x + direction : x;
+		int next_y = axis == 1 ? y + direction : y;
+
+		if (grid.Is_in_bounds(next_x, next_y))
+		{
+			auto& checked_tile = grid.Get_at(next_x, next_y);
+			auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (fast_rand() % 100 < checked_tile_material.Burn_chance)
+			{
+				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
+				grid.set_processed(next_x, next_y);
+			}
+
+			if (checked_tile.id == MaterialRegistry::WATER_ID)
+			{
+				int radius = 5;
+				for (int i = -radius; i <= radius; i++)
+				{
+					for (int j = -radius; j <= radius; j++)
+					{
+						int final_x = next_x + j;
+						int final_y = next_y + i;
+						if (grid.Is_in_bounds(final_x, final_y) && grid.Get_at(final_x, final_y).id == MaterialRegistry::WATER_ID)
+						{
+							grid.Set_at(final_x, final_y, Block::Create(MaterialRegistry::STONE_ID));
+							grid.set_processed(final_x, final_y);
+						}
+					}
+
+					for (int j = -radius * 2; j <= radius * 2; j++)
+					{
+						int final_x = next_x + j;
+						int final_y = next_y + i;
+						if (grid.Is_in_bounds(final_x, final_y) && grid.Get_at(final_x, final_y).id == MaterialRegistry::WATER_ID)
+						{
+							grid.Set_at(final_x, final_y, Block::Create(MaterialRegistry::STEAM_ID));
+							grid.set_processed(final_x, final_y);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Falling tiles
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
 	{
