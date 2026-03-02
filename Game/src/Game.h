@@ -58,5 +58,8 @@ namespace PS
 		float update_time = 0;
 		float render_time = 0;
 		float delta = 0;
+
+		bool show_active_chunks = false;
+		bool show_bench_marks = false;
 	};
 }

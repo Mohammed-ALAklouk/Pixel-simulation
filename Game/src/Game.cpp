@@ -51,12 +51,15 @@ void PS::Game::render()
 	frame.setTexture(&tex);
 	window.draw(frame);
 
-	active_chunks.clear();
-	grid.Get_active_chunks(active_chunks);
-	for (auto chunk: active_chunks)
+	if (show_active_chunks)
 	{
-		chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
-		window.draw(chunk_debug_shape);
+		active_chunks.clear();
+		grid.Get_active_chunks(active_chunks);
+		for (auto chunk: active_chunks)
+		{
+			chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
+			window.draw(chunk_debug_shape);
+		}
 	}
 
 	UI();
@@ -113,14 +116,8 @@ void PS::Game::proccessInputs()
 
 void PS::Game::UI()
 {
-	ImGui::Begin("debug");
+	ImGui::Begin("Material menu");
 	
-	ImGui::Text(("FPS: " + std::to_string(1.0f/delta)).c_str());
-	ImGui::Text(("Update time: " + std::to_string(update_time)).c_str());
-	ImGui::Text(("Input time: " + std::to_string(input_time)).c_str());
-	ImGui::Text(("UI time: " + std::to_string(UI_time)).c_str());
-	ImGui::Text(("Render time: " + std::to_string(render_time)).c_str());
-
 	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
 	{
 		if (ImGui::Button(MaterialRegistry::Get(i).Name.c_str()))
@@ -133,7 +130,23 @@ void PS::Game::UI()
 	if (ImGui::Button("Reload material file"))
 		MaterialRegistry::Reload_materials();
 
+	ImGui::Checkbox("Show active chunks", &show_active_chunks);
+	ImGui::Checkbox("Show benchmarks", &show_bench_marks);
+	
 	ImGui::End();
+
+	if (show_bench_marks)
+	{
+		ImGui::Begin("BenchMarks");
+
+		ImGui::Text(("FPS: " + std::to_string(1.0f / delta)).c_str());
+		ImGui::Text(("Update time: " + std::to_string(update_time)).c_str());
+		ImGui::Text(("Input time: " + std::to_string(input_time)).c_str());
+		ImGui::Text(("UI time: " + std::to_string(UI_time)).c_str());
+		ImGui::Text(("Render time: " + std::to_string(render_time)).c_str());
+		
+		ImGui::End();
+	}
 }
 
 void PS::Game::run()
