@@ -99,6 +99,16 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 				grid.set_processed(next_x, next_y);
 				return;
 			}
+
+			if (checked_tile.id == MaterialRegistry::WATER_ID)
+			{
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+				grid.set_processed(x, y);
+
+				grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::STEAM_ID));
+				grid.set_processed(next_x, next_y);
+				return;
+			}
 		}
 	}
 

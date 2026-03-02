@@ -13,8 +13,8 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": -1,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Sand",
       "color_min": [ 150, 150, 0 ],
@@ -28,8 +28,8 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 5,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Stone",
       "color_min": [ 100, 100, 100 ],
@@ -43,8 +43,8 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 5,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Water",
       "color_min": [ 0, 0, 200 ],
@@ -58,12 +58,12 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 5,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Smoke",
-      "color_min": [ 200, 200, 200 ],
-      "color_max": [ 250, 250, 250 ],
+      "color_min": [ 100, 100, 100 ],
+      "color_max": [ 150, 150, 150 ],
       "steps": 8,
       "is_fluid": true,
       "can_fall": true,
@@ -73,8 +73,8 @@
       "gravity": -1,
       "decay_chance": 1,
       "corrosion_chance": -1,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Acid",
       "color_min": [ 0, 150, 0 ],
@@ -88,8 +88,8 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": -1,
-    	"burn_chance": -1
-		},
+      "burn_chance": -1
+    },
     {
       "name": "Fire",
       "color_min": [ 200, 0, 0 ],
@@ -103,7 +103,22 @@
       "gravity": -1,
       "decay_chance": 300,
       "corrosion_chance": -1,
-    	"burn_chance": -1
-		}
+      "burn_chance": -1
+    },
+    {
+      "name": "Steam",
+      "color_min": [ 200, 200, 200 ],
+      "color_max": [ 240, 240, 240 ],
+      "steps": 8,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": true,
+      "is_liquid": true,
+      "density": 10.0,
+      "gravity": -1,
+      "decay_chance": 5,
+      "corrosion_chance": -1,
+      "burn_chance": -1
+    }
   ]
 }
