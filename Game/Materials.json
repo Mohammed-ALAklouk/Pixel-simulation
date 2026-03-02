@@ -97,8 +97,8 @@
       "steps": 8,
       "is_fluid": true,
       "can_fall": true,
-      "can_cascade": false,
-      "is_liquid": false,
+      "can_cascade": true,
+      "is_liquid": true,
       "density": 0.01,
       "gravity": -1,
       "decay_chance": 300,
@@ -119,6 +119,22 @@
       "decay_chance": 5,
       "corrosion_chance": -1,
       "burn_chance": -1
+    },
+    {
+      "name": "Wood",
+      "color_min": [ 82, 58, 40 ],
+      "color_max": [ 133, 94, 66 ],
+      "steps": 8,
+      "is_fluid": false,
+      "can_fall": false,
+      "can_cascade": false,
+      "is_liquid": false,
+      "density": 100.0,
+      "gravity": 1,
+      "decay_chance": -1,
+      "corrosion_chance": 50,
+      "burn_chance": 50
     }
+
   ]
 }
