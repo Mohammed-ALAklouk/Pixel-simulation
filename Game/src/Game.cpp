@@ -9,6 +9,11 @@ PS::Game::Game()
 	window.setFramerateLimit(60);
 	ImGui::SFML::Init(window);
 
+	curser_shape.setFillColor(sf::Color::Transparent);
+	curser_shape.setOutlineThickness(1);
+	curser_shape.setRadius(curser_radius);
+	curser_shape.setOrigin(sf::Vector2f(curser_radius, curser_radius));
+
 	tex.create(GridSize, GridSize);
 	render_tex.create(GridSize, GridSize);
 	frame.setSize(sf::Vector2f(GridSize, GridSize) * TileSize);
@@ -66,6 +71,10 @@ void PS::Game::render()
 			window.draw(chunk_debug_shape);
 		}
 	}
+
+	auto mouse_pos = sf::Mouse::getPosition(window);
+	curser_shape.setPosition(sf::Vector2f(mouse_pos));
+	window.draw(curser_shape);
 
 	UI();
 	ImGui::SFML::Render(window);
