@@ -69,9 +69,9 @@
       "can_fall": true,
       "can_cascade": true,
       "is_liquid": true,
-      "density": 10.0,
+      "density": 0.01,
       "gravity": -1,
-      "decay_chance": 80,
+      "decay_chance": 250,
       "corrosion_chance": -1,
       "burn_chance": -1
     },
@@ -92,16 +92,16 @@
     },
     {
       "name": "Fire",
-      "color_min": [ 200, 0, 0 ],
-      "color_max": [ 200, 0, 0 ],
-      "steps": 8,
+      "color_min": [ 255, 255, 0 ],
+      "color_max": [ 150, 0, 0 ],
+      "steps": 1,
       "is_fluid": true,
       "can_fall": true,
       "can_cascade": true,
       "is_liquid": true,
-      "density": 0.001,
+      "density": 1,
       "gravity": -1,
-      "decay_chance": 300,
+      "decay_chance": -1,
       "corrosion_chance": -1,
       "burn_chance": -1
     },
@@ -133,7 +133,7 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 50,
-      "burn_chance": 50
+      "burn_chance": 20
     },
     {
       "name": "Lava",

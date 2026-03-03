@@ -130,6 +130,13 @@ void PS::Game::UI()
 	}
 
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
+	auto mouse_pos = sf::Mouse::getPosition(window) - sf::Vector2i(Grid_offset);
+	if (grid.Is_in_bounds(mouse_pos.x, mouse_pos.y))
+	{
+		auto tile = grid.Get_at(mouse_pos.x, mouse_pos.y);
+		ImGui::Text("Pixel under mouse %s", MaterialRegistry::Get(tile.id).Name.c_str());
+	}
+
 
 	if (ImGui::Button("Clear"))
 		grid.Clear();
