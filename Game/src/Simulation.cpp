@@ -100,6 +100,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		int direction = fast_rand() & 1 ? 1 : -1;
 		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
 
+		bool hasFlammable_neighbors = false;
 		for (auto dir: directions)
 		{
 			int next_x = x + dir.x;
@@ -109,6 +110,9 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			{
 				auto& checked_tile = grid.Get_at(next_x, next_y);
 				auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+				if (checked_tile_material.Burn_chance > 0)
+					hasFlammable_neighbors = true;
+
 				if (fast_rand() % 100 < checked_tile_material.Burn_chance)
 				{
 					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
@@ -138,7 +142,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 		direction = (fast_rand() % 3) - 1;
 		// movement
-		if (grid.Is_in_bounds(x + direction, y - 1) && grid.Get_at(x + direction, y - 1).id == MaterialRegistry::AIR_ID)
+		if (!hasFlammable_neighbors && grid.Is_in_bounds(x + direction, y - 1) && grid.Get_at(x + direction, y - 1).id == MaterialRegistry::AIR_ID)
 			grid.swap_pixels({ x,y }, { x + direction, y - 1 });
 
 		return;

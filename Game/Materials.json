@@ -133,7 +133,7 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 50,
-      "burn_chance": 20
+      "burn_chance": 10
     },
     {
       "name": "Lava",
