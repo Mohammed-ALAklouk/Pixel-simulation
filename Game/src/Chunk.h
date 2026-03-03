@@ -31,7 +31,7 @@ namespace PS
 			data[y][x] = block;
 		}
 
-		PS::Block Get_at(std::uint16_t x, std::uint16_t y) const
+		PS::Block& Get_at(std::uint16_t x, std::uint16_t y) 
 		{
 			return data[y][x];
 		}

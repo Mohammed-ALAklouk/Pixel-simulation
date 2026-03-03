@@ -71,7 +71,7 @@
       "is_liquid": true,
       "density": 10.0,
       "gravity": -1,
-      "decay_chance": 1,
+      "decay_chance": 80,
       "corrosion_chance": -1,
       "burn_chance": -1
     },
@@ -99,7 +99,7 @@
       "can_fall": true,
       "can_cascade": true,
       "is_liquid": true,
-      "density": 0.01,
+      "density": 0.001,
       "gravity": -1,
       "decay_chance": 300,
       "corrosion_chance": -1,
@@ -148,6 +148,21 @@
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 1,
+      "burn_chance": -1
+    },
+    {
+      "name": "Hot Stone",
+      "color_min": [ 100, 100, 100 ],
+      "color_max": [ 120, 120, 120 ],
+      "steps": 4,
+      "is_fluid": false,
+      "can_fall": false,
+      "can_cascade": false,
+      "is_liquid": false,
+      "density": 100.0,
+      "gravity": 1,
+      "decay_chance": -1,
+      "corrosion_chance": 5,
       "burn_chance": -1
     }
 

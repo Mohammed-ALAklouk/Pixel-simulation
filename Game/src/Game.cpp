@@ -42,11 +42,13 @@ void PS::Game::render()
 {
 	window.clear();
 
+	Block tile;
 	for (size_t x = 0; x < GridSize; x++)
 	{
 		for (size_t y = 0; y < GridSize; y++)
 		{
-			render_tex.setPixel(x, y, grid.Get_at(x, y).color);
+			tile = grid.Get_at(x, y);
+			render_tex.setPixel(x, y, sf::Color(tile.color.r, tile.color.g, tile.color.b));
 		}
 	}
 

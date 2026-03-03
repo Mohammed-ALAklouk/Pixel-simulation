@@ -13,7 +13,7 @@ namespace PS
 		inline void Create(std::uint16_t width, std::uint16_t height);
 		inline void Reset_proccessed() { std::fill(m_processed.begin(), m_processed.end(), false); }
 
-		inline const Block& Get_at(std::uint16_t x, std::uint16_t y) const;
+		inline Block& Get_at(std::uint16_t x, std::uint16_t y) ;
 		inline int Get_width_px() const { return m_width_px; }
 		inline int Get_height_px() const { return m_height_px; }
 
@@ -122,7 +122,7 @@ namespace PS
 		set_chunk_active_at_pixel(x, y);
 	}
 
-	inline const Block& Grid::Get_at(std::uint16_t x, std::uint16_t y) const
+	inline Block& Grid::Get_at(std::uint16_t x, std::uint16_t y) 
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x & 31;

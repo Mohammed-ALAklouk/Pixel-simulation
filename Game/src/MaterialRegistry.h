@@ -60,6 +60,10 @@ namespace PS
 					STEAM_ID = index;
 				else if (material["name"] == "Lava")
 					LAVA_ID = index;
+				else if (material["name"] == "Smoke")
+					SMOKE_ID = index;
+				else if (material["name"] == "Hot Stone")
+					HOT_STONE_ID = index;
 
 				m_mateials.push_back({
 					material["name"],
@@ -106,6 +110,9 @@ namespace PS
 		inline static int STEAM_ID;
 		inline static int LAVA_ID;
 		inline static int STONE_ID;
+		inline static int SMOKE_ID;
+		inline static int HOT_STONE_ID;
+		
 
 	private:
 		inline static std::vector<BlockData> m_mateials;

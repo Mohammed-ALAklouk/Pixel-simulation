@@ -38,7 +38,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 {
 	if (grid.Is_processed(x, y)) return;
 
-	auto&& tile = grid.Get_at(x, y);
+	auto & tile = grid.Get_at(x, y);
 	if (tile.id == MaterialRegistry::AIR_ID) return;
 	
 	auto&& tile_material = MaterialRegistry::Get(tile.id);
@@ -46,7 +46,16 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 	if (fast_rand() % 10000 < tile_material.Decay_rate )
 	{
-		grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+		if (tile.id == MaterialRegistry::FIRE_ID)
+		{
+			if (!(fast_rand() & 0b111))
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::SMOKE_ID));
+			else 
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+		}
+		else
+			grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+		
 		grid.set_processed(x, y);
 		return;
 	}
@@ -111,7 +120,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			}
 		}
 	}
-
+	
+	// Lava interactions
 	if (tile.id == MaterialRegistry::LAVA_ID)
 	{
 		int direction = fast_rand() & 1 ? 1 : -1;
@@ -132,33 +142,51 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 			if (checked_tile.id == MaterialRegistry::WATER_ID)
 			{
-				int radius = 5;
-				for (int i = -radius; i <= radius; i++)
+				if (grid.Is_in_bounds(next_x, next_y) && grid.Get_at(next_x, next_y).id == MaterialRegistry::WATER_ID)
 				{
-					for (int j = -radius; j <= radius; j++)
-					{
-						int final_x = next_x + j;
-						int final_y = next_y + i;
-						if (grid.Is_in_bounds(final_x, final_y) && grid.Get_at(final_x, final_y).id == MaterialRegistry::WATER_ID)
-						{
-							grid.Set_at(final_x, final_y, Block::Create(MaterialRegistry::STONE_ID));
-							grid.set_processed(final_x, final_y);
-						}
-					}
+					auto new_tile = Block::Create(MaterialRegistry::HOT_STONE_ID);
+					new_tile.color.a = 10;
+					grid.Set_at(next_x, next_y, new_tile);
+					grid.set_processed(next_x, next_y);
+				}}
+		}
+	}
 
-					for (int j = -radius * 2; j <= radius * 2; j++)
-					{
-						int final_x = next_x + j;
-						int final_y = next_y + i;
-						if (grid.Is_in_bounds(final_x, final_y) && grid.Get_at(final_x, final_y).id == MaterialRegistry::WATER_ID)
-						{
-							grid.Set_at(final_x, final_y, Block::Create(MaterialRegistry::STEAM_ID));
-							grid.set_processed(final_x, final_y);
-						}
-					}
+	if (tile.id == MaterialRegistry::HOT_STONE_ID)
+	{
+		if (tile.color.a == 0)
+		{
+			tile.color.a = 255;
+			tile.id = MaterialRegistry::STONE_ID;
+			return;
+		}
+		
+		std::vector<sf::Vector2i> directions = { {0, 1}, {0, -1}, {1, 0}, {-1, 0} };
+		for (auto dir : directions) 
+		{
+			int next_x = x + dir.x;
+			int next_y = y + dir.y;
+			if (grid.Is_in_bounds(next_x, next_y) && grid.Get_at(next_x, next_y).id == MaterialRegistry::WATER_ID)
+			{
+				if (fast_rand() & 1)
+				{
+					auto t = Block::Create(MaterialRegistry::HOT_STONE_ID);
+					t.color.a = tile.color.a - 1;
+
+					grid.Set_at(next_x, next_y, t);
 				}
+				else
+				{
+					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::STEAM_ID));
+				}
+
+				grid.set_processed(next_x, next_y);
 			}
 		}
+
+
+		tile.color.a -= 1;
+		return;
 	}
 
 	// Falling tiles
