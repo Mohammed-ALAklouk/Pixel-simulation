@@ -126,6 +126,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::STEAM_ID));
 					grid.set_processed(next_x, next_y);
+					return;
 				}
 			}
 		}
