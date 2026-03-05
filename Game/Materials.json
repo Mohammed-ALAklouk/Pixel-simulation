@@ -164,7 +164,21 @@
       "decay_chance": -1,
       "corrosion_chance": 5,
       "burn_chance": -1
+    },
+    {
+      "name": "Dirty Water",
+      "color_min": [ 15, 75, 15 ],
+      "color_max": [ 15, 75, 15 ],
+      "steps": 1,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": true,
+      "is_liquid": true,
+      "density": 20.0,
+      "gravity": 1,
+      "decay_chance": -1,
+      "corrosion_chance": -1,
+      "burn_chance": -1
     }
-
   ]
 }

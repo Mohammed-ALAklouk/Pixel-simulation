@@ -56,13 +56,13 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	}
 
 	// Acid interactions
+
 	if (tile.id == MaterialRegistry::ACID_ID)
 	{
 		int direction = fast_rand() & 1 ? 1 : -1;
 
-		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0} };
+		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
 
-		bool hasFlammable_neighbors = false;
 		for (auto dir : directions)
 		{
 			int next_x = x + dir.x;
@@ -72,34 +72,43 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			{
 				auto& checked_tile = grid.Get_at(next_x, next_y);
 				auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-				if (fast_rand() % 100 < checked_tile_material.Corrosion_chance)
+				
+				
+				if (checked_tile.id == MaterialRegistry::WATER_ID)
 				{
-					if (fast_rand() % 100 < 1)
-						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
+					if (fast_rand() % 100 < 70)
+						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::STEAM_ID));
 					else
-						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::SMOKE_ID));
+						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::DIRTY_WATER_ID));
 
 					grid.set_processed(next_x, next_y);
 
-					int potency = tile.color.a;
-					tile.color.a -= fast_rand() % 15 + 5;
-					if (tile.color.a > potency)
+					grid.Set_at(x, y, Block::Create(MaterialRegistry::DIRTY_WATER_ID));
+					grid.set_processed(x, y);
+					grid.set_chunk_active_at_pixel(x, y);
+					grid.set_chunk_active_at_pixel(next_x, next_y);
+
+				}
+				else if (fast_rand() % 100 < checked_tile_material.Corrosion_chance)
+				{
+					if (fast_rand() % 100 < 70)
 					{
-							grid.Set_at(x, y, Block::Create(MaterialRegistry::WATER_ID));
+						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::SMOKE_ID));
+						grid.set_processed(next_x, next_y);
+					}
+
+					if (fast_rand() % 100 < 5)
+					{
+							grid.Set_at(x, y, Block::Create(MaterialRegistry::DIRTY_WATER_ID));
 							grid.set_processed(x, y);
 							return;
 					}
-
-					// color interpolation
-					float t = tile.color.a / 255.0f;
-					tile.color.r = static_cast<uint8_t>(100 - (50 * t));
-					tile.color.g = static_cast<uint8_t>(110 + (145 * t));
-					tile.color.b = static_cast<uint8_t>(80 - (30 * t));
 					return;
 				}
 			}
 		}
 	}
+	
 
 	// Fire interactions
 	if (tile.id == MaterialRegistry::FIRE_ID)

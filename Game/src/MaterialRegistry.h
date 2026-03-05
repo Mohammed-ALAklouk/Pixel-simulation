@@ -63,7 +63,9 @@ namespace PS
 				else if (material["name"] == "Smoke")
 					SMOKE_ID = index;
 				else if (material["name"] == "Hot Stone")
-					HOT_STONE_ID = index;
+					HOT_STONE_ID = index; 
+				else if (material["name"] == "Dirty Water")
+					DIRTY_WATER_ID = index;
 
 				m_mateials.push_back({
 					material["name"],
@@ -112,6 +114,7 @@ namespace PS
 		inline static int STONE_ID;
 		inline static int SMOKE_ID;
 		inline static int HOT_STONE_ID;
+		inline static int DIRTY_WATER_ID;
 		
 
 	private:
