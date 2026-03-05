@@ -153,7 +153,7 @@
       "can_fall": true,
       "can_cascade": true,
       "is_liquid": true,
-      "density": 30.0,
+      "density": 50.0,
       "gravity": 1,
       "decay_chance": -1,
       "corrosion_chance": 1,

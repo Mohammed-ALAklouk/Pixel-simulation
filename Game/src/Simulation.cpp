@@ -56,7 +56,6 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	}
 
 	// Acid interactions
-
 	if (tile.id == MaterialRegistry::ACID_ID)
 	{
 		int direction = fast_rand() & 1 ? 1 : -1;
@@ -87,29 +86,35 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 					grid.set_processed(x, y);
 					grid.set_chunk_active_at_pixel(x, y);
 					grid.set_chunk_active_at_pixel(next_x, next_y);
-
-				}
-				else if (fast_rand() % 100 < checked_tile_material.Corrosion_chance)
-				{
-					if (fast_rand() % 100 < 70)
-					{
-						grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::SMOKE_ID));
-						grid.set_processed(next_x, next_y);
-					}
-
-					if (fast_rand() % 100 < 5)
-					{
-							grid.Set_at(x, y, Block::Create(MaterialRegistry::DIRTY_WATER_ID));
-							grid.set_processed(x, y);
-							return;
-					}
 					return;
+				}
+
+				if (checked_tile_material.Corrosion_chance > 0)
+				{
+					if (fast_rand() % 100 < checked_tile_material.Corrosion_chance)
+					{
+						if (fast_rand() % 100 < 70)
+							grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::SMOKE_ID));
+						else
+							grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::AIR_ID));
+
+						grid.set_processed(next_x, next_y);
+					
+						if (fast_rand() % 100 < 5)
+						{
+								grid.Set_at(x, y, Block::Create(MaterialRegistry::DIRTY_WATER_ID));
+								grid.set_processed(x, y);
+								return;
+						}
+						return;
+					}
+
+					grid.set_chunk_active_at_pixel(next_x, next_y);
 				}
 			}
 		}
 	}
 	
-
 	// Fire interactions
 	if (tile.id == MaterialRegistry::FIRE_ID)
 	{
@@ -206,6 +211,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 	}
 
+	// Hot stone interactions
 	if (tile.id == MaterialRegistry::HOT_STONE_ID)
 	{
 		if (tile.color.a == 0)
