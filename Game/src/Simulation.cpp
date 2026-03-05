@@ -171,12 +171,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		tile.color.r = 150 + (105 * life_ratio);
 		tile.color.g = 255 * life_ratio;
 
-		direction = (fast_rand() % 3) - 1;
-		// movement
-		if (!hasFlammable_neighbors && grid.Is_in_bounds(x + direction, y - 1) && grid.Get_at(x + direction, y - 1).id == MaterialRegistry::AIR_ID)
-			grid.swap_pixels({ x,y }, { x + direction, y - 1 });
-
-		return;
+		if (hasFlammable_neighbors)
+			return;
 	}
 	
 	// Lava interactions
@@ -248,7 +244,26 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 	// Falling tiles
 	if (tile_material.Can_fall && grid.Is_in_bounds(x, y + gravityDirection))
-	{
+	{ 
+		if (fast_rand() % 100 < tile_material.Scatter_chance)
+		{
+			int direction = fast_rand() & 1 ? 1 : -1;
+			int directions[2] = { direction, -direction };
+			for (size_t i = 0; i < 2; i++)
+			{
+				if (grid.Is_in_bounds(x + directions[i], y + gravityDirection))
+				{
+					auto& checked_tile = grid.Get_at(x + directions[i], y + gravityDirection);
+					auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+					if (checked_tile_material.Is_fluid && checked_tile_material.Density < tile_material.Density)
+					{
+						grid.swap_pixels({ x,y }, { x + directions[i], y + gravityDirection });
+						return;
+					}
+				}
+			}
+		}
+
 		auto& next_tile = grid.Get_at(x, y + gravityDirection);
 		auto& next_tile_material = MaterialRegistry::Get(next_tile.id);
 		if (tile_material.Density > next_tile_material.Density)

@@ -19,6 +19,7 @@ namespace PS
 		int Decay_rate;
 		int Corrosion_chance;
 		int Burn_chance;
+		int Scatter_chance;
 
 
 		sf::Color Min_color;
@@ -78,6 +79,7 @@ namespace PS
 					material["decay_chance"],
 					material["corrosion_chance"],
 					material["burn_chance"],
+					material["scatter_chance"],
 
 					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
 					sf::Color(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
