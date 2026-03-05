@@ -4,7 +4,8 @@ project "Game"
     
     includedirs {
         "Dependencies/SFML/include/",
-        "Dependencies/ImGui/"
+        "Dependencies/ImGui/",
+        "Dependencies/nlohmann/",
     }
 
     targetdir "bin/%{cfg.buildcfg}"

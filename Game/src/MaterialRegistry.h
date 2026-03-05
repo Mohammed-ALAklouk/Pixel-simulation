@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <SFML/Graphics.hpp>
-#include "nlohmann/json.hpp"
+#include <json.hpp>
 #include <fstream>
 
 namespace PS
