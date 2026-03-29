@@ -119,16 +119,6 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	if (tile.id == MaterialRegistry::FIRE_ID)
 	{
 		auto lifeSpan = tile.color.a;
-		if (lifeSpan <= 0)
-		{
-			if (fast_rand() % 100 < 25)
-				grid.Set_at(x, y, Block::Create(MaterialRegistry::SMOKE_ID));
-			else
-				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
-			
-			grid.set_processed(x, y);
-			return;
-		}
 		
 		grid.set_chunk_active_at_pixel(x, y);
 
@@ -150,8 +140,16 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 
 				if (fast_rand() % 100 < checked_tile_material.Burn_chance)
 				{
+					
 					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
 					grid.set_processed(next_x, next_y);
+
+					if (fast_rand() % 100 < 1)
+					{
+						grid.Set_at(x, y, Block::Create(MaterialRegistry::HOT_ASH_ID));
+						grid.set_processed(x, y);
+						return;
+					}
 				}
 
 				if (checked_tile.id == MaterialRegistry::WATER_ID)
@@ -169,7 +167,20 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		// life span
 		tile.color.a -= fast_rand() % 15 + 1; 
 		if (tile.color.a > lifeSpan)
+		{
 			tile.color.a = 0;
+
+			if (fast_rand() % 100 < 25) {
+				auto new_tile = Block::Create(MaterialRegistry::SMOKE_ID);
+				new_tile.color.a = 255;
+				grid.Set_at(x, y, new_tile);
+			}
+			else
+				grid.Set_at(x, y, Block::Create(MaterialRegistry::AIR_ID));
+
+			grid.set_processed(x, y);
+			return;
+		}
 
 		// color interpolation
 		float life_ratio = tile.color.a / 255.0f;
@@ -180,6 +191,52 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			return;
 	}
 	
+	// Hot ash interactions
+	if (tile.id == MaterialRegistry::HOT_ASH_ID)
+	{
+		if (tile.color.a == 0)
+		{
+			tile.color.a = 255;
+			tile.id = MaterialRegistry::ASH_ID;
+			return;
+		}
+
+		int direction = fast_rand() & 1 ? 1 : -1;
+		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
+		bool has_flamable_neighbers = false;
+		for (auto dir : directions)
+		{
+			int next_x = x + dir.x;
+			int next_y = y + dir.y;
+
+			if (grid.Is_in_bounds(next_x, next_y))
+			{
+				auto& checked_tile = grid.Get_at(next_x, next_y);
+				auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+				if (checked_tile_material.Burn_chance > 0) has_flamable_neighbers= true;
+
+				if (fast_rand() % 100 < checked_tile_material.Burn_chance)
+				{
+					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::FIRE_ID));
+					grid.set_processed(next_x, next_y);
+				}
+
+				if (checked_tile.id == MaterialRegistry::WATER_ID)
+				{
+					grid.Set_at(x, y, Block::Create(MaterialRegistry::ASH_ID));
+					grid.set_processed(x, y);
+
+					grid.Set_at(next_x, next_y, Block::Create(MaterialRegistry::STEAM_ID));
+					grid.set_processed(next_x, next_y);
+					return;
+				}
+			}
+		}
+
+		if (!has_flamable_neighbers)
+			tile.color.a -= 1;
+	}
+
 	// Lava interactions
 	if (tile.id == MaterialRegistry::LAVA_ID)
 	{
@@ -207,7 +264,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 					new_tile.color.a = 10;
 					grid.Set_at(next_x, next_y, new_tile);
 					grid.set_processed(next_x, next_y);
-				}}
+				}
+			}
 		}
 	}
 
