@@ -370,18 +370,75 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	}
 
 	// Liquid tiles
-	if ((MaterialRegistry::Get(tile.id).Is_liquid))
+	if (tile_material.Is_liquid)
 	{
+		bool is_on_surface = false;
+		if (grid.Is_in_bounds(x, y - 1) && grid.Get_at(x, y - 1).id == MaterialRegistry::AIR_ID)
+		{
+			is_on_surface = true;
+		}
+
 		int direction = fast_rand() & 1 ? 1 : -1;
 
+		if (is_on_surface)
+		{
+			int max_skims = 10; 
+			int target_x = x;
+
+			for (int i = 1; i <= max_skims; i++)
+			{
+				int check_x = x + (i * direction);
+				if (!grid.Is_in_bounds(check_x, y)) break;
+
+				auto& side_tile = grid.Get_at(check_x, y);
+				auto& side_material = MaterialRegistry::Get(side_tile.id);
+
+				if (side_tile.id != MaterialRegistry::AIR_ID &&
+					(!side_material.Is_fluid || side_material.Density >= tile_material.Density))
+				{
+					break;
+				}
+
+				target_x = check_x;
+
+				// Check if there is an empty space or lighter fluid directly below this new spot
+				if (grid.Is_in_bounds(check_x, y + 1))
+				{
+					auto& below_tile = grid.Get_at(check_x, y + 1);
+					auto& below_material = MaterialRegistry::Get(below_tile.id);
+
+					if (below_tile.id == MaterialRegistry::AIR_ID ||
+						(below_material.Is_fluid && tile_material.Density > below_material.Density))
+					{
+						break; // Found the cliff edge, stop scanning and take it
+					}
+				}
+			}
+
+			if (target_x != x)
+			{
+				grid.swap_pixels({ x, y }, { target_x, y });
+				return;
+			}
+		}
+
+		// 3. If submerged or trapped, just do standard slow mixing/pushing
 		if (grid.Is_in_bounds(x + direction, y))
 		{
-			auto& checked_tile = grid.Get_at(x + direction, y);
-			auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
-			if (checked_tile_material.Is_fluid && checked_tile_material.Density <= tile_material.Density && checked_tile.id != tile.id)
+			auto& next_tile = grid.Get_at(x + direction, y);
+			auto& next_material = MaterialRegistry::Get(next_tile.id);
+
+			if (next_tile.id == MaterialRegistry::AIR_ID ||
+				(next_material.Is_fluid && tile_material.Density > next_material.Density))
 			{
-				grid.swap_pixels({ x,y }, { x + direction, y });
+				grid.swap_pixels({ x, y }, { x + direction, y });
 				return;
+			}
+
+			// Keep chunks awake while touching other liquids to prevent early freezing
+			if (next_material.Is_fluid && next_tile.id != tile.id)
+			{
+				grid.set_chunk_active_at_pixel(x, y);
 			}
 		}
 	}
