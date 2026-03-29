@@ -65,6 +65,22 @@
       "scatter_chance": 10
     },
     {
+      "name": "Oil",
+      "color_min": [ 15, 10, 20 ],
+      "color_max": [ 30, 45, 50 ],
+      "steps": 8,
+      "is_fluid": true,
+      "can_fall": true,
+      "can_cascade": true,
+      "is_liquid": true,
+      "density": 20.0,
+      "gravity": 1,
+      "decay_chance": -1,
+      "corrosion_chance": -1,
+      "burn_chance": 100,
+      "scatter_chance": 5
+    },
+    {
       "name": "Smoke",
       "color_min": [ 100, 100, 100 ],
       "color_max": [ 150, 150, 150 ],
