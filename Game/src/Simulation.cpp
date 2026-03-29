@@ -377,7 +377,8 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		if (grid.Is_in_bounds(x + direction, y))
 		{
 			auto& checked_tile = grid.Get_at(x + direction, y);
-			if (checked_tile.id == MaterialRegistry::AIR_ID)
+			auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+			if (checked_tile_material.Is_fluid && checked_tile_material.Density <= tile_material.Density && checked_tile.id != tile.id)
 			{
 				grid.swap_pixels({ x,y }, { x + direction, y });
 				return;
