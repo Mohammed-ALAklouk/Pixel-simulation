@@ -26,7 +26,7 @@ target_include_directories(imgui-sfml PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui"        # for <ImGui/imgui.h>
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui/ImGui"  # for its own "imgui.h"
 )
-target_link_libraries(imgui-sfml PUBLIC sfml-graphics sfml-window sfml-system OpenGL::GL)
+target_link_libraries(imgui-sfml PUBLIC sfml-graphics sfml-window sfml-system OpenGL::GL raylib)
 
 # --- Game -------------------------------------------------------------------
 
