@@ -8,6 +8,12 @@ imgui.ini
 bin/
 bin-int/
 
+build/
+out/
+.deps/
+CMakeUserPresets.json
+CMakeSettings.json
+
 Debug/
 Release/
 x64/
@@ -27,3 +33,14 @@ x86/
 
 .DS_Store
 Thumbs.db
+
+# Ignore Cmake generated files if its run in root
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+Testing/
+
+# Ignore todo file
+TODO.md
