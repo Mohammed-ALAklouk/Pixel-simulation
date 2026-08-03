@@ -26,7 +26,7 @@ target_include_directories(imgui-sfml PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui"        # for <ImGui/imgui.h>
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui/ImGui"  # for its own "imgui.h"
 )
-target_link_libraries(imgui-sfml PUBLIC sfml-graphics sfml-window sfml-system OpenGL::GL raylib)
+target_link_libraries(imgui-sfml PUBLIC sfml-graphics sfml-window sfml-system OpenGL::GL)
 
 # --- Game -------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ add_executable(Game
     src/Simulation.h
 )
 
-target_link_libraries(Game PRIVATE imgui-sfml json_header)
+target_link_libraries(Game PRIVATE imgui-sfml json_header raylib)
 
 set_target_properties(Game PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Game>")
