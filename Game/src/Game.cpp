@@ -81,14 +81,16 @@ void PS::Game::proccessInputs()
 
 	int mouse_x = mouse_pos.x / TileSize, mouse_y = mouse_pos.y / TileSize;
 	
-	if (!mouse_left_down && !mouse_right_down) {
+	
+	if ((!mouse_left_down && !mouse_right_down) || ImGui::GetIO().WantCaptureMouse) {
 		is_drawing_curser = false;
 	}
-	
-	if ((mouse_left_down || mouse_right_down) && !is_drawing_curser) {
+	else if ((mouse_left_down || mouse_right_down) && !is_drawing_curser) {
 		curser_start = mouse_pos;
 		is_drawing_curser = true;
-	} 
+	}
+
+	
 
 	if (is_drawing_curser)
 	{
