@@ -38,7 +38,7 @@ target_link_libraries(Game PRIVATE imgui-backend nlohmann_json::nlohmann_json)
 
 # Plain path, no generator expression: VS's folder/CMake mode reads this
 # property raw from the file API and never evaluates genexes. Running from the
-# source dir also means Materials.json is read in place, so the in-game
+# source dir also means materials.json is read in place, so the in-game
 # "Reload material file" button picks up your edits.
 set_target_properties(Game PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -48,6 +48,6 @@ set_target_properties(Game PROPERTIES
 # raylib links statically, so there are no DLLs to place beside it.
 add_custom_command(TARGET Game POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/Materials.json"
+            "${CMAKE_CURRENT_SOURCE_DIR}/materials.json"
             "$<TARGET_FILE_DIR:Game>/materials.json"
 )
