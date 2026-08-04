@@ -1,8 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <SFML/Graphics.hpp>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <fstream>
 
 #include "Block.h"

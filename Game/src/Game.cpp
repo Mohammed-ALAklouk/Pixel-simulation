@@ -4,62 +4,50 @@ PS::Game::Game()
 {
 	MaterialRegistry::Create_materials();
 
-	window.create(sf::VideoMode(Window_size.x, Window_size.y), "window", sf::Style::Default);
-	Grid_offset = (Window_size - sf::Vector2f(GridSize, GridSize) * TileSize) / 2.0f;
-	window.setFramerateLimit(60);
-	ImGui::SFML::Init(window);
-
-	curser_shape.setFillColor(sf::Color::Transparent);
-	curser_shape.setOutlineThickness(1);
-	curser_shape.setRadius(curser_radius);
-	curser_shape.setOrigin(sf::Vector2f(curser_radius, curser_radius));
-
-	tex.create(GridSize, GridSize);
-	render_tex.create(GridSize, GridSize);
-	frame.setSize(sf::Vector2f(GridSize, GridSize) * TileSize);
-	frame.setPosition(Grid_offset);
-	frame.setOutlineColor(sf::Color::White);
-	frame.setOutlineThickness(5);
 	
-	chunk_debug_shape.setSize(sf::Vector2f(CHUNK_SIZE, CHUNK_SIZE));
-	chunk_debug_shape.setFillColor(sf::Color::Transparent);
-	chunk_debug_shape.setOutlineColor(sf::Color::Red);
-	chunk_debug_shape.setOutlineThickness(1);
+	InitWindow(Window_size.x, Window_size.y, "Pixel Simulation");
+	int grid_size_px = GridSize * TileSize;
+	Grid_offset.x = (Window_size.x - grid_size_px) / 2;
+	Grid_offset.y = (Window_size.y - grid_size_px) / 2;
+	SetTargetFPS(60);
+	rlImGuiSetup(true);
 
-	grid.Create(GridSize, GridSize);
+	pixels.resize(GridSize * GridSize);
 
-	
+	Image blank = GenImageColor(GridSize, GridSize, BLACK);
+	tex = LoadTextureFromImage(blank);
+	UnloadImage(blank);                      // GPU has it now; drop the CPU copy
+	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+
+	frame = Rectangle{ Grid_offset.x, Grid_offset.y,
+					   GridSize * TileSize, GridSize * TileSize };
+
+	grid.Create(GridSize, GridSize);	
 	srand(time(NULL));
 }
 
 void PS::Game::update()
 {
-	sf::Clock clock;
 	if (!paused)
 	{
 		for (size_t i = 0; i < updates_per_frame; i++)
 			Simulation::Update_grid(grid);
 	}
-	update_time = clock.getElapsedTime().asSeconds() / updates_per_frame;
 }
 
 void PS::Game::render()
 {
-	window.clear();
+	BeginDrawing();
+	ClearBackground(BLACK);
+	for (int y = 0; y < GridSize; y++)
+		for (int x = 0; x < GridSize; x++)
+			pixels[y * GridSize + x] = grid.Get_at(x, y).color.toRaylibColor();
 
-	Block tile;
-	for (size_t x = 0; x < GridSize; x++)
-	{
-		for (size_t y = 0; y < GridSize; y++)
-		{
-			tile = grid.Get_at(x, y);
-			render_tex.setPixel(x, y, sf::Color(tile.color.r, tile.color.g, tile.color.b));
-		}
-	}
+	UpdateTexture(tex, pixels.data());
 
-	tex.loadFromImage(render_tex); 
-	frame.setTexture(&tex);
-	window.draw(frame);
+	Rectangle src{ 0, 0, (float)GridSize, (float)GridSize };
+	DrawTexturePro(tex, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
+	DrawRectangleLinesEx(frame, 5, WHITE);
 
 	if (show_active_chunks)
 	{
@@ -67,42 +55,30 @@ void PS::Game::render()
 		grid.Get_active_chunks(active_chunks);
 		for (auto chunk: active_chunks)
 		{
-			chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.first * CHUNK_SIZE, chunk.second * CHUNK_SIZE) * TileSize);
-			window.draw(chunk_debug_shape);
+			DrawRectangleLines(chunk.first * 32 * TileSize + Grid_offset.x, chunk.second * 32 * TileSize + Grid_offset.y, 32 * TileSize, 32 * TileSize, RED);
 		}
 	}
 
-	auto mouse_pos = sf::Mouse::getPosition(window);
-	curser_shape.setPosition(sf::Vector2f(mouse_pos));
-	window.draw(curser_shape);
+	auto mouse_pos = GetMousePosition();
 
-	UI();
-	ImGui::SFML::Render(window);
+	DrawCircleLines(mouse_pos.x, mouse_pos.y, curser_radius * TileSize, WHITE);
+	
+	rlImGuiBegin();
+	UI();          // unchanged
+	rlImGuiEnd();
 
-	window.display();
+	EndDrawing();
 }
 
 void PS::Game::proccessInputs()
 {
-	sf::Event event;
-	while (window.pollEvent(event))
-	{
-		ImGui::SFML::ProcessEvent(event);
-		if (event.type == sf::Event::Closed)
-			window.close();
+	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+	bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
 
-		if (event.type == sf::Event::MouseWheelScrolled)
-		{
-			SelectedMaterial += 1;
-			if (SelectedMaterial >= MaterialRegistry::Get_materials_count())
-				SelectedMaterial = 0;
-		}
-	}
+	Vector2 mouse_pos = GetMousePosition();
+	mouse_pos.x -= Grid_offset.x;
+	mouse_pos.y -= Grid_offset.y;
 
-	bool mouse_left_down = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-	bool mouse_right_down = sf::Mouse::isButtonPressed(sf::Mouse::Right);
-
-	sf::Vector2i mouse_pos = sf::Mouse::getPosition(window) - sf::Vector2i(Grid_offset);
 	int mouse_x = mouse_pos.x / TileSize, mouse_y = mouse_pos.y / TileSize;
 	
 	if (!mouse_left_down && !mouse_right_down) {
@@ -116,7 +92,7 @@ void PS::Game::proccessInputs()
 
 	if (is_drawing_curser)
 	{
-		sf::Vector2i curser_end = mouse_pos;
+		Vector2 curser_end = mouse_pos;
 		auto line = GetLine(curser_start, curser_end);
 		int material = mouse_left_down ? SelectedMaterial : 0;
 
@@ -139,7 +115,9 @@ void PS::Game::UI()
 	}
 
 	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
-	auto mouse_pos = sf::Mouse::getPosition(window) - sf::Vector2i(Grid_offset);
+	auto mouse_pos = GetMousePosition();
+	mouse_pos.x -= Grid_offset.x;
+	mouse_pos.y -= Grid_offset.y;
 	if (grid.Is_in_bounds(mouse_pos.x, mouse_pos.y))
 	{
 		auto tile = grid.Get_at(mouse_pos.x, mouse_pos.y);
@@ -176,29 +154,27 @@ void PS::Game::UI()
 
 void PS::Game::run()
 {
-	sf::Clock UI_clock;
-	sf::Clock delta_clock;
-	sf::Clock bench_clock;
-	while (window.isOpen())
+	std::chrono::high_resolution_clock::time_point UI_clock;
+	std::chrono::high_resolution_clock::time_point delta_clock;
+	std::chrono::high_resolution_clock::time_point bench_clock;
+	while (!WindowShouldClose())
 	{	
-		bench_clock.restart();
+		bench_clock = std::chrono::high_resolution_clock::now();
 		proccessInputs();
-		input_time = bench_clock.restart().asSeconds();
+		input_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
 
-		ImGui::SFML::Update(window, UI_clock.restart());
-		UI_time = bench_clock.restart().asSeconds();
+		UI_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
 
 		update();
-		update_time = bench_clock.restart().asSeconds();
-
+		update_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
 
 		render();
-		render_time = bench_clock.restart().asSeconds();
-		delta = delta_clock.restart().asSeconds();
+		render_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
+		delta = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - delta_clock).count();
 	}
 }
 
-void PS::Game::draw_curser(sf::Vector2i pos, int material)
+void PS::Game::draw_curser(Vector2 pos, int material)
 {
 	for (int x = -curser_radius; x < curser_radius; x++)
 	{
@@ -222,11 +198,11 @@ void PS::Game::draw_curser(sf::Vector2i pos, int material)
 	}
 }
 
-std::vector<sf::Vector2i> PS::Game::GetLine(sf::Vector2i start, sf::Vector2i end)
+std::vector<Vector2> PS::Game::GetLine(Vector2 start, Vector2 end)
 {
-	if (start == end) return { start };
+	if (start.x == end.x && start.y == end.y) return { start };
 	
-	std::vector<sf::Vector2i> points;
+	std::vector<Vector2> points;
 	
 	float dx = end.x - start.x;
 	float dy = end.y - start.y;
@@ -240,7 +216,7 @@ std::vector<sf::Vector2i> PS::Game::GetLine(sf::Vector2i start, sf::Vector2i end
 	{
 		int final_x = start.x + Xinc * i;
 		int final_y = start.y + Yinc * i;
-		points.push_back(sf::Vector2i(final_x, final_y));
+		points.push_back(Vector2(final_x, final_y));
 	}
 
 

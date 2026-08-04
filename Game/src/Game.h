@@ -3,14 +3,37 @@
 #include "Grid.h"
 #include "Simulation.h"
 
-#include <ImGui/imgui.h>
-#include <ImGui/imgui-SFML.h>
-#include <SFML/Graphics.hpp>
+#include <imgui.h>
+#include <rlImGui.h>
+#include <raylib.h>
 #include <unordered_map>
+#include <chrono>
 
 namespace PS
 {
-
+	struct Vector2i
+	{
+		int x;
+		int y;
+		Vector2i() : x(0), y(0) {}
+		Vector2i(int x, int y) : x(x), y(y) {}
+		Vector2i operator-(const Vector2i& other) const
+		{
+			return Vector2i(x - other.x, y - other.y);
+		}
+		Vector2i operator+(const Vector2i& other) const
+		{
+			return Vector2i(x + other.x, y + other.y);
+		}
+		Vector2i operator/(float scalar) const
+		{
+			return Vector2i(static_cast<int>(x / scalar), static_cast<int>(y / scalar));
+		}
+		Vector2i operator*(float scalar) const
+		{
+			return Vector2i(static_cast<int>(x * scalar), static_cast<int>(y * scalar));
+		}
+	};
 	class Game
 	{
 	public:
@@ -21,34 +44,33 @@ namespace PS
 		void proccessInputs();
 		void UI();
 		void run();
-		void draw_curser(sf::Vector2i pos, int material);
+		void draw_curser(Vector2 pos, int material);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
 		
-		std::vector<sf::Vector2i> GetLine(sf::Vector2i start, sf::Vector2i end);
+		std::vector<Vector2> GetLine(Vector2 start, Vector2 end);
 
 		static constexpr uint32_t GridSize = 640;
-		sf::Vector2f Window_size = sf::Vector2f(1400, 900);
-		sf::Vector2f Grid_offset = sf::Vector2f(0, 0);
+		Vector2i Window_size = Vector2i(1400, 900);
+		Vector2 Grid_offset = Vector2(0, 0);
 		float TileSize = 1;
-
-		sf::RenderWindow window;
+		
 		Grid grid;
 		int SelectedMaterial = 0;
 
-		sf::Texture tex;
-		sf::Image render_tex;
-		sf::RectangleShape frame;
+		std::vector<Color> pixels;
+		// tex
+		Texture2D tex;
+		Rectangle frame;
 
 
-		sf::Vector2i mouse_down_pos;
+		Vector2 mouse_down_pos;
 
 		bool is_drawing_curser = false;
-		sf::Vector2i curser_start;
+		Vector2 curser_start;
 		int curser_radius = 15;
 
-		sf::RectangleShape chunk_debug_shape;
 		std::vector<std::pair<int, int>> active_chunks;
 
 		int  updates_per_frame = 3;
@@ -62,7 +84,5 @@ namespace PS
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;
 		bool paused = false;
-
-		sf::CircleShape curser_shape;
 	};
 }

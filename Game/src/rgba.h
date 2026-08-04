@@ -1,4 +1,6 @@
-#include <SFML/Graphics.hpp>
+#include <raylib.h>
+#include <cstdint>
+#include <algorithm>
 
 /*
 	This is a wrapper to represent RGBA colors
@@ -16,11 +18,11 @@ namespace PS {
 
 		RGBA(std::uint8_t red, std::uint8_t green, std::uint8_t blue, std::uint8_t alpha = 255)
 			: r(red), g(green), b(blue), a(alpha) {}
-		sf::Color toSFMLColor() const {
-			return sf::Color(static_cast<sf::Uint8>(r),
-				static_cast<sf::Uint8>(g),
-				static_cast<sf::Uint8>(b),
-				static_cast<sf::Uint8>(a));
+		 Color toRaylibColor() const {
+			return Color{static_cast<std::uint8_t>(r),
+				static_cast<std::uint8_t>(g),
+				static_cast<std::uint8_t>(b),
+				static_cast<std::uint8_t>(a)};
 		}
 
 		RGBA operator-(const RGBA& other) const {

@@ -19,6 +19,29 @@ FetchContent_Declare(raylib
     GIT_TAG        6.0
     GIT_SHALLOW    TRUE
 )
-FetchContent_MakeAvailable(raylib)
+
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+FetchContent_Declare(nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.12.0
+    GIT_SHALLOW    TRUE
+)
+
+# Neither of these ships a CMakeLists, so MakeAvailable only downloads them --
+# Game/CMakeLists.txt compiles them into the imgui-backend target.
+# rlImGui's Raylib_6_0 tag was built against ImGui 1.92.1 and needs the new
+# font API, so these two versions move together.
+FetchContent_Declare(imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.92.1
+    GIT_SHALLOW    TRUE
+)
+FetchContent_Declare(rlimgui
+    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
+    GIT_TAG        Raylib_6_0
+    GIT_SHALLOW    TRUE
+)
+
+FetchContent_MakeAvailable(raylib nlohmann_json imgui rlimgui)
 
 add_subdirectory(Game)

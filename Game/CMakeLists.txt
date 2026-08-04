@@ -1,32 +1,22 @@
-# --- Vendored dependencies --------------------------------------------------
+# --- Dear ImGui + the rlImGui raylib backend --------------------------------
+#
+# Neither project ships a CMakeLists of its own, so their sources are compiled
+# here into one static library. ImGui's core must be compiled exactly once per
+# binary, which is why it lives in a target rather than in Game's source list.
 
-set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/SFML/lib/cmake/SFML")
-find_package(SFML 2.6 REQUIRED COMPONENTS graphics window system)
-
-# imgui-SFML's renderer makes raw GL calls, so it needs OpenGL directly.
-find_package(OpenGL REQUIRED)
-
-# Single header, included as <json.hpp>.
-add_library(json_header INTERFACE)
-target_include_directories(json_header
-    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/nlohmann")
-
-# Dear ImGui + the imgui-SFML backend. premake picked these up via its **.cpp
-# glob; here they get their own target so they build once and stay out of the
-# game's warning output.
-add_library(imgui-sfml STATIC
-    Dependencies/ImGui/ImGui/imgui.cpp
-    Dependencies/ImGui/ImGui/imgui_draw.cpp
-    Dependencies/ImGui/ImGui/imgui_tables.cpp
-    Dependencies/ImGui/ImGui/imgui_widgets.cpp
-    Dependencies/ImGui/ImGui/imgui_demo.cpp
-    Dependencies/ImGui/ImGui/imgui-SFML.cpp
- "src/rgba.h")
-target_include_directories(imgui-sfml PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui"        # for <ImGui/imgui.h>
-    "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui/ImGui"  # for its own "imgui.h"
+add_library(imgui-backend STATIC
+    "${imgui_SOURCE_DIR}/imgui.cpp"
+    "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+    "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+    "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+    "${imgui_SOURCE_DIR}/imgui_demo.cpp"
+    "${rlimgui_SOURCE_DIR}/rlImGui.cpp"
 )
-target_link_libraries(imgui-sfml PUBLIC sfml-graphics sfml-window sfml-system OpenGL::GL)
+target_include_directories(imgui-backend PUBLIC
+    "${imgui_SOURCE_DIR}"
+    "${rlimgui_SOURCE_DIR}"
+)
+target_link_libraries(imgui-backend PUBLIC raylib)
 
 # --- Game -------------------------------------------------------------------
 
@@ -41,9 +31,10 @@ add_executable(Game
     src/Grid.h
     src/MaterialRegistry.h
     src/Simulation.h
- "src/rgba.h")
+    src/rgba.h
+)
 
-target_link_libraries(Game PRIVATE imgui-sfml json_header raylib)
+target_link_libraries(Game PRIVATE imgui-backend nlohmann_json::nlohmann_json)
 
 # Plain path, no generator expression: VS's folder/CMake mode reads this
 # property raw from the file API and never evaluates genexes. Running from the
@@ -52,13 +43,11 @@ target_link_libraries(Game PRIVATE imgui-sfml json_header raylib)
 set_target_properties(Game PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# MaterialRegistry.h opens "materials.json" relative to the working directory,
-# and the SFML DLLs have to sit next to the exe.
+# MaterialRegistry.h opens "materials.json" relative to the working directory.
+# Copying it next to the exe is what makes the build output runnable standalone.
+# raylib links statically, so there are no DLLs to place beside it.
 add_custom_command(TARGET Game POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/Materials.json"
             "$<TARGET_FILE_DIR:Game>/materials.json"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_RUNTIME_DLLS:Game> "$<TARGET_FILE_DIR:Game>"
-    COMMAND_EXPAND_LISTS
 )
