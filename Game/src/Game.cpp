@@ -72,6 +72,14 @@ void PS::Game::render()
 
 void PS::Game::proccessInputs()
 {
+	float mouse_wheel = GetMouseWheelMove();
+	curser_radius += mouse_wheel;
+	if (curser_radius < 1)
+		curser_radius = 1;
+	if (curser_radius > 100)
+		curser_radius = 100;
+
+
 	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 	bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
 

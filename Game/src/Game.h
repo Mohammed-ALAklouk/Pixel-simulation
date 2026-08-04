@@ -48,7 +48,7 @@ namespace PS
 
 		bool is_drawing_curser = false;
 		Vector2 curser_start;
-		int curser_radius = 15;
+		float curser_radius = 15;
 
 		std::vector<std::pair<int, int>> active_chunks;
 
