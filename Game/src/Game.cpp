@@ -67,7 +67,7 @@ void PS::Game::render()
 		grid.Get_active_chunks(active_chunks);
 		for (auto chunk: active_chunks)
 		{
-			chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE) * TileSize);
+			chunk_debug_shape.setPosition(Grid_offset + sf::Vector2f(chunk.first * CHUNK_SIZE, chunk.second * CHUNK_SIZE) * TileSize);
 			window.draw(chunk_debug_shape);
 		}
 	}

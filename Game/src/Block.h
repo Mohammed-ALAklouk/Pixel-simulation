@@ -1,22 +1,19 @@
 #pragma once
-#include <SFML/Graphics.hpp>
+#include "rgba.h"
 #include "MaterialRegistry.h"
-
-
-
 
 namespace PS
 {
 	struct Block
 	{
-		static sf::Color Random_step(sf::Color min, sf::Color max, uint16_t number_of_steps)
+		static RGBA Random_step(RGBA min, RGBA max, uint16_t number_of_steps)
 		{
-			sf::Color step_color = max - min;
+			RGBA step_color = max - min;
 			float step = rand() % number_of_steps;
 			int r = step_color.r * (step / number_of_steps);
 			int g = step_color.g * (step / number_of_steps);
 			int b = step_color.b * (step / number_of_steps);
-			return min + sf::Color(r, g, b);
+			return min + RGBA(r, g, b);
 		}
 
 		static Block Create(int id)
@@ -26,6 +23,6 @@ namespace PS
 		}
 
 		int id;
-		sf::Color color;
+		RGBA color;
 	};
 }

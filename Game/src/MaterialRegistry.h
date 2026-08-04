@@ -5,6 +5,8 @@
 #include <json.hpp>
 #include <fstream>
 
+#include "Block.h"
+
 namespace PS
 {
 	struct BlockData
@@ -22,8 +24,8 @@ namespace PS
 		int Scatter_chance;
 
 
-		sf::Color Min_color;
-		sf::Color Max_color;
+		RGBA Min_color;
+		RGBA Max_color;
 		uint16_t Number_of_steps;
 	};
 
@@ -85,8 +87,8 @@ namespace PS
 					material["burn_chance"],
 					material["scatter_chance"],
 
-					sf::Color(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
-					sf::Color(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
+					RGBA(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
+					RGBA(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
 					material["steps"],
 				});
 				index++;

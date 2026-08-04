@@ -60,12 +60,12 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	{
 		int direction = fast_rand() & 1 ? 1 : -1;
 
-		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
+		std::vector<std::pair<int, int>> directions = {{0, 1}, {direction, 0}, {-direction, 0}, {0, -1}};
 
 		for (auto dir : directions)
 		{
-			int next_x = x + dir.x;
-			int next_y = y + dir.y;
+			int next_x = x + dir.first;
+			int next_y = y + dir.second;
 
 			if (grid.Is_in_bounds(next_x, next_y))
 			{
@@ -123,13 +123,13 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		grid.set_chunk_active_at_pixel(x, y);
 
 		int direction = fast_rand() & 1 ? 1 : -1;
-		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
+		std::vector<std::pair<int, int>> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
 
 		bool hasFlammable_neighbors = false;
 		for (auto dir: directions)
 		{
-			int next_x = x + dir.x;
-			int next_y = y + dir.y;
+			int next_x = x + dir.first;
+			int next_y = y + dir.second;
 
 			if (grid.Is_in_bounds(next_x, next_y))
 			{
@@ -202,12 +202,12 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 
 		int direction = fast_rand() & 1 ? 1 : -1;
-		std::vector<sf::Vector2i> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
+		std::vector<std::pair<int, int>> directions = { {0, 1}, {direction, 0}, {-direction, 0}, {0, -1} };
 		bool has_flamable_neighbers = false;
 		for (auto dir : directions)
 		{
-			int next_x = x + dir.x;
-			int next_y = y + dir.y;
+			int next_x = x + dir.first;
+			int next_y = y + dir.second;
 
 			if (grid.Is_in_bounds(next_x, next_y))
 			{
@@ -279,11 +279,11 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			return;
 		}
 		
-		std::vector<sf::Vector2i> directions = { {0, 1}, {0, -1}, {1, 0}, {-1, 0} };
+		std::vector<std::pair<int, int>> directions = { {0, 1}, {0, -1}, {1, 0}, {-1, 0} };
 		for (auto dir : directions) 
 		{
-			int next_x = x + dir.x;
-			int next_y = y + dir.y;
+			int next_x = x + dir.first;
+			int next_y = y + dir.second;
 			if (grid.Is_in_bounds(next_x, next_y) && grid.Get_at(next_x, next_y).id == MaterialRegistry::WATER_ID)
 			{
 				if (fast_rand() & 1)

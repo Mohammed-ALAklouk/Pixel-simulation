@@ -22,10 +22,10 @@ namespace PS
 		inline bool Is_in_bounds(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
-		inline void swap_pixels(sf::Vector2i pos1, sf::Vector2i pos2);
+		inline void swap_pixels(std::pair<int,int> pos1, std::pair<int,int> pos2);
 		inline void set_processed(int x, int y) { m_processed[get_global_index(x, y)] = true; }
 		inline void set_chunk_active_at_pixel(int x, int y);
-		inline void Get_active_chunks(std::vector<sf::Vector2i>& active_chunks) const;
+		inline void Get_active_chunks(std::vector<std::pair<int,int>>& active_chunks) const;
 		inline void Mark_chunks_for_next_update()
 		{
 			for (auto& chunk : m_chunks)
@@ -72,13 +72,13 @@ namespace PS
 		m_processed.resize(m_width_px * m_height_px);
 	}
 
-	inline void Grid::swap_pixels(sf::Vector2i pos1, sf::Vector2i pos2)
+	inline void Grid::swap_pixels(std::pair<int,int> pos1, std::pair<int,int> pos2)
 	{
-		auto temp = Get_at(pos1.x, pos1.y);
-		Set_at(pos1.x, pos1.y, Get_at(pos2.x, pos2.y));
-		Set_at(pos2.x, pos2.y, temp);
-		m_processed[get_global_index(pos1.x, pos1.y)] = true;
-		m_processed[get_global_index(pos2.x, pos2.y)] = true;
+		auto temp = Get_at(pos1.first, pos1.second);
+		Set_at(pos1.first, pos1.second, Get_at(pos2.first, pos2.second));
+		Set_at(pos2.first, pos2.second, temp);
+		m_processed[get_global_index(pos1.first, pos1.second)] = true;
+		m_processed[get_global_index(pos2.first, pos2.second)] = true;
 	}
 
 	inline void Grid::set_chunk_active_at_pixel(int x, int y)
@@ -100,7 +100,7 @@ namespace PS
 			m_chunks[get_chunk_index(chunk_x, chunk_y + 1)].is_active_next_frame = true;
 	}
 
-	inline void Grid::Get_active_chunks(std::vector<sf::Vector2i>& active_chunks) const
+	inline void Grid::Get_active_chunks(std::vector<std::pair<int,int>>& active_chunks) const
 	{
 		for (size_t i = 0; i < m_chunks.size(); i++)
 		{

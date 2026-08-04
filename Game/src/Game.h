@@ -49,7 +49,7 @@ namespace PS
 		int curser_radius = 15;
 
 		sf::RectangleShape chunk_debug_shape;
-		std::vector<sf::Vector2i> active_chunks;
+		std::vector<std::pair<int, int>> active_chunks;
 
 		int  updates_per_frame = 3;
 

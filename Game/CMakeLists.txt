@@ -21,7 +21,7 @@ add_library(imgui-sfml STATIC
     Dependencies/ImGui/ImGui/imgui_widgets.cpp
     Dependencies/ImGui/ImGui/imgui_demo.cpp
     Dependencies/ImGui/ImGui/imgui-SFML.cpp
-)
+ "src/rgba.h")
 target_include_directories(imgui-sfml PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui"        # for <ImGui/imgui.h>
     "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/ImGui/ImGui"  # for its own "imgui.h"
@@ -41,12 +41,16 @@ add_executable(Game
     src/Grid.h
     src/MaterialRegistry.h
     src/Simulation.h
-)
+ "src/rgba.h")
 
 target_link_libraries(Game PRIVATE imgui-sfml json_header raylib)
 
+# Plain path, no generator expression: VS's folder/CMake mode reads this
+# property raw from the file API and never evaluates genexes. Running from the
+# source dir also means Materials.json is read in place, so the in-game
+# "Reload material file" button picks up your edits.
 set_target_properties(Game PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Game>")
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # MaterialRegistry.h opens "materials.json" relative to the working directory,
 # and the SFML DLLs have to sit next to the exe.
