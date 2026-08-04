@@ -23,7 +23,7 @@ namespace PS
 		void proccessInputs();
 		void UI();
 		void run();
-		void draw_curser(Vector2 pos, int material);
+		void draw_cursor(Vector2 pos, int material);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
@@ -46,9 +46,9 @@ namespace PS
 
 		Vector2 mouse_down_pos;
 
-		bool is_drawing_curser = false;
-		Vector2 curser_start;
-		float curser_radius = 15;
+		bool is_drawing_cursor = false;
+		Vector2 cursor_start;
+		float cursor_radius = 15;
 
 		std::vector<std::pair<int, int>> active_chunks;
 

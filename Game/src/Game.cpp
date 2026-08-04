@@ -61,7 +61,7 @@ void PS::Game::render()
 
 	auto mouse_pos = GetMousePosition();
 
-	DrawCircleLines(mouse_pos.x, mouse_pos.y, curser_radius * TileSize, WHITE);
+	DrawCircleLines(mouse_pos.x, mouse_pos.y, cursor_radius * TileSize, WHITE);
 	
 	rlImGuiBegin();
 	UI();          // unchanged
@@ -73,11 +73,11 @@ void PS::Game::render()
 void PS::Game::proccessInputs()
 {
 	float mouse_wheel = GetMouseWheelMove();
-	curser_radius += mouse_wheel;
-	if (curser_radius < 1)
-		curser_radius = 1;
-	if (curser_radius > 100)
-		curser_radius = 100;
+	cursor_radius += mouse_wheel;
+	if (cursor_radius < 1)
+		cursor_radius = 1;
+	if (cursor_radius > 100)
+		cursor_radius = 100;
 
 
 	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
@@ -91,25 +91,25 @@ void PS::Game::proccessInputs()
 	
 	
 	if ((!mouse_left_down && !mouse_right_down) || ImGui::GetIO().WantCaptureMouse) {
-		is_drawing_curser = false;
+		is_drawing_cursor = false;
 	}
-	else if ((mouse_left_down || mouse_right_down) && !is_drawing_curser) {
-		curser_start = mouse_pos;
-		is_drawing_curser = true;
+	else if ((mouse_left_down || mouse_right_down) && !is_drawing_cursor) {
+		cursor_start = mouse_pos;
+		is_drawing_cursor = true;
 	}
 
 	
 
-	if (is_drawing_curser)
+	if (is_drawing_cursor)
 	{
-		Vector2 curser_end = mouse_pos;
-		auto line = GetLine(curser_start, curser_end);
+		Vector2 cursor_end = mouse_pos;
+		auto line = GetLine(cursor_start, cursor_end);
 		int material = mouse_left_down ? SelectedMaterial : 0;
 
 		for (auto point: line)
-			draw_curser(point, material);
+			draw_cursor(point, material);
 
-		curser_start = curser_end;
+		cursor_start = cursor_end;
 	}
 	
 }
@@ -184,11 +184,11 @@ void PS::Game::run()
 	}
 }
 
-void PS::Game::draw_curser(Vector2 pos, int material)
+void PS::Game::draw_cursor(Vector2 pos, int material)
 {
-	for (int x = -curser_radius; x < curser_radius; x++)
+	for (int x = -cursor_radius; x < cursor_radius; x++)
 	{
-		for (int y = -curser_radius; y < curser_radius; y++)
+		for (int y = -cursor_radius; y < cursor_radius; y++)
 		{
 			int world_x = pos.x + x;
 			int world_y = pos.y + y;
@@ -197,7 +197,7 @@ void PS::Game::draw_curser(Vector2 pos, int material)
 				continue;
 
 
-			int radiusSquared = curser_radius * curser_radius;
+			int radiusSquared = cursor_radius * cursor_radius;
 			if (x * x + y * y < radiusSquared && 
 				(material == MaterialRegistry::AIR_ID || grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID))
 			{
