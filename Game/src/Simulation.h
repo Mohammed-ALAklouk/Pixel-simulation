@@ -1,6 +1,9 @@
 #pragma once
 #include "Grid.h"
 #include "MaterialRegistry.h"
+#include "vec2i.h"
+
+#include <array>
 
 namespace PS
 {

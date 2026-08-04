@@ -11,7 +11,7 @@ add_library(imgui-backend STATIC
     "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
     "${imgui_SOURCE_DIR}/imgui_demo.cpp"
     "${rlimgui_SOURCE_DIR}/rlImGui.cpp"
-)
+ "src/vec2i.h")
 target_include_directories(imgui-backend PUBLIC
     "${imgui_SOURCE_DIR}"
     "${rlimgui_SOURCE_DIR}"
@@ -32,7 +32,7 @@ add_executable(Game
     src/MaterialRegistry.h
     src/Simulation.h
     src/rgba.h
-)
+ "src/vec2i.h")
 
 target_link_libraries(Game PRIVATE imgui-backend nlohmann_json::nlohmann_json)
 

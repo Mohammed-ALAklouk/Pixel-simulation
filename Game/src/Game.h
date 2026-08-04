@@ -2,6 +2,7 @@
 
 #include "Grid.h"
 #include "Simulation.h"
+#include "vec2i.h"
 
 #include <imgui.h>
 #include <rlImGui.h>
@@ -11,29 +12,7 @@
 
 namespace PS
 {
-	struct Vector2i
-	{
-		int x;
-		int y;
-		Vector2i() : x(0), y(0) {}
-		Vector2i(int x, int y) : x(x), y(y) {}
-		Vector2i operator-(const Vector2i& other) const
-		{
-			return Vector2i(x - other.x, y - other.y);
-		}
-		Vector2i operator+(const Vector2i& other) const
-		{
-			return Vector2i(x + other.x, y + other.y);
-		}
-		Vector2i operator/(float scalar) const
-		{
-			return Vector2i(static_cast<int>(x / scalar), static_cast<int>(y / scalar));
-		}
-		Vector2i operator*(float scalar) const
-		{
-			return Vector2i(static_cast<int>(x * scalar), static_cast<int>(y * scalar));
-		}
-	};
+	
 	class Game
 	{
 	public:
@@ -52,7 +31,7 @@ namespace PS
 		std::vector<Vector2> GetLine(Vector2 start, Vector2 end);
 
 		static constexpr uint32_t GridSize = 640;
-		Vector2i Window_size = Vector2i(1400, 900);
+		Vec2i Window_size = Vec2i(1400, 900);
 		Vector2 Grid_offset = Vector2(0, 0);
 		float TileSize = 1;
 		

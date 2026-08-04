@@ -19,11 +19,12 @@ namespace PS
 			{
 				for (size_t x = 0; x < CHUNK_SIZE; x++)
 				{
-					data[y][x] = PS::Block::Create(0);
+					data[y][x] = PS::Block::Create(MaterialRegistry::AIR_ID);
 				}
 			}
 
 			is_active = false;
+			is_active_next_frame = false;
 		}
 
 		void Set_at(std::uint16_t x, std::uint16_t y, PS::Block block)
