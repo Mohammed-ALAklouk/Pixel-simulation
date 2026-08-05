@@ -37,17 +37,20 @@ add_executable(Game
 target_link_libraries(Game PRIVATE imgui-backend nlohmann_json::nlohmann_json)
 
 # Plain path, no generator expression: VS's folder/CMake mode reads this
-# property raw from the file API and never evaluates genexes. Running from the
-# source dir also means materials.json is read in place, so the in-game
-# "Reload material file" button picks up your edits.
+# property raw from the file API and never evaluates genexes.
 set_target_properties(Game PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# MaterialRegistry.h opens "materials.json" relative to the working directory.
-# Copying it next to the exe is what makes the build output runnable standalone.
-# raylib links statically, so there are no DLLs to place beside it.
+# MaterialRegistry.h opens files under "assets/" relative to the exe's own
+# directory (GetApplicationDirectory), not the working directory, so it finds
+# them no matter how the exe was launched. A junction (not a copy) links the
+# build output's assets/ straight to the source assets/, so editing a source
+# file -- e.g. via the in-game "Reload material file" button -- is instantly
+# visible with no rebuild, in dev and in a standalone build alike.
+# `rmdir` (no /s) only unlinks the junction itself, never the linked-to
+# content, so this is safe to rerun every build; `if exist` guards the first
+# build, when there's nothing there yet to unlink.
 add_custom_command(TARGET Game POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/materials.json"
-            "$<TARGET_FILE_DIR:Game>/materials.json"
+    COMMAND cmd /c if exist "$<TARGET_FILE_DIR:Game>/assets" rmdir "$<TARGET_FILE_DIR:Game>/assets"
+    COMMAND cmd /c mklink /J "$<TARGET_FILE_DIR:Game>/assets" "${CMAKE_CURRENT_SOURCE_DIR}/assets"
 )

@@ -3,6 +3,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <raylib.h>
 
 #include "Block.h"
 
@@ -37,9 +38,10 @@ namespace PS
 		static std::string Load_materials()
 		{
 			std::string error_message = "";
-			std::ifstream file("materials.json");
+			std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
+			std::ifstream file(path);
 			if (!file.is_open())
-				return "[Error] Failed to load materials.json";
+				return "[Error] Failed to load materials.json at " + path;
 
 			nlohmann::json data = nlohmann::json::parse(file);
 
