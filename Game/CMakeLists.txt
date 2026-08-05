@@ -53,10 +53,20 @@ set_target_properties(Game PROPERTIES
 # `rmdir` (no /s) only unlinks the junction itself, never the linked-to
 # content, so this is safe to rerun every build; `if exist` guards the first
 # build, when there's nothing there yet to unlink.
+#
+# SHELL_PATH and VERBATIM are both load-bearing here. The quotes below are
+# CMake's own string delimiters, not shell quotes -- CMake re-quotes an argument
+# only when it contains a space -- and cmd's builtins read a leading `/` as a
+# switch. So a forward-slash path under a space-free directory came out bare and
+# cmd rejected it: `D:/a/repo/...` failed with `Invalid switch - "a"`.
+# SHELL_PATH converts to backslashes, VERBATIM adds quotes when they're needed.
 if (WIN32)
+    set(game_assets_link "$<SHELL_PATH:$<TARGET_FILE_DIR:Game>/assets>")
     add_custom_command(TARGET Game POST_BUILD
-        COMMAND cmd /c if exist "$<TARGET_FILE_DIR:Game>/assets" rmdir "$<TARGET_FILE_DIR:Game>/assets"
-        COMMAND cmd /c mklink /J "$<TARGET_FILE_DIR:Game>/assets" "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        COMMAND cmd /c if exist ${game_assets_link} rmdir ${game_assets_link}
+        COMMAND cmd /c mklink /J ${game_assets_link}
+                "$<SHELL_PATH:${CMAKE_CURRENT_SOURCE_DIR}/assets>"
+        VERBATIM
     )
 else()
     # `rm -f` on a symlink-to-directory removes the link, not what it points at
