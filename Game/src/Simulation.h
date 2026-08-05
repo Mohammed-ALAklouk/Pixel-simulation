@@ -4,6 +4,7 @@
 #include "vec2i.h"
 
 #include <array>
+#include <cstdint>
 
 namespace PS
 {

@@ -1,5 +1,10 @@
 #include "Game.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+
 PS::Game::Game()
 {
 	material_load_error_message = MaterialRegistry::Load_materials();
@@ -232,7 +237,7 @@ std::vector<Vector2> PS::Game::GetLine(Vector2 start, Vector2 end)
 	{
 		int final_x = start.x + Xinc * i;
 		int final_y = start.y + Yinc * i;
-		points.push_back(Vector2(final_x, final_y));
+		points.push_back(Vector2{ static_cast<float>(final_x), static_cast<float>(final_y) });
 	}
 
 

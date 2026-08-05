@@ -2,6 +2,9 @@
 #include "rgba.h"
 #include "MaterialRegistry.h"
 
+#include <cstdint>
+#include <cstdlib>
+
 namespace PS
 {
 	struct Block

@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+#include <exception>
 #include <vector>
 #include <string>
 #include <nlohmann/json.hpp>

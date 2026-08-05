@@ -3,6 +3,9 @@
 
 #include "Block.h"
 
+#include <cstddef>
+#include <cstdint>
+
 namespace PS
 {
 	class Chunk

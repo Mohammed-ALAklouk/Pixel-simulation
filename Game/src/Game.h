@@ -7,8 +7,12 @@
 #include <imgui.h>
 #include <rlImGui.h>
 #include <raylib.h>
-#include <unordered_map>
 #include <chrono>
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace PS
 {
@@ -31,8 +35,8 @@ namespace PS
 		std::vector<Vector2> GetLine(Vector2 start, Vector2 end);
 
 		static constexpr uint32_t GridSize = 640;
-		Vec2i Window_size = Vec2i(1400, 900);
-		Vector2 Grid_offset = Vector2(0, 0);
+		Vec2i Window_size = Vec2i{ 1400, 900 };
+		Vector2 Grid_offset = Vector2{ 0.0f, 0.0f };
 		float TileSize = 1;
 		
 		Grid grid;
