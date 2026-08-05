@@ -18,7 +18,7 @@
     },
     {
       "name": "Sand",
-      "color_min": [ 150, 150, 0 ],
+      "color_ min": [ 150, 150, 0 ],
       "color_max": [ 255, 255, 0 ],
       "steps": 8,
       "is_fluid": false,

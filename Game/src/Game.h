@@ -63,5 +63,7 @@ namespace PS
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;
 		bool paused = false;
+
+		std::string material_load_error_message;
 	};
 }

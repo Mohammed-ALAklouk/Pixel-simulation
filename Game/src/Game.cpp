@@ -2,7 +2,7 @@
 
 PS::Game::Game()
 {
-	MaterialRegistry::Create_materials();
+	material_load_error_message = MaterialRegistry::Load_materials();
 
 	
 	InitWindow(Window_size.x, Window_size.y, "Pixel Simulation");
@@ -118,6 +118,12 @@ void PS::Game::UI()
 {
 	ImGui::Begin("Material menu");
 	
+	if (material_load_error_message != "") {
+		ImGui::Text(material_load_error_message.c_str());
+		if (ImGui::Button("Clear error message"))
+			material_load_error_message = "";
+	}
+
 	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
 	{
 		if (ImGui::Button(MaterialRegistry::Get(i).Name.c_str()))
@@ -141,7 +147,7 @@ void PS::Game::UI()
 	ImGui::Checkbox("Pause", &paused);
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 	if (ImGui::Button("Reload material file"))
-		MaterialRegistry::Reload_materials();
+		MaterialRegistry::Load_materials();
 
 	ImGui::Checkbox("Show active chunks", &show_active_chunks);
 	ImGui::Checkbox("Show benchmarks", &show_bench_marks);

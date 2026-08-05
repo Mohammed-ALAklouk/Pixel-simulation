@@ -34,14 +34,12 @@ namespace PS
 	public:
 		MaterialRegistry() = default;
 
-		static void Create_materials()
+		static std::string Load_materials()
 		{
+			std::string error_message = "";
 			std::ifstream file("materials.json");
 			if (!file.is_open())
-			{
-				printf("Failed to open materials.json file\n");
-				exit(1);
-			}
+				return "[Error] Failed to load materials.json";
 
 			nlohmann::json data = nlohmann::json::parse(file);
 
@@ -99,7 +97,7 @@ namespace PS
 				}
 				catch (const std::exception& e)
 				{
-					printf("Error parsing materials.json: %s\n", e.what());
+					error_message += "[Error] Material number " + std::to_string(index) + " has an undefined property\n";
 				}
 				index++;
 			}
@@ -119,12 +117,7 @@ namespace PS
 
 			m_materials = in_materials;
 			file.close();
-
-		}
-
-		static void Reload_materials()
-		{
-			Create_materials();
+			return error_message;
 		}
 
 		static const BlockData& Get(int id)
