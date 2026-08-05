@@ -44,72 +44,97 @@ namespace PS
 			}
 
 			nlohmann::json data = nlohmann::json::parse(file);
-			
+
+			int in_AIR_ID = -1, in_STONE_ID = -1, in_ACID_ID = -1, in_FIRE_ID = -1, in_WATER_ID = -1, in_STEAM_ID = -1, in_LAVA_ID = -1, in_SMOKE_ID = -1, in_HOT_STONE_ID = -1, in_DIRTY_WATER_ID = -1, in_ASH_ID = -1, in_HOT_ASH_ID = -1;
+			std::vector<BlockData> in_materials;
+
+
 			int index = 0;
 			for (auto material: data["materials"])
 			{
-				if (material["name"] == "Air")
-					AIR_ID = index;
-				else if (material["name"] == "Stone")
-					STONE_ID = index;
-				else if (material["name"] == "Acid")
-					ACID_ID = index; 
-				else if (material["name"] == "Fire")
-					FIRE_ID = index;
-				else if (material["name"] == "Water")
-					WATER_ID = index;
-				else if (material["name"] == "Steam")
-					STEAM_ID = index;
-				else if (material["name"] == "Lava")
-					LAVA_ID = index;
-				else if (material["name"] == "Smoke")
-					SMOKE_ID = index;
-				else if (material["name"] == "Hot Stone")
-					HOT_STONE_ID = index; 
-				else if (material["name"] == "Dirty Water")
-					DIRTY_WATER_ID = index;
-				else if (material["name"] == "Ash")
-					ASH_ID = index;
-				else if (material["name"] == "Hot Ash")
-					HOT_ASH_ID = index;
+				try
+				{
+					if (material["name"] == "Air")
+						in_AIR_ID = index;
+					else if (material["name"] == "Stone")
+						in_STONE_ID = index;
+					else if (material["name"] == "Acid")
+						in_ACID_ID = index;
+					else if (material["name"] == "Fire")
+						in_FIRE_ID = index;
+					else if (material["name"] == "Water")
+						in_WATER_ID = index;
+					else if (material["name"] == "Steam")
+						in_STEAM_ID = index;
+					else if (material["name"] == "Lava")
+						in_LAVA_ID = index;
+					else if (material["name"] == "Smoke")
+						in_SMOKE_ID = index;
+					else if (material["name"] == "Hot Stone")
+						in_HOT_STONE_ID = index; 
+					else if (material["name"] == "Dirty Water")
+						in_DIRTY_WATER_ID = index;
+					else if (material["name"] == "Ash")
+						in_ASH_ID = index;
+					else if (material["name"] == "Hot Ash")
+						in_HOT_ASH_ID = index;
 
-				m_mateials.push_back({
-					material["name"],
-					material["can_fall"],
-					material["can_cascade"],
-					material["is_fluid"],
-					material["is_liquid"],
-					material["density"],
-					material["gravity"],
-					material["decay_chance"],
-					material["corrosion_chance"],
-					material["burn_chance"],
-					material["scatter_chance"],
+					in_materials.push_back({
+						material["name"],
+						material["can_fall"],
+						material["can_cascade"],
+						material["is_fluid"],
+						material["is_liquid"],
+						material["density"],
+						material["gravity"],
+						material["decay_chance"],
+						material["corrosion_chance"],
+						material["burn_chance"],
+						material["scatter_chance"],
 
-					RGBA(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
-					RGBA(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
-					material["steps"],
-				});
+						RGBA(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
+						RGBA(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
+						material["steps"],
+					});
+				}
+				catch (const std::exception& e)
+				{
+					printf("Error parsing materials.json: %s\n", e.what());
+				}
 				index++;
 			}
 
+			AIR_ID = in_AIR_ID;
+			ACID_ID = in_ACID_ID;
+			FIRE_ID = in_FIRE_ID;
+			WATER_ID = in_WATER_ID;
+			STEAM_ID = in_STEAM_ID;
+			LAVA_ID = in_LAVA_ID;
+			SMOKE_ID = in_SMOKE_ID;
+			STONE_ID = in_STONE_ID;
+			HOT_STONE_ID = in_HOT_STONE_ID;
+			DIRTY_WATER_ID = in_DIRTY_WATER_ID;
+			ASH_ID = in_ASH_ID;
+			HOT_ASH_ID = in_HOT_ASH_ID;
+
+			m_materials = in_materials;
 			file.close();
+
 		}
 
 		static void Reload_materials()
 		{
-			m_mateials.clear();
 			Create_materials();
 		}
 
 		static const BlockData& Get(int id)
 		{
-			return m_mateials[id];
+			return m_materials[id];
 		}
 
 		static int Get_materials_count()
 		{
-			return m_mateials.size();
+			return m_materials.size();
 		}
 		
 		inline static int AIR_ID;
@@ -127,6 +152,6 @@ namespace PS
 		
 
 	private:
-		inline static std::vector<BlockData> m_mateials;
+		inline static std::vector<BlockData> m_materials;
 	};
 }
