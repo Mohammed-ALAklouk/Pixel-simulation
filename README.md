@@ -80,7 +80,9 @@ ignored by the canvas while it is over an ImGui window.
 
 ## Building
 
-Requires **CMake 3.21+** and a **C++20** compiler. raylib, Dear ImGui, rlImGui and
+Requires **CMake 3.21+** and a **C++20** compiler. The `vs2026` preset additionally
+needs a CMake new enough to know the `Visual Studio 18 2026` generator — check with
+`cmake --help`. raylib, Dear ImGui, rlImGui and
 nlohmann/json are pulled in automatically by `FetchContent` on first configure —
 there is nothing to install by hand. They are checked out into `.deps/` at the
 repository root rather than inside `build/`, so wiping a build directory does not
@@ -92,6 +94,12 @@ force a re-download.
 
 ```bash
 cmake --preset vs2022 && cmake --build --preset vs2022-release
+```
+
+**Windows (Visual Studio 2026)**
+
+```bash
+cmake --preset vs2026 && cmake --build --preset vs2026-release
 ```
 
 **Any platform (Ninja)**
