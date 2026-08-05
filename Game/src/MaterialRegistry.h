@@ -77,7 +77,7 @@ namespace PS
 					else if (material["name"] == "Hot Ash")
 						in_HOT_ASH_ID = index;
 
-					in_materials.push_back({
+					BlockData new_material = {
 						material["name"],
 						material["can_fall"],
 						material["can_cascade"],
@@ -93,7 +93,10 @@ namespace PS
 						RGBA(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
 						RGBA(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
 						material["steps"],
-					});
+					};
+
+					if (new_material.Number_of_steps < 1) new_material.Number_of_steps = 1;
+					in_materials.push_back(new_material);
 				}
 				catch (const std::exception& e)
 				{
