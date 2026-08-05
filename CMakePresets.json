@@ -27,6 +27,16 @@
       }
     },
     {
+      "name": "ci-windows",
+      "displayName": "CI (Windows, newest installed Visual Studio)",
+      "binaryDir": "${sourceDir}/build",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
       "name": "ninja",
       "displayName": "Ninja Multi-Config (any platform)",
       "generator": "Ninja Multi-Config",
@@ -76,6 +86,11 @@
     {
       "name": "vs2026-release",
       "configurePreset": "vs2026",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-windows-release",
+      "configurePreset": "ci-windows",
       "configuration": "Release"
     },
     {

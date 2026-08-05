@@ -28,11 +28,16 @@ jobs:
           path: .deps
           key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
 
+      # The ci-windows preset deliberately pins no generator, so CMake picks
+      # whichever Visual Studio the runner image happens to ship. windows-latest
+      # moved from VS 2022 to VS 2026 in June 2026 and broke a pinned `vs2022`
+      # preset; auto-detection survives the next rollover too. The local vs2022 /
+      # vs2026 presets are unaffected.
       - name: Configure
-        run: cmake --preset vs2022
+        run: cmake --preset ci-windows
 
       - name: Build
-        run: cmake --build --preset vs2022-release
+        run: cmake --build --preset ci-windows-release
 
       # The build tree's assets/ is a junction back into the source tree, so it
       # is copied from the source directly rather than from the output folder.
