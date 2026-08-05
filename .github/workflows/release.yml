@@ -1,0 +1,57 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed by the release job to upload assets
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # raylib / imgui / rlImGui / nlohmann_json are cloned by FetchContent into
+      # .deps (see FETCHCONTENT_BASE_DIR in CMakeLists.txt). The key tracks the
+      # top-level CMakeLists, which is where the GIT_TAGs live -- bumping a
+      # dependency version invalidates the cache automatically.
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: .deps
+          key: deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Configure
+        run: cmake --preset vs2022
+
+      - name: Build
+        run: cmake --build --preset vs2022-release
+
+      # The build tree's assets/ is a junction back into the source tree, so it
+      # is copied from the source directly rather than from the output folder.
+      - name: Stage package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist/PixelSimulator | Out-Null
+          Copy-Item build/Game/Release/Game.exe dist/PixelSimulator/
+          Copy-Item Game/assets dist/PixelSimulator/assets -Recurse
+          Copy-Item README.md, LICENSE dist/PixelSimulator/
+          Compress-Archive -Path dist/PixelSimulator/* -DestinationPath dist/PixelSimulator-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelSimulator-windows-x64
+          path: dist/PixelSimulator/
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$env:GITHUB_REF_NAME" dist/PixelSimulator-windows-x64.zip --generate-notes
