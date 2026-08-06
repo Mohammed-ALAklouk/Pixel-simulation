@@ -1,4 +1,6 @@
-# <!-- TODO: project name -->
+# Scree
+
+*Scree — the sheet of loose rock fragments that mantles a slope.*
 
 A falling-sand simulator written in C++20 with [raylib](https://github.com/raysan5/raylib).
 Every pixel on the grid is an independent particle: sand piles up, water finds its

@@ -36,9 +36,14 @@ add_executable(Game
 
 target_link_libraries(Game PRIVATE imgui-backend nlohmann_json::nlohmann_json)
 
+# The target stays `Game` -- it is referenced by VS_STARTUP_PROJECT and by the
+# asset-link commands below -- while the binary it produces ships as Scree.exe.
+# OUTPUT_NAME does not affect TARGET_FILE_DIR, so the junction below is unmoved.
+#
 # Plain path, no generator expression: VS's folder/CMake mode reads this
 # property raw from the file API and never evaluates genexes.
 set_target_properties(Game PROPERTIES
+    OUTPUT_NAME Scree
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # MaterialRegistry.h opens files under "assets/" relative to the exe's own

@@ -10,7 +10,7 @@ PS::Game::Game()
 	material_load_error_message = MaterialRegistry::Load_materials();
 
 	
-	InitWindow(Window_size.x, Window_size.y, "Pixel Simulation");
+	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;
 	Grid_offset.x = (Window_size.x - grid_size_px) / 2;
 	Grid_offset.y = (Window_size.y - grid_size_px) / 2;
