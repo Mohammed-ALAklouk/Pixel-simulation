@@ -10,21 +10,16 @@ touches water cools into fresh rock.
 Materials are not hardcoded — they are defined in a JSON file that can be edited
 and reloaded while the program is running.
 
-<!-- TODO: hero gif -->
-
-<!-- ---
+<p align="center">
+  <img src="docs/lava-water.gif" width="480"
+       alt="Lava pouring off two shelves into water, boiling off steam and crusting over into hot stone">
+</p>
 
 ## Demo
 
-<!-- TODO: gif — lava pouring into water and crusting over into stone -->
-
-<!-- TODO: gif — fire spreading through wood and oil, leaving ash and smoke -->
-
-<!-- TODO: gif — acid eating through a stone wall -->
-
-<!-- TODO: gif — editing materials.json and hitting "Reload material file" live -->
-
---- -->
+| Fire spreading through wood | Acid eating through stone |
+|:---:|:---:|
+| ![Fire spreading across a wooden figure, leaving ash and smoke behind](docs/fire-wood.gif) | ![Acid eating down through a stone slab and a wood layer, pooling on the sand below](docs/acid-stone.gif) |
 
 ## Features
 
@@ -59,13 +54,23 @@ and reloaded while the program is running.
 
 ## Materials
 
-| | | |
-|---|---|---|
-| Air | Sand | Stone |
-| Water | Dirty Water | Oil |
-| Acid | Lava | Hot Stone |
-| Fire | Smoke | Steam |
-| Wood | Ash | Hot Ash |
+| Material | Behaviour |
+|---|---|
+| Air | Empty space. Anything denser moves straight through it. |
+| Sand | Falls and cascades into slopes. Dissolves slowly in acid. |
+| Stone | Static. The default wall material. |
+| Wood | Static and flammable. Burns away, and corrodes fast in acid. |
+| Water | Levels out, puts out fire, and quenches lava into hot stone. |
+| Dirty Water | What acid leaves behind once it has eaten something. Lighter than water. |
+| Oil | Floats on water and catches fire on contact. |
+| Acid | Sinks through water, corrodes its neighbours, and turns to dirty water as it does. |
+| Lava | Dense liquid. Ignites what it touches and crusts into hot stone in water. |
+| Fire | Rises, spreads to flammable neighbours, and dies in water. |
+| Smoke | Rises and fades out. Left behind by fire. |
+| Steam | Rises and fades much faster. Boiled off water by hot stone. |
+| Hot Stone | Freshly quenched lava. Cools into stone, boiling the water around it. |
+| Ash | Falls like sand. What burnt wood leaves behind. |
+| Hot Ash | Glowing ash from a fresh burn. Cools into ash. |
 
 ## Controls
 
@@ -79,6 +84,67 @@ and reloaded while the program is running.
 Dragging draws a continuous line between frames, so fast strokes don't leave gaps.
 Drawing only fills empty space — erase first to replace something. The mouse is
 ignored by the canvas while it is over an ImGui window.
+
+## How it works
+
+The grid is stored as a flat array of `Chunk`s, each holding a 32 × 32 array of
+`Block`s — an integer material id plus a colour. At 640 × 640 that is a 20 × 20
+grid of chunks. Colours are randomised per particle within the material's
+`color_min`/`color_max` range, quantised into `steps` bands, which gives piles
+texture without storing anything extra.
+
+Each frame runs two passes over the grid: one bottom-to-top for materials that fall,
+one top-to-bottom for materials that rise, so gases and liquids can move past each
+other in the same tick. Within a pass, each pixel resolves in order: decay → material
+reactions → falling → cascading → liquid spreading. A per-pixel processed flag stops
+a particle from being updated twice after it has been swapped forward.
+
+Chunk activity is tracked with two flags — active this frame and active next frame.
+Any write marks the containing chunk for the next frame, and a write on a chunk edge
+marks the neighbour too, which is what keeps interactions from stalling at chunk
+boundaries.
+
+## Adding a material
+
+Append an entry to `Game/assets/materials.json` and reload:
+
+```json
+{
+  "name": "Sand",
+  "color_min": [ 150, 150, 0 ],
+  "color_max": [ 255, 255, 0 ],
+  "steps": 8,
+  "is_fluid": false,
+  "can_fall": true,
+  "can_cascade": true,
+  "is_liquid": false,
+  "density": 80.0,
+  "gravity": 1,
+  "decay_chance": -1,
+  "corrosion_chance": 5,
+  "burn_chance": -1,
+  "scatter_chance": 50
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `color_min` / `color_max` | RGB range each particle's colour is picked from |
+| `steps` | Number of discrete colour bands between min and max |
+| `is_fluid` | Can be displaced by denser materials moving through it |
+| `can_fall` | Moves along the gravity direction |
+| `can_cascade` | Slides diagonally, so it forms slopes instead of towers |
+| `is_liquid` | Spreads sideways to level out |
+| `density` | Decides what sinks through what |
+| `gravity` | `1` falls, `-1` rises |
+| `decay_chance` | Chance in 10,000 per step of vanishing; `-1` for never |
+| `corrosion_chance` | Percent chance of being destroyed by adjacent acid; `-1` for immune |
+| `burn_chance` | Percent chance of catching fire from a neighbour; `-1` for non-flammable |
+| `scatter_chance` | Percent chance a falling particle drifts sideways |
+
+Reactions between specific materials (acid, fire, lava, cooling) are still in code
+and keyed to material names, so new materials get physics for free but not new
+chemistry.
 
 ## Building
 
@@ -147,66 +213,6 @@ executable, so it works no matter what directory you launch from.
 The link is made by a post-build step: a junction on Windows (`mklink /J`, which
 unlike a real symlink never needs admin rights or Developer Mode), and
 `cmake -E create_symlink` everywhere else.
-
-## How it works
-
-The grid is stored as a flat array of 32 × 32 `Chunk`s, each holding an array of
-`Block`s — an integer material id plus a colour. Colours are randomised per particle
-within the material's `color_min`/`color_max` range, quantised into `steps` bands,
-which gives piles texture without storing anything extra.
-
-Each frame runs two passes over the grid: one bottom-to-top for materials that fall,
-one top-to-bottom for materials that rise, so gases and liquids can move past each
-other in the same tick. Within a pass, each pixel resolves in order: decay → material
-reactions → falling → cascading → liquid spreading. A per-pixel processed flag stops
-a particle from being updated twice after it has been swapped forward.
-
-Chunk activity is tracked with two flags — active this frame and active next frame.
-Any write marks the containing chunk for the next frame, and a write on a chunk edge
-marks the neighbour too, which is what keeps interactions from stalling at chunk
-boundaries.
-
-## Adding a material
-
-Append an entry to `Game/assets/materials.json` and reload:
-
-```json
-{
-  "name": "Sand",
-  "color_min": [ 150, 150, 0 ],
-  "color_max": [ 255, 255, 0 ],
-  "steps": 8,
-  "is_fluid": false,
-  "can_fall": true,
-  "can_cascade": true,
-  "is_liquid": false,
-  "density": 80.0,
-  "gravity": 1,
-  "decay_chance": -1,
-  "corrosion_chance": 5,
-  "burn_chance": -1,
-  "scatter_chance": 50
-}
-```
-
-| Field | Meaning |
-|---|---|
-| `color_min` / `color_max` | RGB range each particle's colour is picked from |
-| `steps` | Number of discrete colour bands between min and max |
-| `is_fluid` | Can be displaced by denser materials moving through it |
-| `can_fall` | Moves along the gravity direction |
-| `can_cascade` | Slides diagonally, so it forms slopes instead of towers |
-| `is_liquid` | Spreads sideways to level out |
-| `density` | Decides what sinks through what |
-| `gravity` | `1` falls, `-1` rises |
-| `decay_chance` | Chance in 10,000 per step of vanishing; `-1` for never |
-| `corrosion_chance` | Percent chance of being destroyed by adjacent acid; `-1` for immune |
-| `burn_chance` | Percent chance of catching fire from a neighbour; `-1` for non-flammable |
-| `scatter_chance` | Percent chance a falling particle drifts sideways |
-
-Reactions between specific materials (acid, fire, lava, cooling) are still in code
-and keyed to material names, so new materials get physics for free but not new
-chemistry.
 
 ## Roadmap
 
