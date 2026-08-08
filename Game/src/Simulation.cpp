@@ -118,7 +118,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Fire interactions
 	if (tile.id == MaterialRegistry::FIRE_ID)
 	{
-		auto lifeSpan = tile.color.a;
+		auto lifeSpan = tile.lifespan;
 		
 		grid.set_chunk_active_at_pixel(x, y);
 
@@ -165,14 +165,14 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 
 		// life span
-		tile.color.a -= fast_rand() % 15 + 1; 
-		if (tile.color.a > lifeSpan)
+		tile.lifespan -= fast_rand() % 15 + 1; 
+		if (tile.lifespan > lifeSpan)
 		{
-			tile.color.a = 0;
+			tile.lifespan = 0;
 
 			if (fast_rand() % 100 < 25) {
 				auto new_tile = Block::Create(MaterialRegistry::SMOKE_ID);
-				new_tile.color.a = 255;
+				new_tile.lifespan = 255;
 				grid.Set_at(x, y, new_tile);
 			}
 			else
@@ -183,7 +183,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 
 		// color interpolation
-		float life_ratio = tile.color.a / 255.0f;
+		float life_ratio = tile.lifespan / 255.0f;
 		tile.color.r = 150 + (105 * life_ratio);
 		tile.color.g = 255 * life_ratio;
 
@@ -194,9 +194,9 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Hot ash interactions
 	if (tile.id == MaterialRegistry::HOT_ASH_ID)
 	{
-		if (tile.color.a == 0)
+		if (tile.lifespan == 0)
 		{
-			tile.color.a = 255;
+			tile.lifespan = 255;
 			tile.id = MaterialRegistry::ASH_ID;
 			return;
 		}
@@ -234,7 +234,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 		}
 
 		if (!has_flamable_neighbers)
-			tile.color.a -= 1;
+			tile.lifespan -= 1;
 	}
 
 	// Lava interactions
@@ -261,7 +261,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 				if (grid.Is_in_bounds(next_x, next_y) && grid.Get_at(next_x, next_y).id == MaterialRegistry::WATER_ID)
 				{
 					auto new_tile = Block::Create(MaterialRegistry::HOT_STONE_ID);
-					new_tile.color.a = 10;
+					new_tile.lifespan = 10;
 					grid.Set_at(next_x, next_y, new_tile);
 					grid.set_processed(next_x, next_y);
 				}
@@ -272,9 +272,9 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	// Hot stone interactions
 	if (tile.id == MaterialRegistry::HOT_STONE_ID)
 	{
-		if (tile.color.a == 0)
+		if (tile.lifespan == 0)
 		{
-			tile.color.a = 255;
+			tile.lifespan = 255;
 			tile.id = MaterialRegistry::STONE_ID;
 			return;
 		}
@@ -289,7 +289,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 				if (fast_rand() & 1)
 				{
 					auto t = Block::Create(MaterialRegistry::HOT_STONE_ID);
-					t.color.a = tile.color.a - 1;
+					t.lifespan = tile.lifespan - 1;
 
 					grid.Set_at(next_x, next_y, t);
 				}
@@ -302,7 +302,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 			}
 		}
 
-		tile.color.a -= 1;
+		tile.lifespan -= 1;
 		return;
 	}
 

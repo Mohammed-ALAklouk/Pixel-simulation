@@ -26,8 +26,8 @@ namespace PS
 		int Scatter_chance;
 
 
-		RGBA Min_color;
-		RGBA Max_color;
+		RGB Min_color;
+		RGB Max_color;
 		uint16_t Number_of_steps;
 	};
 
@@ -94,8 +94,8 @@ namespace PS
 						material["burn_chance"],
 						material["scatter_chance"],
 
-						RGBA(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
-						RGBA(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
+						RGB(material["color_min"][0], material["color_min"][1], material["color_min"][2]),
+						RGB(material["color_max"][0], material["color_max"][1], material["color_max"][2]),
 						material["steps"],
 					};
 
