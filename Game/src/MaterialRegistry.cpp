@@ -44,7 +44,6 @@ std::string PS::MaterialRegistry::LoadMaterials()
 	error_message += ParseTags(data);
 	error_message += ValidateMaterials(data);
 
-	printf("Loading %d materials\n", (int)materials.size());
 	for (auto& material: data["materials"])
 	{
 		if(!material["valid"])
@@ -61,21 +60,6 @@ std::string PS::MaterialRegistry::LoadMaterials()
 
 		materials.push_back(inMaterial);
 	}
-
-
-	printf("Loaded %d materials and %d tags.\n", (int)materials.size(), (int)tags.size());
-	for (auto& material: materials)
-	{
-		// lifespan info
-		printf("Material %s: Initial lifespan %d, Tick %d, OnDeathTransitionSpan start %d, count %d, totalWeight %d\n",
-			materialNames[&material - &materials[0]].c_str(),
-			material.lifespanData.Initial,
-			material.lifespanData.Tick,
-			material.lifespanData.OnDeathTransitionSpan.start,
-			material.lifespanData.OnDeathTransitionSpan.count,
-			material.lifespanData.OnDeathTransitionSpan.totalWeight);
-	}
-
 	return error_message;
 }
 
@@ -339,14 +323,6 @@ std::string PS::MaterialRegistry::ParseLifespan(const nlohmann::json& material, 
 	out.Initial = initial;
 	out.Tick = tick;
 	out.OnDeathTransitionSpan = onDeathSpan;
-
-	printf("Material %s: Initial lifespan %d, Tick %d, OnDeathTransitionSpan start %d, count %d, totalWeight %d\n",
-		material["name"].get<std::string>().c_str(),
-		initial,
-		tick,
-		out.OnDeathTransitionSpan.start,
-		out.OnDeathTransitionSpan.count,
-		out.OnDeathTransitionSpan.totalWeight);
 	
 	return error_message;
 }
