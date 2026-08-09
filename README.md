@@ -182,12 +182,15 @@ cmake --preset ninja && cmake --build --preset ninja-release
 cmake --preset make-release && cmake --build --preset make-release
 ```
 
-Swap `release` for `debug` in any of the above. The executable lands in
-`build/Game/Release/` (or `build/Game/` for the Make presets).
+Swap `release` for `debug` in any of the above. Each preset configures into its own
+`build/<preset>/` directory, so the executable lands in
+`build/vs2022/Game/Release/` (or `build/make-release/Game/` for the Make presets).
 
-All presets share the `build/` directory, so **switching generators means deleting
-`build/` first**. The downloaded dependencies live in `.deps/` at the repository
-root and are not affected, so switching costs a reconfigure, not a re-download.
+Because a CMake build directory is bound to the generator that created it, giving
+every preset its own directory means they coexist -- switching between them costs
+nothing and needs no cleanup. The downloaded dependencies live in `.deps/` at the
+repository root and are shared across all of them, so switching never triggers a
+re-download.
 
 ### Linux system packages
 

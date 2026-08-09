@@ -45,7 +45,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist/Scree | Out-Null
-          Copy-Item build/Game/Release/Scree.exe dist/Scree/
+          Copy-Item build/ci-windows/Game/Release/Scree.exe dist/Scree/
           Copy-Item Game/assets dist/Scree/assets -Recurse
           Copy-Item README.md, LICENSE dist/Scree/
           Compress-Archive -Path dist/Scree/* -DestinationPath dist/Scree-windows-x64.zip

@@ -2,6 +2,7 @@
 
 #include "Grid.h"
 #include "Simulation.h"
+#include "MaterialRegistry.h"
 #include "vec2i.h"
 
 #include <imgui.h>

@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
-#include "rgba.h"
+#include "rgb.h"
 
 
 
@@ -14,21 +14,27 @@ namespace PS
 	// Index range into one of the g_* arenas below. Which arena depends on the field:
 	// every transition span points into g_transitions, reactionSpan into g_reactions.
 	struct Span {
-		std::uint16_t start;
-		std::uint16_t count;
+		std::uint16_t start = 0;
+		std::uint16_t count = 0;
+	};
+
+	struct TransitionsSpan {
+		std::uint16_t start = 0;
+		std::uint16_t count = 0;
+		std::uint16_t totalWeight = 0;	
 	};
 
 	struct Movement {
-		std::int8_t Y_direction;
+		std::int8_t Y_direction = 1;
 		// Integer scale, not the old float. Comparisons are strict, so equal densities
 		// never displace each other: air 0, smoke 1, fire 2, steam 10, oil 20,
 		// dirty water 20, water 30, acid 31, lava 50, sand/ash 80, stone/wood 100.
-		std::uint8_t density;
-		std::uint8_t scatter_chance;
-		bool can_fall;
-		bool can_cascade;
-		bool is_fluid;
-		bool is_liquid;
+		std::uint8_t density = 0;
+		std::uint8_t scatter_chance = 0;
+		bool can_fall = false;
+		bool can_cascade = false;
+		bool is_fluid = false;
+		bool is_liquid = false;
 	};
 
 	// One possible outcome. A transition span is a partition -- weights are relative to
@@ -46,18 +52,18 @@ namespace PS
 			Initial,    // use the default lifespan of the new material it turns into
 		};
 
-		bool noTransition;			// leaves the block untouched; nextID unused
-		std::uint8_t nextID;
-		std::uint8_t weight;		// relative to the other weights in the same span
-		LifeSpanBase lifespanBase;
+		bool noTransition = false;			// leaves the block untouched; nextID unused
+		std::uint8_t nextID = 0;
+		std::uint8_t weight = 0;		// relative to the other weights in the same span
+		LifeSpanBase lifespanBase = LifeSpanBase::Initial;
 	};
 
 	// A material with no lifespan is Initial 255, Tick 0. An omitted lifespan block in
 	// the JSON resolves to those same values.
 	struct LifeSpan {
-		std::uint8_t Initial;
-		std::uint8_t Tick;			// subtracted once per update
-		Span OnDeathTransitionSpan;
+		std::uint8_t Initial = 255;
+		std::uint8_t Tick = 0;			// subtracted once per update
+		TransitionsSpan OnDeathTransitionSpan = { 0, 0, 0};
 	};
 
 	struct Reaction {
@@ -66,46 +72,41 @@ namespace PS
 			Tag,
 		};
 
-		TargetType targetType;
-		std::uint8_t TargetID;		// material id when Material, tag id when Tag
+		enum class Sample : std::uint8_t {
+			All,
+			FirstToReact,
+		};
+
+		TargetType targetType = TargetType::Material;
+		std::uint8_t TargetID = 0;		// material id when Material, tag id when Tag
 		// Percent. For Tag targets it scales the target's intensity for that tag
 		// (Chance * intensity / 100), so 100 means "use the intensity as-is".
-		std::uint8_t Chance;
+		std::uint8_t Chance = 0;
+		TransitionsSpan TargetTransitionsSpan = { 0, 0, 0 };
+		TransitionsSpan SelfTransitionsSpan = { 0, 0, 0 };
 
-		Span TargetTransitionsSpan;
-		Span SelfTransitionsSpan;
-
+		Sample sample = Sample::FirstToReact;
 		// On firing: stop scanning the remaining neighbours AND skip movement this tick.
-		bool HaltUpdate;
-	};
-
-	inline std::vector<Reaction>   g_reactions;
-	inline std::vector<Transition> g_transitions;
-	inline std::vector<std::string> g_names;	// indexed by material id
-
-	enum class Sample : std::uint8_t {
-		All,
-		FirstToReact,
+		bool HaltUpdate = false;
 	};
 
 	struct TagData {
-		std::uint8_t intensity;		// 0 = this material does not have the tag
+		std::uint8_t intensity = 0;		// 0 = this material does not have the tag
 		// Stick to neighbours carrying this tag (suppresses movement). Independent of
 		// intensity -- fire anchors to flammable while being flammable 0 itself.
-		bool isAnchor;
+		bool isAnchor = false;
 	};
 
 	struct MaterialData {
 		Movement movement;
-		Sample scanSample;
 		Span reactionSpan;
 		LifeSpan lifespanData;
 
-		bool inert;					// skip the update entirely (air)
-		bool interpolateColor;		// colour from lifespan: minColor at 0, maxColor at Initial
-		RGBA minColor;
-		RGBA maxColor;
-		std::uint8_t numberOfSteps;	// random colour steps, used when not interpolating
+		bool inert = false;					// skip the update entirely (air)
+		bool interpolateColor = false;		// colour from lifespan: minColor at 0, maxColor at Initial
+		RGB minColor = {255, 0, 255};
+		RGB maxColor = {255, 0, 255};
+		std::uint8_t numberOfSteps = 1;	// random colour steps, used when not interpolating
 
 		TagData tagData[MAX_TAGS];	// indexed by tag id
 	};

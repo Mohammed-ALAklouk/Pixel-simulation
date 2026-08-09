@@ -22,8 +22,46 @@ namespace PS
 		static Block Create(int id)
 		{
 			auto& data = MaterialRegistry::Get(id);
-			return Block(id, Random_step(data.Min_color, data.Max_color, data.Number_of_steps));
+			return Block(id, Random_step(data.minColor, data.maxColor, data.numberOfSteps));
 		}
+
+		bool Tick()
+		{
+			auto& data = MaterialRegistry::Get(id);
+			if (lifespan < data.lifespanData.Tick) {
+				lifespan = 0;
+				return true;
+			}
+			
+			lifespan -= data.lifespanData.Tick;
+			if (data.interpolateColor)
+				color = data.minColor + (data.maxColor - data.minColor) * (static_cast<float>(lifespan) / data.lifespanData.Initial);
+		
+			return lifespan == 0;
+		}
+
+		void Recreate(int id, std::uint8_t lifespan)
+		{
+			auto& data = MaterialRegistry::Get(id);
+			if (this->id != id) {
+				this->color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+			}
+
+			this->id = id;
+			this->lifespan = lifespan;
+		}
+
+		void CreateAt(int id, std::uint8_t lifespan)
+		{
+			auto& data = MaterialRegistry::Get(id);
+			this->id = id;
+			this->lifespan = lifespan;
+			if (data.interpolateColor)
+				this->color = data.minColor + (data.maxColor - data.minColor) * (static_cast<float>(lifespan) / data.lifespanData.Initial);
+			else
+				this->color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+		}
+
 
 		int id;
 		RGB color;

@@ -2,21 +2,13 @@
 #include "Grid.h"
 #include "MaterialRegistry.h"
 #include "vec2i.h"
+#include "fast_rand.h"
 
 #include <array>
 #include <cstdint>
 
 namespace PS
 {
-	inline int fast_rand()
-	{
-		static uint32_t state = 123456789;
-		state ^= state << 13;
-		state ^= state >> 17;
-		state ^= state << 5;
-		return static_cast<int>(state & 0x7FFFFFFF);
-	}
-
 	class Simulation
 	{
 	public:
@@ -25,6 +17,8 @@ namespace PS
 		static void Update_grid(Grid& grid);
 		static void Update_grid_drectional(Grid& grid, int gravityDirection);
 		static void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
-	private:
+		static bool update_pixel_lifespan(Grid& grid, Block& tile, int x, int y);
+		static void update_pixel_reaction(Grid& grid, Block& tile, int x, int y);
+		static void update_pixel_movement(Grid& grid, Block& tile, int x, int y);
 	};
 }

@@ -7,9 +7,8 @@
 
 PS::Game::Game()
 {
-	material_load_error_message = MaterialRegistry::Load_materials();
+	material_load_error_message = MaterialRegistry::LoadMaterials();
 
-	
 	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;
 	Grid_offset.x = (Window_size.x - grid_size_px) / 2;
@@ -129,21 +128,23 @@ void PS::Game::UI()
 			material_load_error_message = "";
 	}
 
-	for (size_t i = 0; i < MaterialRegistry::Get_materials_count(); i++)
+	for (int i = 0; i < MaterialRegistry::GetMaterialsCount(); i++)
 	{
-		if (ImGui::Button(MaterialRegistry::Get(i).Name.c_str()))
+		if (ImGui::Button(MaterialRegistry::GetName(i).c_str()))
 			SelectedMaterial = i;
 	}
 
-	ImGui::Text(MaterialRegistry::Get(SelectedMaterial).Name.c_str());
+	ImGui::Text(MaterialRegistry::GetName(SelectedMaterial).c_str());
 	auto mouse_pos = GetMousePosition();
 	mouse_pos.x -= Grid_offset.x;
 	mouse_pos.y -= Grid_offset.y;
 	if (grid.Is_in_bounds(mouse_pos.x, mouse_pos.y))
 	{
 		auto tile = grid.Get_at(mouse_pos.x, mouse_pos.y);
-		ImGui::Text("Pixel under mouse %s", MaterialRegistry::Get(tile.id).Name.c_str());
+		ImGui::Text("Pixel under mouse %s", MaterialRegistry::GetName(tile.id).c_str());
 	}
+
+
 
 
 	if (ImGui::Button("Clear"))
@@ -152,7 +153,7 @@ void PS::Game::UI()
 	ImGui::Checkbox("Pause", &paused);
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 	if (ImGui::Button("Reload material file"))
-		MaterialRegistry::Load_materials();
+		material_load_error_message = MaterialRegistry::LoadMaterials();
 
 	ImGui::Checkbox("Show active chunks", &show_active_chunks);
 	ImGui::Checkbox("Show benchmarks", &show_bench_marks);

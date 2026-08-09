@@ -36,6 +36,12 @@ namespace PS {
 			return RGB(add(r, other.r), add(g, other.g), add(b, other.b));
 		}
 
+		RGB operator*(float scalar) const {
+			return RGB(static_cast<std::uint8_t>(r * scalar),
+				static_cast<std::uint8_t>(g * scalar),
+				static_cast<std::uint8_t>(b * scalar));
+		}
+
 	private:
 		static const std::uint8_t add(std::uint8_t a, std::uint8_t b) {
 			return static_cast<std::uint8_t>(std::min(a + b, 255));
