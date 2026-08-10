@@ -5,8 +5,8 @@ std::vector<std::string> PS::MaterialRegistry::tags;
 std::vector<PS::Reaction> PS::MaterialRegistry::reactions;
 std::vector<PS::Transition> PS::MaterialRegistry::transitions;
 std::vector<std::string> PS::MaterialRegistry::materialNames;
-std::unordered_map<std::string, int> PS::MaterialRegistry::materialMap;
-std::unordered_map<std::string, int> PS::MaterialRegistry::tagMap;
+std::unordered_map<std::string, PS::MaterialID> PS::MaterialRegistry::materialMap;
+std::unordered_map<std::string, PS::MaterialID> PS::MaterialRegistry::tagMap;
 
 namespace {
 	// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
@@ -76,7 +76,7 @@ std::string PS::MaterialRegistry::ParseTags(nlohmann::json& data)
 		try {
 			auto name = tag.get<std::string>();
 			tags.push_back(name);
-			tagMap[name] = index;
+			tagMap[name] = static_cast<MaterialID>(index);
 		}
 		catch (const nlohmann::json::exception&) {
 			error_message += "[Error] Tag must be a string, got " + tag.dump() + ".\n";
@@ -93,8 +93,18 @@ std::string PS::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 {
 	std::string error_message = "";
 	int index = 0;
+	bool overflow_reported = false;
 	for (auto& material : data["materials"]) {
 		bool ok = true;
+		if (index >= PS::MAX_MATERIALS) {
+			if (!overflow_reported) {
+				error_message += "[Error] Too many materials defined in materials.json. Maximum allowed is " + std::to_string(PS::MAX_MATERIALS) + ".\n";
+				overflow_reported = true;
+			}
+			material["valid"] = false;
+			continue;
+		}
+
 		if (!material.contains("name")) {
 			error_message += "[Error] Material entry is missing a name.\n";
 			material["valid"] = false;
@@ -112,7 +122,7 @@ std::string PS::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 
 			material["valid"] = true;
 			materialNames.push_back(name);
-			materialMap[name] = index;
+			materialMap[name] = static_cast<MaterialID>(index);
 			index++;
 		}
 		catch (const nlohmann::json::exception&) {

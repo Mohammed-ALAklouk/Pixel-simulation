@@ -28,7 +28,7 @@ namespace PS
 		void proccessInputs();
 		void UI();
 		void run();
-		void draw_cursor(Vector2 pos, int material);
+		void draw_cursor(Vector2 pos, MaterialID material);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
@@ -41,7 +41,7 @@ namespace PS
 		float TileSize = 1;
 		
 		Grid grid;
-		int SelectedMaterial = 0;
+		MaterialID SelectedMaterial = 0;
 
 		std::vector<Color> pixels;
 		// tex

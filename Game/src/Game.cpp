@@ -108,7 +108,7 @@ void PS::Game::proccessInputs()
 	{
 		Vector2 cursor_end = mouse_pos;
 		auto line = GetLine(cursor_start, cursor_end);
-		int material = mouse_left_down ? SelectedMaterial : 0;
+		MaterialID material = static_cast<MaterialID>(mouse_left_down ? SelectedMaterial : MaterialRegistry::AIR_ID);
 
 		for (auto point: line)
 			draw_cursor(point, material);
@@ -130,8 +130,9 @@ void PS::Game::UI()
 
 	for (int i = 0; i < MaterialRegistry::GetMaterialsCount(); i++)
 	{
-		if (ImGui::Button(MaterialRegistry::GetName(i).c_str()))
-			SelectedMaterial = i;
+		MaterialID id = static_cast<MaterialID>(i);
+		if (ImGui::Button(MaterialRegistry::GetName(id).c_str()))
+			SelectedMaterial = id;
 	}
 
 	ImGui::Text(MaterialRegistry::GetName(SelectedMaterial).c_str());
@@ -196,7 +197,7 @@ void PS::Game::run()
 	}
 }
 
-void PS::Game::draw_cursor(Vector2 pos, int material)
+void PS::Game::draw_cursor(Vector2 pos, MaterialID material)
 {
 	for (int x = -cursor_radius; x < cursor_radius; x++)
 	{

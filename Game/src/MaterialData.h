@@ -10,6 +10,8 @@
 namespace PS
 {
 	static constexpr int MAX_TAGS = 8;
+	static constexpr int MAX_MATERIALS = 256;
+	using MaterialID = std::uint8_t;
 
 	// Index range into one of the g_* arenas below. Which arena depends on the field:
 	// every transition span points into g_transitions, reactionSpan into g_reactions.
@@ -53,7 +55,7 @@ namespace PS
 		};
 
 		bool noTransition = false;			// leaves the block untouched; nextID unused
-		std::uint8_t nextID = 0;
+		MaterialID nextID = 0;
 		std::uint8_t weight = 0;		// relative to the other weights in the same span
 		LifeSpanBase lifespanBase = LifeSpanBase::Initial;
 	};
@@ -78,7 +80,7 @@ namespace PS
 		};
 
 		TargetType targetType = TargetType::Material;
-		std::uint8_t TargetID = 0;		// material id when Material, tag id when Tag
+		MaterialID TargetID = 0;		// material id when Material, tag id when Tag
 		// Percent. For Tag targets it scales the target's intensity for that tag
 		// (Chance * intensity / 100), so 100 means "use the intensity as-is".
 		std::uint8_t Chance = 0;

@@ -35,12 +35,12 @@ namespace PS
 			data[y][x] = block;
 		}
 
-		void Recreate_at(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan)
+		void Recreate_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
 		{
 			data[y][x].Recreate(id, lifespan);
 		}
 
-		void CreateAt(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan)
+		void CreateAt(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
 		{
 			data[y][x].CreateAt(id, lifespan);
 		}

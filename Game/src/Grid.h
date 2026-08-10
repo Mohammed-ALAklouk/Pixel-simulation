@@ -27,8 +27,8 @@ namespace PS
 		inline bool Is_in_bounds(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
-		inline void Recreate_at(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan);
-		inline void Create_at(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan);
+		inline void Recreate_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan);
+		inline void Create_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan);
 		inline void swap_pixels(std::pair<int,int> pos1, std::pair<int,int> pos2);
 		inline void set_processed(int x, int y) { m_processed[get_global_index(x, y)] = true; }
 		inline void set_chunk_active_at_pixel(int x, int y);
@@ -129,7 +129,7 @@ namespace PS
 		set_chunk_active_at_pixel(x, y);
 	}
 
-	inline void Grid::Recreate_at(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan)
+	inline void Grid::Recreate_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x & 31;
@@ -138,7 +138,7 @@ namespace PS
 		set_chunk_active_at_pixel(x, y);
 	}
 
-	inline void Grid::Create_at(std::uint16_t x, std::uint16_t y, int id, std::uint8_t lifespan)
+	inline void Grid::Create_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x & 31;

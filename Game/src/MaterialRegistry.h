@@ -18,7 +18,7 @@ namespace PS {
 		// Chunk fills new chunks with it and the eraser brush paints it -- so it needs a
 		// name the code can reach without a lookup. It is pinned to id 0, which makes it
 		// the first entry in materials.v2.json by contract.
-		static constexpr int AIR_ID = 0;
+		static constexpr MaterialID AIR_ID = 0;
 
 		static std::string LoadMaterials();
 		static std::string ParseTags(nlohmann::json& data);
@@ -40,7 +40,7 @@ namespace PS {
 		}
 
 
-		static const MaterialData& Get(int id) {
+		static const MaterialData& Get(MaterialID id) {
 			return materials[id];
 		}
 
@@ -66,11 +66,11 @@ namespace PS {
 			return &reactions[index];
 		}
 
-		static std::uint8_t GetTagIntensity(std::uint16_t id, std::uint8_t tag) {
+		static std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) {
 			return materials[id].tagData[tag].intensity;
 		}
 
-		static bool CanReact(std::uint16_t id, std::uint8_t target, Reaction::TargetType targetType)
+		static bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType)
 		{
 			if (targetType == Reaction::TargetType::Material)
 				return id == target;
@@ -78,7 +78,7 @@ namespace PS {
 				return GetTagIntensity(id, target);
 		}
 
-		static std::string GetName(int id) {
+		static std::string GetName(MaterialID id) {
 			return materialNames[id];
 		}
 
@@ -88,7 +88,7 @@ namespace PS {
 		static std::vector<Reaction>   reactions;
 		static std::vector<Transition> transitions;
 		static std::vector<std::string> materialNames;
-		static std::unordered_map<std::string, int> materialMap;
-		static std::unordered_map<std::string, int> tagMap;
+		static std::unordered_map<std::string, MaterialID> materialMap;
+		static std::unordered_map<std::string, MaterialID> tagMap;
 	};
 }

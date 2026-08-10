@@ -1,5 +1,6 @@
 #pragma once
 #include "rgb.h"
+#include "MaterialData.h"
 #include "MaterialRegistry.h"
 
 #include <cstdint>
@@ -19,7 +20,7 @@ namespace PS
 			return min + RGB(r, g, b);
 		}
 
-		static Block Create(int id)
+		static Block Create(MaterialID id)
 		{
 			auto& data = MaterialRegistry::Get(id);
 			return Block(id, Random_step(data.minColor, data.maxColor, data.numberOfSteps));
@@ -40,7 +41,7 @@ namespace PS
 			return lifespan == 0;
 		}
 
-		void Recreate(int id, std::uint8_t lifespan)
+		void Recreate(MaterialID id, std::uint8_t lifespan)
 		{
 			auto& data = MaterialRegistry::Get(id);
 			if (this->id != id) {
@@ -51,7 +52,7 @@ namespace PS
 			this->lifespan = lifespan;
 		}
 
-		void CreateAt(int id, std::uint8_t lifespan)
+		void CreateAt(MaterialID id, std::uint8_t lifespan)
 		{
 			auto& data = MaterialRegistry::Get(id);
 			this->id = id;
@@ -63,7 +64,7 @@ namespace PS
 		}
 
 
-		int id;
+		MaterialID id;
 		RGB color;
 		std::uint8_t lifespan = 255;
 	};
