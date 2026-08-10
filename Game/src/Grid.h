@@ -34,6 +34,9 @@ namespace scree
 		inline void set_processed(int x, int y) { m_processed[get_global_index(x, y)] = true; }
 		inline void set_chunk_active_at_pixel(int x, int y);
 		inline void Get_active_chunks(std::vector<std::pair<int,int>>& active_chunks) const;
+
+		inline void Remap(const std::vector<MaterialID>& remap);
+
 		inline void Mark_chunks_for_next_update()
 		{
 			for (auto& chunk : m_chunks)
@@ -133,6 +136,25 @@ namespace scree
 		}
 	}
 
+	inline void Grid::Remap(const std::vector<MaterialID>& remap)
+	{
+		for (size_t y = 0; y < m_height_px; y++)
+		{
+			for (size_t x = 0; x < m_width_px; x++)
+			{
+				auto& block = Get_at(x, y);
+				if (block.id < remap.size())
+				{
+					auto& block = Get_at(x, y);
+					if (block.id >= remap.size()) continue;
+
+					set_chunk_active_at_pixel(x, y);
+					m_material_registry->RecreateBlock(block, remap[block.id], block.lifespan);
+				}
+			}
+		}
+	}
+
 	inline void Grid::Set_at(std::uint16_t x, std::uint16_t y, Block block)
 	{
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
@@ -170,4 +192,5 @@ namespace scree
 		
 		return m_chunks[chunk_index].Get_at(local_x, local_y);
 	}
+
 }

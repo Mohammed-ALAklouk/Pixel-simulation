@@ -231,10 +231,34 @@ bool scree::Game::load_materials()
 	MaterialRegistry new_registry;
 	bool success = new_registry.LoadMaterials();
 	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
-	if (success)
+	if (success) {
+		auto remap = get_registry_changes(new_registry);
 		material_registry = std::move(new_registry);
+		grid.Remap(remap);
+	}
 	
 	return success;
+}
+
+std::vector<scree::MaterialID> scree::Game::get_registry_changes(const MaterialRegistry& new_registry)
+{
+	std::vector<MaterialID> remap(material_registry.GetMaterialsCount(), MaterialRegistry::AIR_ID);
+
+	for (int i = 0; i < material_registry.GetMaterialsCount(); i++)
+	{
+		MaterialID id = static_cast<MaterialID>(i);
+		auto name = material_registry.GetName(id);
+		for (int j = 0; j < new_registry.GetMaterialsCount(); j++)
+		{
+			MaterialID new_id = static_cast<MaterialID>(j);
+			if (new_registry.GetName(new_id) == name)
+			{
+				remap[id] = new_id;
+				break;
+			}
+		}
+	}
+	return remap;
 }
 
 std::vector<Vector2> scree::Game::GetLine(Vector2 start, Vector2 end)

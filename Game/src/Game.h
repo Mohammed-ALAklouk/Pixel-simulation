@@ -30,6 +30,7 @@ namespace scree
 		void run();
 		void draw_cursor(Vector2 pos, MaterialID material);
 		bool load_materials();
+		std::vector<MaterialID> get_registry_changes(const MaterialRegistry& new_registry);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
