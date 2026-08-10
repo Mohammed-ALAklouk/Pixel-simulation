@@ -1,13 +1,5 @@
 #include "MaterialRegistry.h"
 
-std::vector<scree::MaterialData> scree::MaterialRegistry::materials;
-std::vector<std::string> scree::MaterialRegistry::tags;
-std::vector<scree::Reaction> scree::MaterialRegistry::reactions;
-std::vector<scree::Transition> scree::MaterialRegistry::transitions;
-std::vector<std::string> scree::MaterialRegistry::materialNames;
-std::unordered_map<std::string, scree::MaterialID> scree::MaterialRegistry::materialMap;
-std::unordered_map<std::string, scree::MaterialID> scree::MaterialRegistry::tagMap;
-
 namespace {
 	// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
 	// wraps instead of failing -- an initial lifespan of 300 would silently become 44.

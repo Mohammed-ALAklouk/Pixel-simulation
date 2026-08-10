@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "MaterialData.h"
 #include "fast_rand.h"
+#include "Block.h"
 
 namespace scree {
 	class MaterialRegistry {
@@ -20,17 +21,17 @@ namespace scree {
 		// the first entry in materials.v2.json by contract.
 		static constexpr MaterialID AIR_ID = 0;
 
-		static std::string LoadMaterials();
-		static std::string ParseMaterial(nlohmann::json& material);
-		static std::string ParseTags(nlohmann::json& data);
-		static std::string ValidateMaterials(nlohmann::json& data);
-		static std::string ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out);
-		static std::string ParseMovement(const nlohmann::json& material, scree::Movement& out);
-		static std::string ParseTags(const nlohmann::json& material, scree::MaterialData& out);
-		static std::string ParseLifespan(const nlohmann::json& material, scree::LifeSpan& out);
-		static std::string ParseReactions(const nlohmann::json& material, scree::MaterialData& out);
+		std::string LoadMaterials();
+		std::string ParseMaterial(nlohmann::json& material);
+		std::string ParseTags(nlohmann::json& data);
+		std::string ValidateMaterials(nlohmann::json& data);
+		std::string ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out);
+		std::string ParseMovement(const nlohmann::json& material, scree::Movement& out);
+		std::string ParseTags(const nlohmann::json& material, scree::MaterialData& out);
+		std::string ParseLifespan(const nlohmann::json& material, scree::LifeSpan& out);
+		std::string ParseReactions(const nlohmann::json& material, scree::MaterialData& out);
 
-		static void Clear() {
+		void Clear() {
 			materials.clear();
 			tags.clear();
 			reactions.clear();
@@ -41,15 +42,15 @@ namespace scree {
 		}
 
 
-		static const MaterialData& Get(MaterialID id) {
-			return materials[id];
+		const MaterialData& Get(MaterialID id) const {
+			return materials.at(id);
 		}
 
-		static int GetMaterialsCount() {
+		int GetMaterialsCount() const {
 			return static_cast<int>(materials.size());
 		}
 
-		static const Transition* PickTransition(TransitionsSpan span)
+		const Transition* PickTransition(TransitionsSpan span) const
 		{
 			if (span.totalWeight <= 0) return nullptr;
 
@@ -63,15 +64,15 @@ namespace scree {
 			return nullptr; // unreachable when total > 0
 		}
 
-		static const Reaction* GetReaction(int index) {
+		const Reaction* GetReaction(int index) const {
 			return &reactions[index];
 		}
 
-		static std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) {
+		std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) const {
 			return materials[id].tagData[tag].intensity;
 		}
 
-		static bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType)
+		bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType) const
 		{
 			if (targetType == Reaction::TargetType::Material)
 				return id == target;
@@ -79,17 +80,78 @@ namespace scree {
 				return GetTagIntensity(id, target);
 		}
 
-		static std::string GetName(MaterialID id) {
+		std::string GetName(MaterialID id) const {
 			return materialNames[id];
 		}
 
+		// Divides by steps-1 so the last step lands exactly on max; dividing by steps
+		// leaves max unreachable. One step means one shade, and that shade is min.
+		static RGB Random_step(const RGB& min, const RGB& max, uint16_t number_of_steps)
+		{
+			if (number_of_steps <= 1) return min;
+
+			int step = fast_rand() % number_of_steps;
+			return RGB::lerp(min, max, static_cast<float>(step) / (number_of_steps - 1));
+		}
+
+		// An Initial of 0 is accepted at load and would divide here, so guard it.
+		static float lifespan_ratio(std::uint8_t lifespan, std::uint8_t initial)
+		{
+			return initial ? static_cast<float>(lifespan) / initial : 0.0f;
+		}
+
+		Block CreateBlock(MaterialID id) const
+		{
+			auto& data = Get(id);
+			return Block(id, Random_step(data.minColor, data.maxColor, data.numberOfSteps));
+		}
+
+		bool Tick(Block& block) const
+		{
+			auto& data = materials.at(block.id);
+			if (block.lifespan < data.lifespanData.Tick) {
+				block.lifespan = 0;
+				return true;
+			}
+
+			block.lifespan -= data.lifespanData.Tick;
+			if (data.interpolateColor)
+				block.color = RGB::lerp(data.minColor, data.maxColor,
+					lifespan_ratio(block.lifespan, data.lifespanData.Initial));
+
+			return block.lifespan == 0;
+		}
+
+		void RecreateBlock(Block& block, MaterialID id, std::uint8_t lifespan) const
+		{
+			auto& data = Get(id);
+			if (block.id != id) {
+				block.color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+			}
+
+			block.id = id;
+			block.lifespan = lifespan;
+		}
+
+		void CreateBlock(Block& block, MaterialID id, std::uint8_t lifespan) const
+		{
+			auto& data = Get(id);
+			block.id = id;
+			block.lifespan = lifespan;
+			if (data.interpolateColor)
+				block.color = RGB::lerp(data.minColor, data.maxColor,
+					lifespan_ratio(lifespan, data.lifespanData.Initial));
+			else
+				block.color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+		}
+
 	private:
-		static std::vector<MaterialData> materials;
-		static std::vector<std::string> tags;
-		static std::vector<Reaction>   reactions;
-		static std::vector<Transition> transitions;
-		static std::vector<std::string> materialNames;
-		static std::unordered_map<std::string, MaterialID> materialMap;
-		static std::unordered_map<std::string, MaterialID> tagMap;
+		std::vector<MaterialData> materials;
+		std::vector<std::string> tags;
+		std::vector<Reaction>   reactions;
+		std::vector<Transition> transitions;
+		std::vector<std::string> materialNames;
+		std::unordered_map<std::string, MaterialID> materialMap;
+		std::unordered_map<std::string, MaterialID> tagMap;
 	};
 }

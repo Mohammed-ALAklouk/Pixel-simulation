@@ -1,6 +1,7 @@
 #pragma once
 #include "Chunk.h"
 #include "Block.h"
+#include "MaterialRegistry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -15,7 +16,7 @@ namespace scree
 	public:
 		Grid() = default;
 
-		inline void Create(std::uint16_t width, std::uint16_t height);
+		inline void Create(std::uint16_t width, std::uint16_t height, const MaterialRegistry* material_registry);
 		inline void Reset_proccessed() { std::fill(m_processed.begin(), m_processed.end(), false); }
 
 		inline Block& Get_at(std::uint16_t x, std::uint16_t y) ;
@@ -44,12 +45,23 @@ namespace scree
 		
 		inline void Clear()
 		{
-			for (auto& chunk : m_chunks)
-				chunk.Reset();
+			for (auto& chunk : m_chunks) {
+				for (size_t y = 0; y < CHUNK_SIZE; y++)
+				{
+					for (size_t x = 0; x < CHUNK_SIZE; x++)
+					{
+						chunk.Get_at(x, y) = m_material_registry->CreateBlock(MaterialRegistry::AIR_ID);
+					}
+				}
+
+				chunk.is_active = false;
+				chunk.is_active_next_frame = false;
+			}
 			std::fill(m_processed.begin(), m_processed.end(), false);
 		}
 
 	private:
+		const MaterialRegistry* m_material_registry = nullptr;
 		// Helper functions
 		int get_chunk_index(int x, int y)	const	{	return y * m_width_ch + x;	}
 		int get_chunk_index_from_pixel(int x, int y)	const { return get_chunk_index(x >> 5, y >> 5); }
@@ -67,8 +79,9 @@ namespace scree
 		int m_height_px = 0;
 	};
 
-	inline void Grid::Create(std::uint16_t width_px, std::uint16_t height_px)
+	inline void Grid::Create(std::uint16_t width_px, std::uint16_t height_px, const MaterialRegistry* material_registry)
 	{
+		m_material_registry = material_registry;
 		m_width_ch = ceil(width_px / float(CHUNK_SIZE));
 		m_height_ch = ceil(height_px / float(CHUNK_SIZE));
 
@@ -134,7 +147,8 @@ namespace scree
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x & 31;
 		std::uint16_t local_y = y & 31;
-		m_chunks[chunk_index].Recreate_at(local_x, local_y, id, lifespan);
+		auto& block = m_chunks[chunk_index].Get_at(local_x, local_y);
+		m_material_registry->RecreateBlock(block, id, lifespan);
 		set_chunk_active_at_pixel(x, y);
 	}
 
@@ -143,7 +157,8 @@ namespace scree
 		std::uint16_t chunk_index = get_chunk_index_from_pixel(x, y);
 		std::uint16_t local_x = x & 31;
 		std::uint16_t local_y = y & 31;
-		m_chunks[chunk_index].CreateAt(local_x, local_y, id, lifespan);
+		auto& block = m_chunks[chunk_index].Get_at(local_x, local_y);
+		m_material_registry->CreateBlock(block, id, lifespan);
 		set_chunk_active_at_pixel(x, y);
 	}
 

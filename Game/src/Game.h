@@ -40,7 +40,11 @@ namespace scree
 		Vector2 Grid_offset = Vector2{ 0.0f, 0.0f };
 		float TileSize = 1;
 		
+		// Declared before grid and simulation: both bind to it at construction, and
+		// member initialisation follows declaration order.
+		MaterialRegistry material_registry;
 		Grid grid;
+		Simulation simulation;
 		MaterialID SelectedMaterial = 0;
 
 		std::vector<Color> pixels;

@@ -6,8 +6,9 @@
 #include <ctime>
 
 scree::Game::Game()
+	: simulation(material_registry)
 {
-	material_load_error_message = MaterialRegistry::LoadMaterials();
+	material_load_error_message = material_registry.LoadMaterials();
 
 	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;
@@ -26,7 +27,7 @@ scree::Game::Game()
 	frame = Rectangle{ Grid_offset.x, Grid_offset.y,
 					   GridSize * TileSize, GridSize * TileSize };
 
-	grid.Create(GridSize, GridSize);	
+	grid.Create(GridSize, GridSize,  &material_registry);
 	srand(time(NULL));
 }
 
@@ -35,7 +36,7 @@ void scree::Game::update()
 	if (!paused)
 	{
 		for (size_t i = 0; i < updates_per_frame; i++)
-			Simulation::Update_grid(grid);
+			simulation.Update_grid(grid);
 	}
 }
 
@@ -128,21 +129,21 @@ void scree::Game::UI()
 			material_load_error_message = "";
 	}
 
-	for (int i = 0; i < MaterialRegistry::GetMaterialsCount(); i++)
+	for (int i = 0; i < material_registry.GetMaterialsCount(); i++)
 	{
 		MaterialID id = static_cast<MaterialID>(i);
-		if (ImGui::Button(MaterialRegistry::GetName(id).c_str()))
+		if (ImGui::Button(material_registry.GetName(id).c_str()))
 			SelectedMaterial = id;
 	}
 
-	ImGui::Text(MaterialRegistry::GetName(SelectedMaterial).c_str());
+	ImGui::Text(material_registry.GetName(SelectedMaterial).c_str());
 	auto mouse_pos = GetMousePosition();
 	mouse_pos.x -= Grid_offset.x;
 	mouse_pos.y -= Grid_offset.y;
 	if (grid.Is_in_bounds(mouse_pos.x, mouse_pos.y))
 	{
 		auto tile = grid.Get_at(mouse_pos.x, mouse_pos.y);
-		ImGui::Text("Pixel under mouse %s", MaterialRegistry::GetName(tile.id).c_str());
+		ImGui::Text("Pixel under mouse %s", material_registry.GetName(tile.id).c_str());
 	}
 
 
@@ -154,7 +155,7 @@ void scree::Game::UI()
 	ImGui::Checkbox("Pause", &paused);
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 	if (ImGui::Button("Reload material file"))
-		material_load_error_message = MaterialRegistry::LoadMaterials();
+		material_load_error_message = material_registry.LoadMaterials();
 
 	ImGui::Checkbox("Show active chunks", &show_active_chunks);
 	ImGui::Checkbox("Show benchmarks", &show_bench_marks);
@@ -214,7 +215,9 @@ void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 			if (x * x + y * y < radiusSquared && 
 				(material == MaterialRegistry::AIR_ID || grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID))
 			{
-					grid.Set_at(world_x, world_y, Block::Create(material));
+				auto& tile = grid.Get_at(world_x, world_y);
+				grid.Set_at(world_x, world_y, material_registry.CreateBlock(material));
+				
 			}
 		}
 
