@@ -41,25 +41,61 @@ std::string scree::MaterialRegistry::LoadMaterials()
 		return "[Error] Failed to parse materials.json: " + std::string(e.what()) + "\n";
 	}
 
+	// Tags have to exist before any material is parsed -- ParseTags(material, out) looks
+	// every tag up in tagMap and reports an unknown tag otherwise.
 	error_message += ParseTags(data);
+
+	// Air is not in materials.json because the simulation cannot run without it. Its name
+	// is registered before ValidateMaterials so that id 0 is taken, the ids handed out to
+	// file materials start at 1, and a stray "Air" entry in the file is caught as a
+	// duplicate. The name has to match the one file transitions refer to.
+	std::string airStr = R"({
+		"name": "Air",
+		"movement": {
+			"y_direction": 1,
+			"density": 0,
+			"scatter_chance": 0,
+			"can_fall": false,
+			"can_cascade": false,
+			"is_fluid": true,
+			"is_liquid": false
+		},
+		"tags": {},
+		"inert": true,
+		"interpolate_color": false,
+		"color_min": [0, 0, 0],
+		"color_max": [0, 0, 0],
+		"steps": 1
+	})";
+	nlohmann::json airJSON = nlohmann::json::parse(airStr);
+	materialNames.push_back(airJSON["name"].get<std::string>());
+	materialMap[airJSON["name"].get<std::string>()] = AIR_ID;
+
 	error_message += ValidateMaterials(data);
+	error_message += ParseMaterial(airJSON);
 
 	for (auto& material: data["materials"])
 	{
 		if(!material["valid"])
 			continue;
 
-		MaterialData inMaterial{};
-		error_message += ParseIntrensics(material, inMaterial);		
-		error_message += ParseMovement(material, inMaterial.movement);
-		error_message += ParseTags(material, inMaterial);
-		error_message += ParseLifespan(material, inMaterial.lifespanData);
-		error_message += ParseReactions(material, inMaterial);
-
-		
-
-		materials.push_back(inMaterial);
+		error_message += ParseMaterial(material);
 	}
+	return error_message;
+}
+
+std::string scree::MaterialRegistry::ParseMaterial(nlohmann::json& material)
+{
+	// TO DO: Make sure invalid materials are not pushed to the materials vector
+	std::string error_message = "";
+	MaterialData inMaterial{};
+	error_message += ParseIntrensics(material, inMaterial);
+	error_message += ParseMovement(material, inMaterial.movement);
+	error_message += ParseTags(material, inMaterial);
+	error_message += ParseLifespan(material, inMaterial.lifespanData);
+	error_message += ParseReactions(material, inMaterial);
+	materials.push_back(inMaterial);
+
 	return error_message;
 }
 
@@ -92,7 +128,7 @@ std::string scree::MaterialRegistry::ParseTags(nlohmann::json& data)
 std::string scree::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 {
 	std::string error_message = "";
-	int index = 0;
+	int index = 1;
 	bool overflow_reported = false;
 	for (auto& material : data["materials"]) {
 		bool ok = true;

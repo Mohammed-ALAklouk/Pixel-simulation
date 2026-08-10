@@ -21,6 +21,7 @@ namespace scree {
 		static constexpr MaterialID AIR_ID = 0;
 
 		static std::string LoadMaterials();
+		static std::string ParseMaterial(nlohmann::json& material);
 		static std::string ParseTags(nlohmann::json& data);
 		static std::string ValidateMaterials(nlohmann::json& data);
 		static std::string ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out);
