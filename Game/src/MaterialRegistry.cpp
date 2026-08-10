@@ -433,6 +433,7 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 
 				reaction.targetType = Reaction::TargetType::Material;
 				reaction.TargetID = materialMap[targetName];
+				reaction.Chance = ClampField(reactionData.value("chance", 100), 0, 100, "reaction chance", id);
 			}
 			else if (targetType == "tag") {
 				if (tagMap.find(targetName) == tagMap.end()) {
@@ -462,7 +463,6 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 				}
 			}
 
-			reaction.Chance = ClampField(reactionData.value("chance", 100), 0, 100, "reaction chance", id);
 			reaction.HaltUpdate = reactionData.value("halt_update", false);
 		}
 		catch (const nlohmann::json::exception& e) {
