@@ -317,7 +317,7 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 			logs.push_back(Log::CreateWrongType(id, GetName(id), "lifespan.on_death", "expected an array"));
 			return;
 		}
-		inJSON_Count = lifespan["on_death"].size();
+		inJSON_Count = static_cast<int>(lifespan["on_death"].size());
 
 		if (inJSON_Count == 0) {
 			logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
@@ -391,9 +391,9 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 	// without operator[] inserting a null into the DOM.
 	static const nlohmann::json emptyArray = nlohmann::json::array();
 
-	out.reactionSpan.start = reactions.size();
+	out.reactionSpan.start = static_cast<std::uint16_t>(reactions.size());
 	out.reactionSpan.count = 0;
-	int reactionCount = material["reactions"].size();
+	int reactionCount = static_cast<int>(material["reactions"].size());
 	for (int i = 0; i < reactionCount; ++i) {
 		const auto& reactionData = material["reactions"][i];
 		Reaction reaction;
@@ -470,7 +470,7 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 			continue;
 		}
 
-		reaction.TargetTransitionsSpan.start = transitions.size();
+		reaction.TargetTransitionsSpan.start = static_cast<std::uint16_t>(transitions.size());
 		reaction.TargetTransitionsSpan.count = 0;
 		reaction.TargetTransitionsSpan.totalWeight = 0;
 		const auto& targetTransitions = reactionData.contains("target_transitions") ? reactionData["target_transitions"] : emptyArray;
@@ -524,7 +524,7 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 		}
 
 
-		reaction.SelfTransitionsSpan.start = transitions.size();
+		reaction.SelfTransitionsSpan.start = static_cast<std::uint16_t>(transitions.size());
 		reaction.SelfTransitionsSpan.count = 0;
 		reaction.SelfTransitionsSpan.totalWeight = 0;
 
