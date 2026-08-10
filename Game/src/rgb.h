@@ -42,6 +42,21 @@ namespace scree {
 				static_cast<std::uint8_t>(b * scalar));
 		}
 
+		// The sign of (max - min) carries the direction, so a channel where min > max
+		// descends. RGB's own operators can't be used here -- they saturate at 0 and would
+		// flatten such a channel instead. The result is clamped rather than left to RGB's
+		// uint8_t constructor, which wraps modularly: a t above 1 would turn 310 into 54.
+		static RGB lerp(const RGB& min, const RGB& max, float t)
+		{
+			t = std::clamp(t, 0.0f, 1.0f);
+			int r = int(min.r) + static_cast<int>((int(max.r) - int(min.r)) * t);
+			int g = int(min.g) + static_cast<int>((int(max.g) - int(min.g)) * t);
+			int b = int(min.b) + static_cast<int>((int(max.b) - int(min.b)) * t);
+			return RGB(static_cast<std::uint8_t>(std::clamp(r, 0, 255)),
+				static_cast<std::uint8_t>(std::clamp(g, 0, 255)),
+				static_cast<std::uint8_t>(std::clamp(b, 0, 255)));
+		}
+
 	private:
 		static const std::uint8_t add(std::uint8_t a, std::uint8_t b) {
 			return static_cast<std::uint8_t>(std::min(a + b, 255));
