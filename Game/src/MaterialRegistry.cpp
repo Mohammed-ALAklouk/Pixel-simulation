@@ -187,6 +187,11 @@ void scree::MaterialRegistry::ParseMovement(const nlohmann::json& material, Mate
 		// Y_direction is used as a grid offset, so anything outside -1..1 would step over
 		// neighbouring tiles.
 		out.Y_direction = ClampField(movement.value("y_direction", 1), -1, 1, "y_direction", id);
+		if (out.Y_direction == 0) {
+			out.Y_direction = 1;
+			logs.push_back(Log::CreateOutOfRange(id, GetName(id), "y_direction", 0, -1, 1));
+		}
+
 		out.density = ClampField(movement.value("density", 0), 0, 255, "density", id);
 		out.scatter_chance = ClampField(movement.value("scatter_chance", 0), 0, 100, "scatter_chance", id);
 		out.can_fall = movement.value("can_fall", false);
