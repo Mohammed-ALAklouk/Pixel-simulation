@@ -17,7 +17,7 @@ namespace scree
 		Grid() = default;
 
 		inline void Create(std::uint16_t width, std::uint16_t height, const MaterialRegistry* material_registry);
-		inline void Reset_proccessed() { std::fill(m_processed.begin(), m_processed.end(), false); }
+		inline void Reset_processed() { std::fill(m_processed.begin(), m_processed.end(), false); }
 
 		inline Block& Get_at(std::uint16_t x, std::uint16_t y) ;
 		inline int Get_width_px() const { return m_width_px; }

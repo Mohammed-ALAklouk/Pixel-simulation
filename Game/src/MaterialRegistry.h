@@ -29,7 +29,7 @@ namespace scree {
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);
 		void ValidateMaterials(nlohmann::json& data);
-		void ParseIntrensics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
+		void ParseIntrinsics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
 		void ParseMovement(const nlohmann::json& material, MaterialID id, scree::Movement& out);
 		void ParseTags(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
 		void ParseLifespan(const nlohmann::json& material, MaterialID id, scree::LifeSpan& out);
@@ -64,19 +64,19 @@ namespace scree {
 			int roll = fast_rand() % span.totalWeight;
 			for (int i = 0; i < span.count; ++i)
 			{
-				roll -= transitions[span.start + i].weight;
+				roll -= transitions.at(span.start + i).weight;
 				if (roll < 0)
-					return &transitions[span.start + i];
+					return &transitions.at(span.start + i);
 			}
 			return nullptr; // unreachable when total > 0
 		}
 
 		const Reaction* GetReaction(int index) const {
-			return &reactions[index];
+			return &reactions.at(index);
 		}
 
 		std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) const {
-			return materials[id].tagData[tag].intensity;
+			return materials.at(id).tagData.at(tag).intensity;
 		}
 
 		bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType) const
@@ -87,8 +87,8 @@ namespace scree {
 				return GetTagIntensity(id, target);
 		}
 
-		std::string GetName(MaterialID id) const {
-			return materialNames[id];
+		const std::string& GetName(MaterialID id) const {
+			return materialNames.at(id);
 		}
 
 		// Divides by steps-1 so the last step lands exactly on max; dividing by steps

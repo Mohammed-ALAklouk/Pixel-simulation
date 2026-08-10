@@ -2,13 +2,13 @@
 
 void scree::Simulation::Update_grid(Grid& grid)
 {
-	grid.Reset_proccessed();
+	grid.Reset_processed();
 	grid.Mark_chunks_for_next_update();
-	Update_grid_drectional(grid, 1);
-	Update_grid_drectional(grid, -1);
+	Update_grid_directional(grid, 1);
+	Update_grid_directional(grid, -1);
 }
 
-void scree::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
+void scree::Simulation::Update_grid_directional(Grid& grid, int gravityDirection)
 {
 	int y_increment = gravityDirection == 1 ? -1 : 1;
 	int y_start = y_increment == 1 ? 0 : grid.Get_height_px() - 1;
@@ -80,7 +80,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 				if (m_registry.CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) {
 					int chance = reaction->Chance;
 					if (reaction->targetType == Reaction::TargetType::Tag) 
-						chance = m_registry.Get(checked_tile.id).tagData[reaction->TargetID].intensity;
+						chance = m_registry.Get(checked_tile.id).tagData.at(reaction->TargetID).intensity;
 
 					if (fast_rand() % 101 >= chance)	continue;
 					hasReacted = true;
@@ -122,8 +122,8 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 	
 	// Anchor tiles
 	for (int i = 0; i < MAX_TAGS; i++) {
-		if (tile_material.tagData[i].isAnchor) {
-			std::vector<Vec2i> directions = { {0, -gravityDirection}, {1, 0}, {-1, 0}, {0, gravityDirection}};
+		if (tile_material.tagData.at(i).isAnchor) {
+			std::array<Vec2i, 4> directions = { {{0, -gravityDirection}, {1, 0}, {-1, 0}, {0, gravityDirection}} };
 
 			for (auto dir : directions) {
 				int next_x = x + dir.x;
@@ -131,7 +131,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 				if (grid.Is_in_bounds(next_x, next_y)) {
 					auto& checked_tile = grid.Get_at(next_x, next_y);
 					auto& checked_tile_material = m_registry.Get(checked_tile.id);
-					if (checked_tile_material.tagData[i].intensity) {
+					if (checked_tile_material.tagData.at(i).intensity) {
 						return; // Found an anchor tile nearby, do not move
 					}
 				}

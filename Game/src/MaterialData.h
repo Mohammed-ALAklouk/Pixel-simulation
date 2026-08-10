@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <array>
 #include <string>
 #include <cstdint>
 #include "rgb.h"
@@ -110,6 +110,6 @@ namespace scree
 		RGB maxColor = {255, 0, 255};
 		std::uint8_t numberOfSteps = 1;	// random colour steps, used when not interpolating
 
-		TagData tagData[MAX_TAGS];	// indexed by tag id
+		std::array<TagData, MAX_TAGS> tagData;	// indexed by tag id
 	};
 }

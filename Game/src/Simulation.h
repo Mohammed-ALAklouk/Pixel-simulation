@@ -16,7 +16,7 @@ namespace scree
 			: m_registry(material_registry) {}
 
 		void Update_grid(Grid& grid);
-		void Update_grid_drectional(Grid& grid, int gravityDirection);
+		void Update_grid_directional(Grid& grid, int gravityDirection);
 		void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
 		bool update_pixel_lifespan(Grid& grid, Block& tile, int x, int y);
 		void update_pixel_reaction(Grid& grid, Block& tile, int x, int y);

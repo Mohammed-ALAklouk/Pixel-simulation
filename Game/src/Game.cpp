@@ -77,7 +77,7 @@ void scree::Game::render()
 	EndDrawing();
 }
 
-void scree::Game::proccessInputs()
+void scree::Game::processInputs()
 {
 	float mouse_wheel = GetMouseWheelMove();
 	cursor_radius += mouse_wheel;
@@ -126,7 +126,7 @@ void scree::Game::UI()
 	ImGui::Begin("Material menu");
 	
 	if (material_load_error_message != "") {
-		ImGui::Text(material_load_error_message.c_str());
+		ImGui::Text("%s", material_load_error_message.c_str());
 		if (ImGui::Button("Clear error message"))
 			material_load_error_message = "";
 	}
@@ -138,7 +138,7 @@ void scree::Game::UI()
 			SelectedMaterial = id;
 	}
 
-	ImGui::Text(material_registry.GetName(SelectedMaterial).c_str());
+	ImGui::Text("%s", material_registry.GetName(SelectedMaterial).c_str());
 	auto mouse_pos = GetMousePosition();
 	mouse_pos.x -= Grid_offset.x;
 	mouse_pos.y -= Grid_offset.y;
@@ -168,11 +168,11 @@ void scree::Game::UI()
 	{
 		ImGui::Begin("BenchMarks");
 
-		ImGui::Text(("FPS: " + std::to_string(1.0f / delta)).c_str());
-		ImGui::Text(("Update time: " + std::to_string(update_time)).c_str());
-		ImGui::Text(("Input time: " + std::to_string(input_time)).c_str());
-		ImGui::Text(("UI time: " + std::to_string(UI_time)).c_str());
-		ImGui::Text(("Render time: " + std::to_string(render_time)).c_str());
+		ImGui::Text("FPS: %f", 1.0f / delta);
+		ImGui::Text("Update time: %f", update_time);
+		ImGui::Text("Input time: %f", input_time);
+		ImGui::Text("UI time: %f", UI_time);
+		ImGui::Text("Render time: %f", render_time);
 		
 		ImGui::End();
 	}
@@ -186,7 +186,7 @@ void scree::Game::run()
 	while (!WindowShouldClose())
 	{	
 		bench_clock = std::chrono::high_resolution_clock::now();
-		proccessInputs();
+		processInputs();
 		input_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
 
 		UI_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - bench_clock).count();
@@ -235,6 +235,7 @@ bool scree::Game::load_materials()
 		auto remap = get_registry_changes(new_registry);
 		material_registry = std::move(new_registry);
 		grid.Remap(remap);
+		SelectedMaterial = MaterialRegistry::AIR_ID;
 	}
 	
 	return success;

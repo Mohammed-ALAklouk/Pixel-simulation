@@ -25,7 +25,7 @@ namespace scree
 		
 		void update();
 		void render();
-		void proccessInputs();
+		void processInputs();
 		void UI();
 		void run();
 		void draw_cursor(Vector2 pos, MaterialID material);

@@ -87,7 +87,7 @@ void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID
 	const std::size_t logStart = logs.size();
 
 	MaterialData inMaterial{};
-	ParseIntrensics(material, id, inMaterial);
+	ParseIntrinsics(material, id, inMaterial);
 	ParseMovement(material, id, inMaterial.movement);
 	ParseTags(material, id, inMaterial);
 	ParseLifespan(material, id, inMaterial.lifespanData);
@@ -240,7 +240,7 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 	}
 }
 
-void scree::MaterialRegistry::ParseIntrensics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)
+void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)
 {
 	try {
 		out.inert = material.value("inert", false);
@@ -290,7 +290,7 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	}
 
 	TransitionsSpan onDeathSpan = {
-		transitions.size(),
+		std::uint16_t(transitions.size()),
 		0,
 		0
 	};
