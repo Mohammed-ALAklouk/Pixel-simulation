@@ -51,12 +51,17 @@ void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirect
 		return;
 	}
 
-	update_pixel_reaction(grid, tile, x, y);
+	if (update_pixel_reaction(grid, tile, x, y))
+	{
+		grid.set_processed(x, y);
+		return;
+	}
+
 	update_pixel_movement(grid, tile, x, y);
 	grid.set_processed(x, y);
 }
 
-void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
+bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
 {
 	auto&& tile_material = m_registry.Get(tile.id);
 	int start_index = tile_material.reactionSpan.start;
@@ -83,7 +88,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 					if (reaction->targetType == Reaction::TargetType::Tag) 
 						chance = m_registry.Get(checked_tile.id).tagData.at(reaction->TargetID).intensity;
 
-					if (fast_rand() % 101 >= chance)	continue;
+					if (fast_rand() % 100 >= chance)	continue;
 					hasReacted = true;
 					const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
 					const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
@@ -94,18 +99,26 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
 							lifespan = tile_cpy.lifespan;
 
+						// Only the neighbour changes here, so tile_material and the span
+						// this loop is walking are both still correct. set_processed keeps
+						// the rewritten neighbour from being updated again this frame.
 						grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
 						grid.set_processed(next_x, next_y);
 					}
 
 					if (selfTransition && !selfTransition->noTransition) {
-						std::uint8_t lifespan = tile.lifespan;
+						std::uint8_t lifespan = tile_cpy.lifespan;
 						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
 						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
 							lifespan = checked_tile.lifespan;
 
+						// The tile is a different material from here on: tile_material, the
+						// reaction span this loop is walking, and the Y_direction that
+						// picked this gravity pass all describe the old one. Stop rather
+						// than keep firing the old material's reactions on the new one.
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
+						return true;
 					}
 
 					if (reaction->sample == Reaction::Sample::FirstToReact)
@@ -114,8 +127,13 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 			}
 		}
 
-		if (reaction->HaltUpdate && hasReacted) return;
+		// Note this stops the scan but still lets movement run, which contradicts
+		// MaterialData.h's "AND skip movement this tick". Left as-is: changing it is a
+		// behaviour change, not part of the stale-material fix.
+		if (reaction->HaltUpdate && hasReacted) return false;
 	}
+
+	return false;
 }
 
 void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y) {

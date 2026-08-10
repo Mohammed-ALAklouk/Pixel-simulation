@@ -111,7 +111,9 @@ namespace scree {
 		Block CreateBlock(MaterialID id) const
 		{
 			auto& data = Get(id);
-			return Block(id, Random_step(data.minColor, data.maxColor, data.numberOfSteps));
+			std::uint8_t lifespan = data.lifespanData.Initial;
+			RGB color = data.interpolateColor ? RGB::lerp(data.minColor, data.maxColor, lifespan_ratio(lifespan, data.lifespanData.Initial)) : Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+			return Block(id, color, lifespan);
 		}
 
 		bool Tick(Block& block) const
