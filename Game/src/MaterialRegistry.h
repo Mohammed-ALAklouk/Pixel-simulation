@@ -32,6 +32,11 @@ namespace scree {
 		void ParseTags(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
 		void ParseLifespan(const nlohmann::json& material, MaterialID id, scree::LifeSpan& out);
 		void ParseReactions(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
+		// Pushes into transitions and returns the span covering what it added. Label prefixes
+		// every error, e.g. "reaction target transition". allowReactorAndSelf is false for
+		// on_death, where neither base means anything and the result is always Initial.
+		TransitionsSpan ParseTransitionSpan(const nlohmann::json& array, MaterialID id,
+			const std::string& label, bool allowReactorAndSelf);
 
 		const std::vector<Log>& GetLogs() const { return logs; }
 

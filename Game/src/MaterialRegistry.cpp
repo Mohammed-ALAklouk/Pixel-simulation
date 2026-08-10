@@ -298,6 +298,74 @@ void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, Ma
 	}
 }
 
+scree::TransitionsSpan scree::MaterialRegistry::ParseTransitionSpan(const nlohmann::json& array,
+	MaterialID id, const std::string& label, bool allowReactorAndSelf)
+{
+	TransitionsSpan span = { static_cast<std::uint16_t>(transitions.size()), 0, 0 };
+
+	for (const auto& transitionData : array) {
+		Transition transition;
+
+		try {
+			transition.noTransition = transitionData.value("no_transition", false);
+			if (!transition.noTransition) {
+				if (!transitionData.contains("material")) {
+					logs.push_back(Log::CreateMissingField(id, GetName(id), label + " material"));
+					continue;
+				}
+
+				else if (materialMap.find(transitionData["material"]) == materialMap.end()) {
+					logs.push_back(Log::CreateUnknownReference(id, GetName(id), label + " material",
+						transitionData["material"].get<std::string>()));
+					continue;
+				}
+
+				transition.nextID = materialMap[transitionData["material"]];
+
+				auto lifespanBaseStr = transitionData.value("lifespan_base", "initial");
+				if (!allowReactorAndSelf) {
+					if (lifespanBaseStr == "self") {
+						logs.push_back(Log::CreateNotAllowed(id, GetName(id), label + " lifespan_base",
+							lifespanBaseStr, "the material is gone by the time it is read"));
+					}
+					else if (lifespanBaseStr == "reactor") {
+						logs.push_back(Log::CreateNotAllowed(id, GetName(id), label + " lifespan_base",
+							lifespanBaseStr, "an on_death transition has no reactor"));
+					}
+				}
+				else if (lifespanBaseStr == "self")
+					transition.lifespanBase = Transition::LifeSpanBase::Self;
+				else if (lifespanBaseStr == "reactor")
+					transition.lifespanBase = Transition::LifeSpanBase::Reactor;
+				else if (lifespanBaseStr == "initial")
+					transition.lifespanBase = Transition::LifeSpanBase::Initial;
+				else {
+					logs.push_back(Log::CreateUnknownReference(id, GetName(id),
+						label + " lifespan_base", lifespanBaseStr));
+					continue;
+				}
+			}
+
+			if (!transitionData.contains("weight")) {
+				logs.push_back(Log::CreateMissingField(id, GetName(id), label + " weight"));
+				continue;
+			}
+
+			transition.weight = ClampField(transitionData["weight"], 0, 255, label + " weight", id);
+		}
+		catch (const nlohmann::json::exception& e) {
+			logs.push_back(Log::CreateWrongType(id, GetName(id), label + " field", e.what()));
+			continue;
+		}
+
+		transitions.push_back(transition);
+		span.count++;
+		span.totalWeight += transition.weight;
+	}
+
+	return span;
+}
+
 void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, MaterialID id, scree::LifeSpan& out)
 {
 	if (!material.contains("lifespan")) return;
@@ -319,83 +387,27 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	out.Initial = initial;
 	out.Tick = tick;
 
-	TransitionsSpan onDeathSpan = {
-		std::uint16_t(transitions.size()),
-		0,
-		0
-	};
+	// A material that never ticks never dies, so on_death is only read when it does.
+	if (tick == 0) return;
 
-	int inJSON_Count = 0;
-
-	if (tick > 0) {
-		if (!lifespan.contains("on_death")) {
-			logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
-				"absent, and the lifespan ticks"));
-			return;
-		}
-
-		if (!lifespan["on_death"].is_array()) {
-			logs.push_back(Log::CreateWrongType(id, GetName(id), "lifespan.on_death", "expected an array"));
-			return;
-		}
-		inJSON_Count = static_cast<int>(lifespan["on_death"].size());
-
-		if (inJSON_Count == 0) {
-			logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
-				"empty, and the lifespan ticks"));
-			return;
-		}
+	if (!lifespan.contains("on_death")) {
+		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
+			"absent, and the lifespan ticks"));
+		return;
 	}
 
-	for (int i = 0; i < inJSON_Count; ++i) {
-		const auto& transitionData = lifespan["on_death"][i];
-		Transition transition;
-
-		try {
-			transition.noTransition = transitionData.value("no_transition", false);
-			if (!transition.noTransition) {
-				if (!transitionData.contains("material")) {
-					logs.push_back(Log::CreateMissingField(id, GetName(id), "on_death transition material"));
-					continue;
-				}
-
-				else if (materialMap.find(transitionData["material"]) == materialMap.end()) {
-					logs.push_back(Log::CreateUnknownReference(id, GetName(id), "on_death transition material",
-						transitionData["material"].get<std::string>()));
-					continue;
-				}
-
-				transition.nextID = materialMap[transitionData["material"]];
-
-				auto lifespanBaseStr = transitionData.value("lifespan_base", "initial");
-				if (lifespanBaseStr == "self") {
-					logs.push_back(Log::CreateNotAllowed(id, GetName(id), "on_death transition lifespan_base",
-						lifespanBaseStr, "the material is gone by the time it is read"));
-				}
-				else if (lifespanBaseStr == "reactor") {
-					logs.push_back(Log::CreateNotAllowed(id, GetName(id), "on_death transition lifespan_base",
-						lifespanBaseStr, "an on_death transition has no reactor"));
-				}
-			}
-
-			if (!transitionData.contains("weight")) {
-				logs.push_back(Log::CreateMissingField(id, GetName(id), "on_death transition weight"));
-				continue;
-			}
-
-			transition.weight = ClampField(transitionData["weight"], 0, 255, "on_death transition weight", id);
-		}
-		catch (const nlohmann::json::exception& e) {
-			logs.push_back(Log::CreateWrongType(id, GetName(id), "an on_death transition field", e.what()));
-			continue;
-		}
-
-		transitions.push_back(transition);
-		onDeathSpan.count++;
-		onDeathSpan.totalWeight += transition.weight;
+	if (!lifespan["on_death"].is_array()) {
+		logs.push_back(Log::CreateWrongType(id, GetName(id), "lifespan.on_death", "expected an array"));
+		return;
 	}
 
-	out.OnDeathTransitionSpan = onDeathSpan;
+	if (lifespan["on_death"].empty()) {
+		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
+			"empty, and the lifespan ticks"));
+		return;
+	}
+
+	out.OnDeathTransitionSpan = ParseTransitionSpan(lifespan["on_death"], id, "on_death transition", false);
 }
 
 void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)
@@ -490,117 +502,15 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 			continue;
 		}
 
-		reaction.TargetTransitionsSpan.start = static_cast<std::uint16_t>(transitions.size());
-		reaction.TargetTransitionsSpan.count = 0;
-		reaction.TargetTransitionsSpan.totalWeight = 0;
 		const auto& targetTransitions = reactionData.contains("target_transitions") ? reactionData["target_transitions"] : emptyArray;
-		for (const auto& transitionData : targetTransitions) {
-			Transition transition;
-
-			try {
-				transition.noTransition = transitionData.value("no_transition", false);
-				if (!transition.noTransition) {
-					if (!transitionData.contains("material")) {
-						logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction target transition material"));
-						continue;
-					}
-					else if (materialMap.find(transitionData["material"]) == materialMap.end()) {
-						logs.push_back(Log::CreateUnknownReference(id, GetName(id), "reaction target transition material",
-							transitionData["material"].get<std::string>()));
-						continue;
-					}
-
-					transition.nextID = materialMap[transitionData["material"]];
-
-					auto lifespanBaseStr = transitionData.value("lifespan_base", "initial");
-					if (lifespanBaseStr == "self")
-						transition.lifespanBase = Transition::LifeSpanBase::Self;
-					else if (lifespanBaseStr == "reactor")
-						transition.lifespanBase = Transition::LifeSpanBase::Reactor;
-					else if (lifespanBaseStr == "initial")
-						transition.lifespanBase = Transition::LifeSpanBase::Initial;
-					else {
-						logs.push_back(Log::CreateUnknownReference(id, GetName(id),
-							"reaction target transition lifespan_base", lifespanBaseStr));
-						continue;
-					}
-				}
-
-				if (!transitionData.contains("weight")) {
-					logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction target transition weight"));
-					continue;
-				}
-
-				transition.weight = ClampField(transitionData["weight"], 0, 255, "reaction target transition weight", id);
-			}
-			catch (const nlohmann::json::exception& e) {
-				logs.push_back(Log::CreateWrongType(id, GetName(id), "a reaction target transition field", e.what()));
-				continue;
-			}
-
-			transitions.push_back(transition);
-			reaction.TargetTransitionsSpan.count++;
-			reaction.TargetTransitionsSpan.totalWeight += transition.weight;
-		}
-
-
-		reaction.SelfTransitionsSpan.start = static_cast<std::uint16_t>(transitions.size());
-		reaction.SelfTransitionsSpan.count = 0;
-		reaction.SelfTransitionsSpan.totalWeight = 0;
+		reaction.TargetTransitionsSpan = ParseTransitionSpan(targetTransitions, id, "reaction target transition", true);
 
 		const auto& selfTransitions = reactionData.contains("self_transitions") ? reactionData["self_transitions"] : emptyArray;
-		for (const auto& transitionData : selfTransitions) {
-			Transition transition;
-
-			try {
-				transition.noTransition = transitionData.value("no_transition", false);
-				if (!transition.noTransition) {
-					if (!transitionData.contains("material")) {
-						logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction self transition material"));
-						continue;
-					}
-					else if (materialMap.find(transitionData["material"]) == materialMap.end()) {
-						logs.push_back(Log::CreateUnknownReference(id, GetName(id), "reaction self transition material",
-							transitionData["material"].get<std::string>()));
-						continue;
-					}
-
-					transition.nextID = materialMap[transitionData["material"]];
-
-					auto lifespanBaseStr = transitionData.value("lifespan_base", "initial");
-					if (lifespanBaseStr == "self")
-						transition.lifespanBase = Transition::LifeSpanBase::Self;
-					else if (lifespanBaseStr == "reactor")
-						transition.lifespanBase = Transition::LifeSpanBase::Reactor;
-					else if (lifespanBaseStr == "initial")
-						transition.lifespanBase = Transition::LifeSpanBase::Initial;
-					else {
-						logs.push_back(Log::CreateUnknownReference(id, GetName(id),
-							"reaction self transition lifespan_base", lifespanBaseStr));
-						continue;
-					}
-				}
-
-				if (!transitionData.contains("weight")) {
-					logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction self transition weight"));
-					continue;
-				}
-
-				transition.weight = ClampField(transitionData["weight"], 0, 255, "reaction self transition weight", id);
-			}
-			catch (const nlohmann::json::exception& e) {
-				logs.push_back(Log::CreateWrongType(id, GetName(id), "a reaction self transition field", e.what()));
-				continue;
-			}
-
-			transitions.push_back(transition);
-			reaction.SelfTransitionsSpan.count++;
-			reaction.SelfTransitionsSpan.totalWeight += transition.weight;
-		}
+		reaction.SelfTransitionsSpan = ParseTransitionSpan(selfTransitions, id, "reaction self transition", true);
 
 		if (reaction.TargetTransitionsSpan.count == 0 && reaction.SelfTransitionsSpan.count == 0) {
 			logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction transitions",
-				"present, but no entry parsed"));
+				"empty after parsing"));
 			continue;
 		}
 
