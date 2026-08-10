@@ -88,10 +88,10 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 					const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
 					if (targetTransition && !targetTransition->noTransition) {
 						std::uint8_t lifespan = checked_tile.lifespan;
-						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial) 
+						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
-						else 
-							lifespan = tile.lifespan;
+						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
+							lifespan = checked_tile.lifespan;
 
 						grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
 						grid.set_processed(next_x, next_y);
@@ -101,8 +101,9 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						std::uint8_t lifespan = tile.lifespan;
 						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
-						else
-							lifespan = checked_tile.lifespan;
+						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
+							lifespan = tile.lifespan;
+
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
 					}
 
