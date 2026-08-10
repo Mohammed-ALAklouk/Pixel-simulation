@@ -104,7 +104,6 @@ namespace scree
 		Span reactionSpan;
 		LifeSpan lifespanData;
 
-		bool inert = false;					// skip the update entirely (air)
 		bool interpolateColor = false;		// colour from lifespan: minColor at 0, maxColor at Initial
 		RGB minColor = {255, 0, 255};
 		RGB maxColor = {255, 0, 255};

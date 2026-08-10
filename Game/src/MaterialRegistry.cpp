@@ -106,10 +106,8 @@ void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID
 	// name, so this slot has to be filled either way -- skipping the push would shift
 	// every later material away from the name it was assigned. A rejected entry becomes
 	// inert instead, which leaves it visible in the UI and ignored by the simulation.
-	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) {
-		materials.push_back(MaterialData{ .inert = true });
+	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) 
 		return;
-	}
 
 	materials.push_back(inMaterial);
 }
@@ -252,7 +250,6 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)
 {
 	try {
-		out.inert = material.value("inert", false);
 		out.interpolateColor = material.value("interpolate_color", false);
 
 		// A short array converts without complaint, so the size has to be checked before
