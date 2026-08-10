@@ -7,7 +7,7 @@
 #include <array>
 #include <cstdint>
 
-namespace PS
+namespace scree
 {
 	class Simulation
 	{

@@ -1,12 +1,12 @@
 #include "MaterialRegistry.h"
 
-std::vector<PS::MaterialData> PS::MaterialRegistry::materials;
-std::vector<std::string> PS::MaterialRegistry::tags;
-std::vector<PS::Reaction> PS::MaterialRegistry::reactions;
-std::vector<PS::Transition> PS::MaterialRegistry::transitions;
-std::vector<std::string> PS::MaterialRegistry::materialNames;
-std::unordered_map<std::string, PS::MaterialID> PS::MaterialRegistry::materialMap;
-std::unordered_map<std::string, PS::MaterialID> PS::MaterialRegistry::tagMap;
+std::vector<scree::MaterialData> scree::MaterialRegistry::materials;
+std::vector<std::string> scree::MaterialRegistry::tags;
+std::vector<scree::Reaction> scree::MaterialRegistry::reactions;
+std::vector<scree::Transition> scree::MaterialRegistry::transitions;
+std::vector<std::string> scree::MaterialRegistry::materialNames;
+std::unordered_map<std::string, scree::MaterialID> scree::MaterialRegistry::materialMap;
+std::unordered_map<std::string, scree::MaterialID> scree::MaterialRegistry::tagMap;
 
 namespace {
 	// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
@@ -23,7 +23,7 @@ namespace {
 	}
 }
 
-std::string PS::MaterialRegistry::LoadMaterials()
+std::string scree::MaterialRegistry::LoadMaterials()
 {
 	std::string error_message = "";
 	std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
@@ -63,13 +63,13 @@ std::string PS::MaterialRegistry::LoadMaterials()
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseTags(nlohmann::json& data)
+std::string scree::MaterialRegistry::ParseTags(nlohmann::json& data)
 {
 	std::string error_message = "";
 	int index = 0;
 	for (auto& tag : data["tags"]) {
-		if (index >= PS::MAX_TAGS) {
-			error_message += "[Error] Too many tags defined in materials.json. Maximum allowed is " + std::to_string(PS::MAX_TAGS) + ".\n";
+		if (index >= scree::MAX_TAGS) {
+			error_message += "[Error] Too many tags defined in materials.json. Maximum allowed is " + std::to_string(scree::MAX_TAGS) + ".\n";
 			break;
 		}
 
@@ -89,16 +89,16 @@ std::string PS::MaterialRegistry::ParseTags(nlohmann::json& data)
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
+std::string scree::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 {
 	std::string error_message = "";
 	int index = 0;
 	bool overflow_reported = false;
 	for (auto& material : data["materials"]) {
 		bool ok = true;
-		if (index >= PS::MAX_MATERIALS) {
+		if (index >= scree::MAX_MATERIALS) {
 			if (!overflow_reported) {
-				error_message += "[Error] Too many materials defined in materials.json. Maximum allowed is " + std::to_string(PS::MAX_MATERIALS) + ".\n";
+				error_message += "[Error] Too many materials defined in materials.json. Maximum allowed is " + std::to_string(scree::MAX_MATERIALS) + ".\n";
 				overflow_reported = true;
 			}
 			material["valid"] = false;
@@ -135,7 +135,7 @@ std::string PS::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseMovement(const nlohmann::json& material, PS::Movement& out)
+std::string scree::MaterialRegistry::ParseMovement(const nlohmann::json& material, scree::Movement& out)
 {
 	if (!material.contains("movement")) return "";
 	const auto& movement = material["movement"];
@@ -161,7 +161,7 @@ std::string PS::MaterialRegistry::ParseMovement(const nlohmann::json& material, 
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseTags(const nlohmann::json& material, PS::MaterialData& out)
+std::string scree::MaterialRegistry::ParseTags(const nlohmann::json& material, scree::MaterialData& out)
 {
 	std::string error_message = "";
 
@@ -211,7 +211,7 @@ std::string PS::MaterialRegistry::ParseTags(const nlohmann::json& material, PS::
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseIntrensics(const nlohmann::json& material, PS::MaterialData& out)
+std::string scree::MaterialRegistry::ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out)
 {
 	std::string error_message = "";
 	const std::string context = "Material '" + material["name"].get<std::string>() + "'";
@@ -244,7 +244,7 @@ std::string PS::MaterialRegistry::ParseIntrensics(const nlohmann::json& material
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseLifespan(const nlohmann::json& material, PS::LifeSpan& out)
+std::string scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, scree::LifeSpan& out)
 {
 	if (!material.contains("lifespan")) return "";
 
@@ -337,7 +337,7 @@ std::string PS::MaterialRegistry::ParseLifespan(const nlohmann::json& material, 
 	return error_message;
 }
 
-std::string PS::MaterialRegistry::ParseReactions(const nlohmann::json& material, PS::MaterialData& out)
+std::string scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, scree::MaterialData& out)
 {
 	if (!material.contains("reactions")) return "";
 	if (!material["reactions"].is_array()) 

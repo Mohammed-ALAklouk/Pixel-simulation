@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace PS
+namespace scree
 {
 	class Chunk
 	{
@@ -22,7 +22,7 @@ namespace PS
 			{
 				for (size_t x = 0; x < CHUNK_SIZE; x++)
 				{
-					data[y][x] = PS::Block::Create(MaterialRegistry::AIR_ID);
+					data[y][x] = scree::Block::Create(MaterialRegistry::AIR_ID);
 				}
 			}
 
@@ -30,7 +30,7 @@ namespace PS
 			is_active_next_frame = false;
 		}
 
-		void Set_at(std::uint16_t x, std::uint16_t y, PS::Block block)
+		void Set_at(std::uint16_t x, std::uint16_t y, scree::Block block)
 		{
 			data[y][x] = block;
 		}
@@ -45,7 +45,7 @@ namespace PS
 			data[y][x].CreateAt(id, lifespan);
 		}
 
-		PS::Block& Get_at(std::uint16_t x, std::uint16_t y) 
+		scree::Block& Get_at(std::uint16_t x, std::uint16_t y) 
 		{
 			return data[y][x];
 		}
@@ -53,6 +53,6 @@ namespace PS
 		bool is_active = false;
 		bool is_active_next_frame = false;
 	private:
-		PS::Block data[CHUNK_SIZE][CHUNK_SIZE];
+		scree::Block data[CHUNK_SIZE][CHUNK_SIZE];
 	};
 }

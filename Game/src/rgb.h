@@ -9,7 +9,7 @@
 	I did this so the simulation logic is decupled from the graphics library and can be easily replaced in the future if needed
 */
 
-namespace PS {
+namespace scree {
 	struct RGB {
 		std::uint8_t r = 0;
 		std::uint8_t g = 0;

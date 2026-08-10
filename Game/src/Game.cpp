@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 
-PS::Game::Game()
+scree::Game::Game()
 {
 	material_load_error_message = MaterialRegistry::LoadMaterials();
 
@@ -30,7 +30,7 @@ PS::Game::Game()
 	srand(time(NULL));
 }
 
-void PS::Game::update()
+void scree::Game::update()
 {
 	if (!paused)
 	{
@@ -39,7 +39,7 @@ void PS::Game::update()
 	}
 }
 
-void PS::Game::render()
+void scree::Game::render()
 {
 	BeginDrawing();
 	ClearBackground(BLACK);
@@ -74,7 +74,7 @@ void PS::Game::render()
 	EndDrawing();
 }
 
-void PS::Game::proccessInputs()
+void scree::Game::proccessInputs()
 {
 	float mouse_wheel = GetMouseWheelMove();
 	cursor_radius += mouse_wheel;
@@ -118,7 +118,7 @@ void PS::Game::proccessInputs()
 	
 }
 
-void PS::Game::UI()
+void scree::Game::UI()
 {
 	ImGui::Begin("Material menu");
 	
@@ -175,7 +175,7 @@ void PS::Game::UI()
 	}
 }
 
-void PS::Game::run()
+void scree::Game::run()
 {
 	std::chrono::high_resolution_clock::time_point UI_clock;
 	std::chrono::high_resolution_clock::time_point delta_clock;
@@ -197,7 +197,7 @@ void PS::Game::run()
 	}
 }
 
-void PS::Game::draw_cursor(Vector2 pos, MaterialID material)
+void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 {
 	for (int x = -cursor_radius; x < cursor_radius; x++)
 	{
@@ -221,7 +221,7 @@ void PS::Game::draw_cursor(Vector2 pos, MaterialID material)
 	}
 }
 
-std::vector<Vector2> PS::Game::GetLine(Vector2 start, Vector2 end)
+std::vector<Vector2> scree::Game::GetLine(Vector2 start, Vector2 end)
 {
 	if (start.x == end.x && start.y == end.y) return { start };
 	

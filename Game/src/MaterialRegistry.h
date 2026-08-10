@@ -9,7 +9,7 @@
 #include "MaterialData.h"
 #include "fast_rand.h"
 
-namespace PS {
+namespace scree {
 	class MaterialRegistry {
 	public:
 		MaterialRegistry() = default;
@@ -23,11 +23,11 @@ namespace PS {
 		static std::string LoadMaterials();
 		static std::string ParseTags(nlohmann::json& data);
 		static std::string ValidateMaterials(nlohmann::json& data);
-		static std::string ParseIntrensics(const nlohmann::json& material, PS::MaterialData& out);
-		static std::string ParseMovement(const nlohmann::json& material, PS::Movement& out);
-		static std::string ParseTags(const nlohmann::json& material, PS::MaterialData& out);
-		static std::string ParseLifespan(const nlohmann::json& material, PS::LifeSpan& out);
-		static std::string ParseReactions(const nlohmann::json& material, PS::MaterialData& out);
+		static std::string ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out);
+		static std::string ParseMovement(const nlohmann::json& material, scree::Movement& out);
+		static std::string ParseTags(const nlohmann::json& material, scree::MaterialData& out);
+		static std::string ParseLifespan(const nlohmann::json& material, scree::LifeSpan& out);
+		static std::string ParseReactions(const nlohmann::json& material, scree::MaterialData& out);
 
 		static void Clear() {
 			materials.clear();

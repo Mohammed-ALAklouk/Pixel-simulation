@@ -2,6 +2,6 @@
 
 int main()
 {
-	PS::Game app;
+	scree::Game app;
 	app.run();
 }

@@ -7,7 +7,7 @@
 
 
 
-namespace PS
+namespace scree
 {
 	static constexpr int MAX_TAGS = 8;
 	static constexpr int MAX_MATERIALS = 256;

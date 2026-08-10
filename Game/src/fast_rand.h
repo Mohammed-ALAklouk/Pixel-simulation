@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace PS
+namespace scree
 {
 	inline int fast_rand()
 	{

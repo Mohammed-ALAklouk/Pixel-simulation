@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-namespace PS
+namespace scree
 {
 	class Grid
 	{

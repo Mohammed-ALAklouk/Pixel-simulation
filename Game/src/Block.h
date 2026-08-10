@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace PS
+namespace scree
 {
 	struct Block
 	{

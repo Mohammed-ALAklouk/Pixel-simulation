@@ -1,6 +1,6 @@
 #include "Simulation.h"
 
-void PS::Simulation::Update_grid(Grid& grid)
+void scree::Simulation::Update_grid(Grid& grid)
 {
 	grid.Reset_proccessed();
 	grid.Mark_chunks_for_next_update();
@@ -8,7 +8,7 @@ void PS::Simulation::Update_grid(Grid& grid)
 	Update_grid_drectional(grid, -1);
 }
 
-void PS::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
+void scree::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
 {
 	int y_increment = gravityDirection == 1 ? -1 : 1;
 	int y_start = y_increment == 1 ? 0 : grid.Get_height_px() - 1;
@@ -34,7 +34,7 @@ void PS::Simulation::Update_grid_drectional(Grid& grid, int gravityDirection)
 	}
 }
 
-void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection)
+void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection)
 {
 	if (grid.Is_processed(x, y)) return;
 
@@ -56,7 +56,7 @@ void PS::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection
 	grid.set_processed(x, y);
 }
 
-void PS::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
+void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
 {
 	auto&& tile_material = MaterialRegistry::Get(tile.id);
 	int start_index = tile_material.reactionSpan.start;
@@ -116,7 +116,7 @@ void PS::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y
 	}
 }
 
-void PS::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y) {
+void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y) {
 	auto&& tile_material = MaterialRegistry::Get(tile.id);
 	std::int8_t gravityDirection = tile_material.movement.Y_direction;
 	
@@ -277,7 +277,7 @@ void PS::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y
 	}
 }
 
-bool PS::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, int x, int y)
+bool scree::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, int x, int y)
 {
 	auto&& tile_material = MaterialRegistry::Get(tile.id);
 	if (tile_material.lifespanData.Tick)
