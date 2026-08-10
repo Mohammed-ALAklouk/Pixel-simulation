@@ -19,9 +19,7 @@ namespace scree
 		void Update_grid_directional(Grid& grid, int gravityDirection);
 		void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
 		bool update_pixel_lifespan(Grid& grid, Block& tile, int x, int y);
-		// True when a self transition rewrote the tile. Everything the caller derived from
-		// the old material is stale at that point -- including the Y_direction gate that
-		// decided this pass -- so movement has to be skipped rather than run on the new one.
+		// True when a self transition rewrote the tile, so the caller must skip movement.
 		bool update_pixel_reaction(Grid& grid, Block& tile, int x, int y);
 		void update_pixel_movement(Grid& grid, Block& tile, int x, int y);
 

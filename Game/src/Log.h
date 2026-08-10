@@ -157,6 +157,19 @@ namespace scree {
             };
         }
 
+        // nlohmann converts a float to int without throwing, so the value is already
+        // truncated by the time anything else sees it.
+        static Log CreateNotIntegral(int materialID, const std::string& materialName,
+                                     const std::string& field, const std::string& value, int truncated) {
+            return Log{
+                .message  = Context(materialName) + field + " is " + value + ", truncated to "
+                          + std::to_string(truncated) + ".",
+                .severity = Severity::Warning,
+                .type     = Type::WrongType,
+                .material = materialID,
+            };
+        }
+
         // Kind names what was being looked up -- "tag", "anchor tag", "material",
         // "target tag", "lifespan_base", "scan_sample".
         static Log CreateUnknownReference(int materialID, const std::string& materialName,

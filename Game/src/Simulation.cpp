@@ -99,9 +99,7 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
 							lifespan = tile_cpy.lifespan;
 
-						// Only the neighbour changes here, so tile_material and the span
-						// this loop is walking are both still correct. set_processed keeps
-						// the rewritten neighbour from being updated again this frame.
+						// Only the neighbour changes, so the loop's material data is still good.
 						grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
 						grid.set_processed(next_x, next_y);
 					}
@@ -113,10 +111,7 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
 							lifespan = checked_tile.lifespan;
 
-						// The tile is a different material from here on: tile_material, the
-						// reaction span this loop is walking, and the Y_direction that
-						// picked this gravity pass all describe the old one. Stop rather
-						// than keep firing the old material's reactions on the new one.
+						// The tile is a different material now, so everything above is stale.
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
 						return true;
 					}
@@ -127,9 +122,6 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 			}
 		}
 
-		// Note this stops the scan but still lets movement run, which contradicts
-		// MaterialData.h's "AND skip movement this tick". Left as-is: changing it is a
-		// behaviour change, not part of the stale-material fix.
 		if (reaction->HaltUpdate && hasReacted) return false;
 	}
 

@@ -44,12 +44,12 @@ namespace scree
 	// happens" is not the absence of an entry, it is an entry with noTransition set.
 	struct Transition {
 		enum class LifeSpanBase : std::uint8_t {
-			Self,		// use the old lifespan of the current material
+			Self,		// use the old lifespan of the tile being rewritten
 			// Use the lifespan of the material that caused the transition, read AFTER
 			// that material has ticked this frame. Hot stone spreading through water
 			// relies on this to cool by one per generation, so the lifespan tick must
 			// stay ordered before reactions in Update_pixel.
-			// Meaningless in OnDeathTransitionSpan (there is no reactor) -- reject at load.
+			// In on_death there is no reactor: warns at load and falls back to Initial.
 			Reactor,
 			Initial,    // use the default lifespan of the new material it turns into
 		};
@@ -81,14 +81,14 @@ namespace scree
 
 		TargetType targetType = TargetType::Material;
 		MaterialID TargetID = 0;		// material id when Material, tag id when Tag
-		// Percent. For Tag targets it scales the target's intensity for that tag
-		// (Chance * intensity / 100), so 100 means "use the intensity as-is".
+		// Percent, Material targets only. Tag targets roll against the target's intensity
+		// instead, so Chance is neither parsed nor read for them.
 		std::uint8_t Chance = 0;
 		TransitionsSpan TargetTransitionsSpan = { 0, 0, 0 };
 		TransitionsSpan SelfTransitionsSpan = { 0, 0, 0 };
 
 		Sample sample = Sample::FirstToReact;
-		// On firing: stop scanning the remaining neighbours AND skip movement this tick.
+		// On firing: stop scanning the remaining neighbours. Movement still runs.
 		bool HaltUpdate = false;
 	};
 

@@ -11,6 +11,23 @@ int scree::MaterialRegistry::ClampField(int value, int min, int max, const std::
 	return value;
 }
 
+int scree::MaterialRegistry::ClampField(const nlohmann::json& value, int min, int max, const std::string& field, MaterialID materialID)
+{
+	int whole = value.get<int>();
+	if (value.is_number_float())
+		logs.push_back(Log::CreateNotIntegral(materialID, GetName(materialID), field, value.dump(), whole));
+
+	return ClampField(whole, min, max, field, materialID);
+}
+
+int scree::MaterialRegistry::ReadField(const nlohmann::json& parent, const std::string& key, int fallback,
+	int min, int max, const std::string& field, MaterialID materialID)
+{
+	if (!parent.contains(key)) return fallback;
+
+	return ClampField(parent[key], min, max, field, materialID);
+}
+
 scree::MaterialRegistry::MaterialRegistry()
 {
 	LoadAir();
@@ -77,7 +94,6 @@ void scree::MaterialRegistry::LoadAir()
 			"is_liquid": false
 		},
 		"tags": {},
-		"inert": true,
 		"interpolate_color": false,
 		"color_min": [0, 0, 0],
 		"color_max": [0, 0, 0],
@@ -102,10 +118,9 @@ void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID
 	ParseLifespan(material, id, inMaterial.lifespanData);
 	ParseReactions(material, id, inMaterial);
 
-	// The id was handed out in ValidateMaterials and materialNames already holds the
-	// name, so this slot has to be filled either way -- skipping the push would shift
-	// every later material away from the name it was assigned. A rejected entry becomes
-	// inert instead, which leaves it visible in the UI and ignored by the simulation.
+	// The id was handed out in ValidateMaterials, so the slot has to be filled either way --
+	// skipping the push would shift every later material off its name. A rejected entry
+	// gets the defaults: no reactions, no tick, and magenta so it is obvious.
 	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) {
 		materials.push_back(MaterialData{}); 
 		return;
@@ -188,14 +203,14 @@ void scree::MaterialRegistry::ParseMovement(const nlohmann::json& material, Mate
 	try {
 		// Y_direction is used as a grid offset, so anything outside -1..1 would step over
 		// neighbouring tiles.
-		out.Y_direction = ClampField(movement.value("y_direction", 1), -1, 1, "y_direction", id);
+		out.Y_direction = ReadField(movement, "y_direction", 1, -1, 1, "y_direction", id);
 		if (out.Y_direction == 0) {
 			out.Y_direction = 1;
 			logs.push_back(Log::CreateOutOfRange(id, GetName(id), "y_direction", 0, -1, 1));
 		}
 
-		out.density = ClampField(movement.value("density", 0), 0, 255, "density", id);
-		out.scatter_chance = ClampField(movement.value("scatter_chance", 0), 0, 100, "scatter_chance", id);
+		out.density = ReadField(movement, "density", 0, 0, 255, "density", id);
+		out.scatter_chance = ReadField(movement, "scatter_chance", 0, 0, 100, "scatter_chance", id);
 		out.can_fall = movement.value("can_fall", false);
 		out.can_cascade = movement.value("can_cascade", false);
 		out.is_fluid = movement.value("is_fluid", false);
@@ -232,8 +247,6 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 				"expected a number, got " + tagEntry.value().dump()));
 			continue;
 		}
-
-		out.tagData[tag->second].isAnchor = false;
 	}
 
 	if (material.contains("anchor")) {
@@ -276,12 +289,12 @@ void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, Ma
 		out.minColor = RGB(color_min[0], color_min[1], color_min[2]);
 		out.maxColor = RGB(color_max[0], color_max[1], color_max[2]);
 
-		// Block::Random_step takes rand() % numberOfSteps, so zero is a divide by zero
+		// Random_step takes fast_rand() % numberOfSteps, so zero is a divide by zero
 		// rather than a bad colour.
-		out.numberOfSteps = ClampField(material.value("steps", 1), 1, 255, "steps", id);
+		out.numberOfSteps = ReadField(material, "steps", 1, 1, 255, "steps", id);
 	}
 	catch (const nlohmann::json::exception& e) {
-		logs.push_back(Log::CreateWrongType(id, GetName(id), "an intrensic field", e.what()));
+		logs.push_back(Log::CreateWrongType(id, GetName(id), "an intrinsic field", e.what()));
 	}
 }
 
@@ -294,13 +307,17 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	int tick = 0;
 
 	try {
-		initial = ClampField(lifespan.value("initial", initial), 0, 255, "lifespan.initial", id);
-		tick = ClampField(lifespan.value("tick", tick), 0, 255, "lifespan.tick", id);
+		initial = ReadField(lifespan, "initial", initial, 0, 255, "lifespan.initial", id);
+		tick = ReadField(lifespan, "tick", tick, 0, 255, "lifespan.tick", id);
 	}
 	catch (const nlohmann::json::exception& e) {
 		logs.push_back(Log::CreateWrongType(id, GetName(id), "lifespan", e.what()));
 		return;
 	}
+
+	// Committed here so the on_death paths below can bail without discarding them.
+	out.Initial = initial;
+	out.Tick = tick;
 
 	TransitionsSpan onDeathSpan = {
 		std::uint16_t(transitions.size()),
@@ -378,8 +395,6 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 		onDeathSpan.totalWeight += transition.weight;
 	}
 
-	out.Initial = initial;
-	out.Tick = tick;
 	out.OnDeathTransitionSpan = onDeathSpan;
 }
 
@@ -408,6 +423,7 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 		}
 
 		if (!reactionData.contains("target_transitions") && !reactionData.contains("self_transitions")) {
+			logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction target_transitions or self_transitions"));
 			continue;
 		}
 
@@ -437,7 +453,7 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 
 				reaction.targetType = Reaction::TargetType::Material;
 				reaction.TargetID = materialMap[targetName];
-				reaction.Chance = ClampField(reactionData.value("chance", 100), 0, 100, "reaction chance", id);
+				reaction.Chance = ReadField(reactionData, "chance", 100, 0, 100, "reaction chance", id);
 			}
 			else if (targetType == "tag") {
 				if (tagMap.find(targetName) == tagMap.end()) {
@@ -582,8 +598,11 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 			reaction.SelfTransitionsSpan.totalWeight += transition.weight;
 		}
 
-		if (reaction.TargetTransitionsSpan.count == 0 && reaction.SelfTransitionsSpan.count == 0)
+		if (reaction.TargetTransitionsSpan.count == 0 && reaction.SelfTransitionsSpan.count == 0) {
+			logs.push_back(Log::CreateMissingField(id, GetName(id), "reaction transitions",
+				"present, but no entry parsed"));
 			continue;
+		}
 
 		reactions.push_back(reaction);
 		out.reactionSpan.count++;

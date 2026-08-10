@@ -16,15 +16,12 @@ namespace scree {
 	public:
 		MaterialRegistry();
 
-		// Air is the simulation's notion of "empty" rather than an ordinary material --
-		// Chunk fills new chunks with it and the eraser brush paints it -- so it needs a
-		// name the code can reach without a lookup. It is pinned to id 0, which makes it
-		// the first entry in materials.v2.json by contract.
+		// Air is "empty" rather than an ordinary material -- Grid::Clear fills with it and
+		// the eraser paints it -- so the code reaches it by id, not by name. LoadAir pins
+		// it to 0; it is not in materials.json.
 		static constexpr MaterialID AIR_ID = 0;
 
-		// Every problem found goes into logs. The returned string is those logs flattened
-		// for the caller that still wants text; read GetLogs()/Worst() instead once the
-		// caller can act on a severity.
+		// False means nothing was loaded. Problems go to logs either way.
 		bool LoadMaterials();
 		void LoadAir();
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
@@ -160,6 +157,11 @@ namespace scree {
 		// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
 		// wraps instead of failing -- an initial lifespan of 300 would silently become 44.
 		int ClampField(int value, int min, int max, const std::string& field, MaterialID materialID);
+		// Same, but warns first if the JSON value was fractional.
+		int ClampField(const nlohmann::json& value, int min, int max, const std::string& field, MaterialID materialID);
+		// Reads parent[key], or fallback when it is absent.
+		int ReadField(const nlohmann::json& parent, const std::string& key, int fallback,
+			int min, int max, const std::string& field, MaterialID materialID);
 
 		std::vector<MaterialData> materials;
 		std::vector<std::string> tags;

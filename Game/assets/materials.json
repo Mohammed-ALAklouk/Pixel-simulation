@@ -6,7 +6,6 @@
   "materials": [
     {
       "name": "Sand",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 150, 150, 0 ],
       "color_max": [ 255, 255, 0 ],
@@ -31,7 +30,6 @@
 
     {
       "name": "Stone",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 100, 100, 100 ],
       "color_max": [ 120, 120, 120 ],
@@ -56,7 +54,6 @@
 
     {
       "name": "Water",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 0, 0, 200 ],
       "color_max": [ 0, 0, 250 ],
@@ -81,7 +78,6 @@
 
     {
       "name": "Oil",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 15, 10, 20 ],
       "color_max": [ 30, 45, 50 ],
@@ -106,7 +102,6 @@
 
     {
       "name": "Smoke",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 100, 100, 100 ],
       "color_max": [ 150, 150, 150 ],
@@ -133,7 +128,6 @@
 
     {
       "name": "Acid",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 50, 255, 50 ],
       "color_max": [ 200, 200, 0 ],
@@ -188,7 +182,6 @@
 
     {
       "name": "Fire",
-      "inert": false,
       "interpolate_color": true,
       "color_min": [ 150, 0, 0 ],
       "color_max": [ 255, 255, 0 ],
@@ -245,7 +238,6 @@
 
     {
       "name": "Steam",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 200, 200, 200 ],
       "color_max": [ 240, 240, 240 ],
@@ -272,7 +264,6 @@
 
     {
       "name": "Wood",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 82, 58, 40 ],
       "color_max": [ 133, 94, 66 ],
@@ -297,7 +288,6 @@
 
     {
       "name": "Lava",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 200, 40, 0 ],
       "color_max": [ 255, 170, 0 ],
@@ -345,7 +335,6 @@
 
     {
       "name": "Hot Stone",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 100, 100, 100 ],
       "color_max": [ 120, 120, 120 ],
@@ -385,7 +374,6 @@
 
     {
       "name": "Dirty Water",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 15, 75, 15 ],
       "color_max": [ 15, 75, 15 ],
@@ -410,7 +398,6 @@
 
     {
       "name": "Ash",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 0, 0, 0 ],
       "color_max": [ 150, 150, 150 ],
@@ -435,7 +422,6 @@
 
     {
       "name": "Hot Ash",
-      "inert": false,
       "interpolate_color": false,
       "color_min": [ 0, 0, 0 ],
       "color_max": [ 150, 150, 150 ],

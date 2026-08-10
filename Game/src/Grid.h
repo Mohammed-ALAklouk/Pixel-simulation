@@ -49,9 +49,9 @@ namespace scree
 		inline void Clear()
 		{
 			for (auto& chunk : m_chunks) {
-				for (size_t y = 0; y < CHUNK_SIZE; y++)
+				for (std::uint16_t y = 0; y < CHUNK_SIZE; y++)
 				{
-					for (size_t x = 0; x < CHUNK_SIZE; x++)
+					for (std::uint16_t x = 0; x < CHUNK_SIZE; x++)
 					{
 						chunk.Get_at(x, y) = m_material_registry->CreateBlock(MaterialRegistry::AIR_ID);
 					}
@@ -85,8 +85,8 @@ namespace scree
 	inline void Grid::Create(std::uint16_t width_px, std::uint16_t height_px, const MaterialRegistry* material_registry)
 	{
 		m_material_registry = material_registry;
-		m_width_ch = ceil(width_px / float(CHUNK_SIZE));
-		m_height_ch = ceil(height_px / float(CHUNK_SIZE));
+		m_width_ch = static_cast<int>(ceil(width_px / float(CHUNK_SIZE)));
+		m_height_ch = static_cast<int>(ceil(height_px / float(CHUNK_SIZE)));
 
 		m_width_px = m_width_ch * CHUNK_SIZE;
 		m_height_px = m_height_ch * CHUNK_SIZE;
@@ -125,7 +125,7 @@ namespace scree
 
 	inline void Grid::Get_active_chunks(std::vector<std::pair<int,int>>& active_chunks) const
 	{
-		for (size_t i = 0; i < m_chunks.size(); i++)
+		for (int i = 0; i < static_cast<int>(m_chunks.size()); i++)
 		{
 			if (m_chunks[i].is_active)
 			{
@@ -138,19 +138,15 @@ namespace scree
 
 	inline void Grid::Remap(const std::vector<MaterialID>& remap)
 	{
-		for (size_t y = 0; y < m_height_px; y++)
+		for (std::uint16_t y = 0; y < m_height_px; y++)
 		{
-			for (size_t x = 0; x < m_width_px; x++)
+			for (std::uint16_t x = 0; x < m_width_px; x++)
 			{
 				auto& block = Get_at(x, y);
-				if (block.id < remap.size())
-				{
-					auto& block = Get_at(x, y);
-					if (block.id >= remap.size()) continue;
+				if (block.id >= remap.size()) continue;
 
-					set_chunk_active_at_pixel(x, y);
-					m_material_registry->RecreateBlock(block, remap[block.id], block.lifespan);
-				}
+				set_chunk_active_at_pixel(x, y);
+				m_material_registry->RecreateBlock(block, remap[block.id], block.lifespan);
 			}
 		}
 	}
