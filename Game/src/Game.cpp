@@ -8,9 +8,7 @@
 scree::Game::Game()
 	: simulation(material_registry)
 {
-	if (!load_materials()) {
-		material_load_error_message = Log::FormatLogs(material_registry.GetLogs());
-	}
+	load_materials();
 
 	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;

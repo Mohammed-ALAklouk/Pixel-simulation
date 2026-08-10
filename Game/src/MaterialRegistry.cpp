@@ -11,10 +11,17 @@ int scree::MaterialRegistry::ClampField(int value, int min, int max, const std::
 	return value;
 }
 
+scree::MaterialRegistry::MaterialRegistry()
+{
+	LoadAir();
+}
+
 bool scree::MaterialRegistry::LoadMaterials()
 {
 	Clear();
 
+	LoadAir();
+	
 	std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
 	std::ifstream file(path);
 	if (!file.is_open()) {
@@ -34,7 +41,26 @@ bool scree::MaterialRegistry::LoadMaterials()
 	// Tags have to exist before any material is parsed -- ParseTags(material, out) looks
 	// every tag up in tagMap and reports an unknown tag otherwise.
 	ParseTags(data);
+	ValidateMaterials(data);
 
+	for (auto& material: data["materials"])
+	{
+		if(!material["valid"])
+			continue;
+
+		// ValidateMaterials put every valid entry in materialMap, so this is the id it
+		// was given there -- and the slot ParseMaterial's push_back is about to fill.
+		ParseMaterial(material, materialMap[material["name"].get<std::string>()]);
+	}
+
+	if (Log::Worst(logs) == Log::Severity::RejectFile)
+		return false;
+	
+	return true;
+}
+
+void scree::MaterialRegistry::LoadAir()
+{
 	// Air is not in materials.json because the simulation cannot run without it. Its name
 	// is registered before ValidateMaterials so that id 0 is taken, the ids handed out to
 	// file materials start at 1, and a stray "Air" entry in the file is caught as a
@@ -60,24 +86,7 @@ bool scree::MaterialRegistry::LoadMaterials()
 	nlohmann::json airJSON = nlohmann::json::parse(airStr);
 	materialNames.push_back(airJSON["name"].get<std::string>());
 	materialMap[airJSON["name"].get<std::string>()] = AIR_ID;
-
-	ValidateMaterials(data);
 	ParseMaterial(airJSON, AIR_ID);
-
-	for (auto& material: data["materials"])
-	{
-		if(!material["valid"])
-			continue;
-
-		// ValidateMaterials put every valid entry in materialMap, so this is the id it
-		// was given there -- and the slot ParseMaterial's push_back is about to fill.
-		ParseMaterial(material, materialMap[material["name"].get<std::string>()]);
-	}
-
-	if (Log::Worst(logs) == Log::Severity::RejectFile)
-		return false;
-	
-	return true;
 }
 
 void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID id)

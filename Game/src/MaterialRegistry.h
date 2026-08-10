@@ -14,7 +14,7 @@
 namespace scree {
 	class MaterialRegistry {
 	public:
-		MaterialRegistry() = default;
+		MaterialRegistry();
 
 		// Air is the simulation's notion of "empty" rather than an ordinary material --
 		// Chunk fills new chunks with it and the eraser brush paints it -- so it needs a
@@ -26,6 +26,7 @@ namespace scree {
 		// for the caller that still wants text; read GetLogs()/Worst() instead once the
 		// caller can act on a severity.
 		bool LoadMaterials();
+		void LoadAir();
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);
 		void ValidateMaterials(nlohmann::json& data);
