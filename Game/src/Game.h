@@ -29,6 +29,7 @@ namespace scree
 		void UI();
 		void run();
 		void draw_cursor(Vector2 pos, MaterialID material);
+		void load_materials();
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 

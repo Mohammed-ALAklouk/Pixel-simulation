@@ -8,7 +8,7 @@
 scree::Game::Game()
 	: simulation(material_registry)
 {
-	material_load_error_message = material_registry.LoadMaterials();
+	load_materials();
 
 	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;
@@ -155,7 +155,7 @@ void scree::Game::UI()
 	ImGui::Checkbox("Pause", &paused);
 	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
 	if (ImGui::Button("Reload material file"))
-		material_load_error_message = material_registry.LoadMaterials();
+		load_materials();
 
 	ImGui::Checkbox("Show active chunks", &show_active_chunks);
 	ImGui::Checkbox("Show benchmarks", &show_bench_marks);
@@ -222,6 +222,16 @@ void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 		}
 
 	}
+}
+
+void scree::Game::load_materials()
+{
+	MaterialRegistry new_registry;
+	material_load_error_message = new_registry.LoadMaterials();
+	if (material_load_error_message == "")
+		material_registry = std::move(new_registry);
+	else 
+		material_load_error_message = "Failed to load materials: \n" + material_load_error_message;
 }
 
 std::vector<Vector2> scree::Game::GetLine(Vector2 start, Vector2 end)
