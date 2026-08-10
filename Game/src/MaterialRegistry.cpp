@@ -106,8 +106,10 @@ void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID
 	// name, so this slot has to be filled either way -- skipping the push would shift
 	// every later material away from the name it was assigned. A rejected entry becomes
 	// inert instead, which leaves it visible in the UI and ignored by the simulation.
-	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) 
+	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) {
+		materials.push_back(MaterialData{}); 
 		return;
+	}
 
 	materials.push_back(inMaterial);
 }

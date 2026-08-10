@@ -61,6 +61,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 	auto&& tile_material = m_registry.Get(tile.id);
 	int start_index = tile_material.reactionSpan.start;
 	int count = tile_material.reactionSpan.count;
+	auto tile_cpy = tile; // Copy of the tile to avoid issues with self-reactions
 
 	for (int i = start_index; i < start_index + count; i++)
 	{
@@ -91,7 +92,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
 						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
-							lifespan = checked_tile.lifespan;
+							lifespan = tile_cpy.lifespan;
 
 						grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
 						grid.set_processed(next_x, next_y);
@@ -102,7 +103,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
 						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
-							lifespan = tile.lifespan;
+							lifespan = checked_tile.lifespan;
 
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
 					}
