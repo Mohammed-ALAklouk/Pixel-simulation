@@ -40,7 +40,7 @@ void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirect
 
 	auto& tile = grid.Get_at(x, y);
 
-	auto&& tile_material = MaterialRegistry::Get(tile.id);
+	auto&& tile_material = m_registry.Get(tile.id);
 	if (tile.id == MaterialRegistry::AIR_ID) return;
 	if (tile_material.movement.Y_direction != gravityDirection) return;
 
@@ -58,13 +58,13 @@ void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirect
 
 void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
 {
-	auto&& tile_material = MaterialRegistry::Get(tile.id);
+	auto&& tile_material = m_registry.Get(tile.id);
 	int start_index = tile_material.reactionSpan.start;
 	int count = tile_material.reactionSpan.count;
 
 	for (int i = start_index; i < start_index + count; i++)
 	{
-		const auto& reaction = MaterialRegistry::GetReaction(i);
+		const auto& reaction = m_registry.GetReaction(i);
 		std::int8_t direction = fast_rand() & 1 ? 1 : -1;
 		std::int8_t gravityDirection = tile_material.movement.Y_direction;
 		std::array<Vec2i, 4> directions = { {{0, gravityDirection}, {direction, 0}, {-direction, 0}, {0, -gravityDirection}} };
@@ -77,19 +77,19 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 			if (grid.Is_in_bounds(next_x, next_y))
 			{
 				auto& checked_tile = grid.Get_at(next_x, next_y);
-				if (MaterialRegistry::CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) {
+				if (m_registry.CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) {
 					int chance = reaction->Chance;
 					if (reaction->targetType == Reaction::TargetType::Tag) 
-						chance = MaterialRegistry::Get(checked_tile.id).tagData[reaction->TargetID].intensity;
+						chance = m_registry.Get(checked_tile.id).tagData[reaction->TargetID].intensity;
 
 					if (fast_rand() % 101 >= chance)	continue;
 					hasReacted = true;
-					const Transition* targetTransition = MaterialRegistry::PickTransition(reaction->TargetTransitionsSpan);
-					const Transition* selfTransition = MaterialRegistry::PickTransition(reaction->SelfTransitionsSpan);
+					const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
+					const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
 					if (targetTransition && !targetTransition->noTransition) {
 						std::uint8_t lifespan = checked_tile.lifespan;
 						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial) 
-							lifespan = MaterialRegistry::Get(targetTransition->nextID).lifespanData.Initial;
+							lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
 						else 
 							lifespan = tile.lifespan;
 
@@ -100,7 +100,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 					if (selfTransition && !selfTransition->noTransition) {
 						std::uint8_t lifespan = tile.lifespan;
 						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
-							lifespan = MaterialRegistry::Get(selfTransition->nextID).lifespanData.Initial;
+							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
 						else
 							lifespan = checked_tile.lifespan;
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
@@ -117,7 +117,7 @@ void scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 }
 
 void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y) {
-	auto&& tile_material = MaterialRegistry::Get(tile.id);
+	auto&& tile_material = m_registry.Get(tile.id);
 	std::int8_t gravityDirection = tile_material.movement.Y_direction;
 	
 	// Anchor tiles
@@ -130,7 +130,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 				int next_y = y + dir.y;
 				if (grid.Is_in_bounds(next_x, next_y)) {
 					auto& checked_tile = grid.Get_at(next_x, next_y);
-					auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+					auto& checked_tile_material = m_registry.Get(checked_tile.id);
 					if (checked_tile_material.tagData[i].intensity) {
 						return; // Found an anchor tile nearby, do not move
 					}
@@ -151,7 +151,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 				if (grid.Is_in_bounds(x + directions[i], y + gravityDirection))
 				{
 					auto& checked_tile = grid.Get_at(x + directions[i], y + gravityDirection);
-					auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+					auto& checked_tile_material = m_registry.Get(checked_tile.id);
 					if (checked_tile_material.movement.is_fluid && checked_tile_material.movement.density < tile_material.movement.density)
 					{
 						grid.swap_pixels({ x,y }, { x + directions[i], y + gravityDirection });
@@ -162,7 +162,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 		}
 
 		auto& next_tile = grid.Get_at(x, y + gravityDirection);
-		auto& next_tile_material = MaterialRegistry::Get(next_tile.id);
+		auto& next_tile_material = m_registry.Get(next_tile.id);
 		if (tile_material.movement.density > next_tile_material.movement.density)
 		{
 			grid.swap_pixels({ x,y }, { x, y + gravityDirection });
@@ -181,7 +181,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 			if (grid.Is_in_bounds(x + direction, y + gravityDirection))
 			{
 				auto& checked_tile = grid.Get_at(x + direction, y + gravityDirection);
-				auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+				auto& checked_tile_material = m_registry.Get(checked_tile.id);
 				if (checked_tile_material.movement.is_fluid && checked_tile_material.movement.density < tile_material.movement.density)
 				{
 					grid.swap_pixels({ x,y }, { x + direction, y + gravityDirection });
@@ -192,7 +192,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 			if (grid.Is_in_bounds(x - direction, y + gravityDirection))
 			{
 				auto& checked_tile = grid.Get_at(x - direction, y + gravityDirection);
-				auto& checked_tile_material = MaterialRegistry::Get(checked_tile.id);
+				auto& checked_tile_material = m_registry.Get(checked_tile.id);
 				if (checked_tile_material.movement.is_fluid && checked_tile_material.movement.density < tile_material.movement.density)
 				{
 					grid.swap_pixels({ x,y }, { x - direction, y + gravityDirection });
@@ -224,7 +224,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 				if (!grid.Is_in_bounds(check_x, y)) break;
 
 				auto& side_tile = grid.Get_at(check_x, y);
-				auto& side_material = MaterialRegistry::Get(side_tile.id);
+				auto& side_material = m_registry.Get(side_tile.id);
 
 				if (side_tile.id != MaterialRegistry::AIR_ID &&
 					(!side_material.movement.is_fluid || side_material.movement.density >= tile_material.movement.density))
@@ -238,7 +238,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 				if (grid.Is_in_bounds(check_x, y + 1))
 				{
 					auto& below_tile = grid.Get_at(check_x, y + 1);
-					auto& below_material = MaterialRegistry::Get(below_tile.id);
+					auto& below_material = m_registry.Get(below_tile.id);
 
 					if (below_tile.id == MaterialRegistry::AIR_ID ||
 						(below_material.movement.is_fluid && tile_material.movement.density > below_material.movement.density))
@@ -259,7 +259,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 		if (grid.Is_in_bounds(x + direction, y))
 		{
 			auto& next_tile = grid.Get_at(x + direction, y);
-			auto& next_material = MaterialRegistry::Get(next_tile.id);
+			auto& next_material = m_registry.Get(next_tile.id);
 
 			if (next_tile.id == MaterialRegistry::AIR_ID ||
 				(next_material.movement.is_fluid && tile_material.movement.density > next_material.movement.density))
@@ -279,17 +279,17 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 
 bool scree::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, int x, int y)
 {
-	auto&& tile_material = MaterialRegistry::Get(tile.id);
+	auto&& tile_material = m_registry.Get(tile.id);
 	if (tile_material.lifespanData.Tick)
 	{
 		grid.set_chunk_active_at_pixel(x, y);
 
-		if (tile.Tick())
+		if (m_registry.Tick(tile))
 		{
-			auto transition = MaterialRegistry::PickTransition(tile_material.lifespanData.OnDeathTransitionSpan);
+			auto transition = m_registry.PickTransition(tile_material.lifespanData.OnDeathTransitionSpan);
 			if (!transition || transition->noTransition) return false;
 
-			std::uint8_t new_lifespan = MaterialRegistry::Get(transition->nextID).lifespanData.Initial;
+			std::uint8_t new_lifespan = m_registry.Get(transition->nextID).lifespanData.Initial;
 			grid.Recreate_at(x, y, transition->nextID, new_lifespan);
 			return true;
 		}

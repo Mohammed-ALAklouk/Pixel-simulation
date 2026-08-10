@@ -12,13 +12,19 @@ namespace scree
 	class Simulation
 	{
 	public:
-		Simulation() = default;
-		
-		static void Update_grid(Grid& grid);
-		static void Update_grid_drectional(Grid& grid, int gravityDirection);
-		static void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
-		static bool update_pixel_lifespan(Grid& grid, Block& tile, int x, int y);
-		static void update_pixel_reaction(Grid& grid, Block& tile, int x, int y);
-		static void update_pixel_movement(Grid& grid, Block& tile, int x, int y);
+		explicit Simulation(const MaterialRegistry& material_registry)
+			: m_registry(material_registry) {}
+
+		void Update_grid(Grid& grid);
+		void Update_grid_drectional(Grid& grid, int gravityDirection);
+		void Update_pixel(Grid& grid, int x, int y, int gravityDirection);
+		bool update_pixel_lifespan(Grid& grid, Block& tile, int x, int y);
+		void update_pixel_reaction(Grid& grid, Block& tile, int x, int y);
+		void update_pixel_movement(Grid& grid, Block& tile, int x, int y);
+
+	private:
+		// Bound once at construction. Game reloads materials by assigning into the same
+		// registry object, so this reference stays valid across a reload.
+		const MaterialRegistry& m_registry;
 	};
 }
