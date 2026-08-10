@@ -11,38 +11,9 @@ namespace scree
 	class Chunk
 	{
 	public:
-		Chunk()
-		{
-			Reset();
-		}
-
-		void Reset()
-		{
-			for (size_t y = 0; y < CHUNK_SIZE; y++)
-			{
-				for (size_t x = 0; x < CHUNK_SIZE; x++)
-				{
-					data[y][x] = scree::Block::Create(MaterialRegistry::AIR_ID);
-				}
-			}
-
-			is_active = false;
-			is_active_next_frame = false;
-		}
-
 		void Set_at(std::uint16_t x, std::uint16_t y, scree::Block block)
 		{
 			data[y][x] = block;
-		}
-
-		void Recreate_at(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
-		{
-			data[y][x].Recreate(id, lifespan);
-		}
-
-		void CreateAt(std::uint16_t x, std::uint16_t y, MaterialID id, std::uint8_t lifespan)
-		{
-			data[y][x].CreateAt(id, lifespan);
 		}
 
 		scree::Block& Get_at(std::uint16_t x, std::uint16_t y) 
