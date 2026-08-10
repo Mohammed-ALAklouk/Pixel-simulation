@@ -5,7 +5,7 @@
 
   "materials": [
     {
-      "name": "Sand",
+      "nam e": "Sand",
       "inert": false,
       "interpolate_color": false,
       "color_min": [ 150, 150, 0 ],

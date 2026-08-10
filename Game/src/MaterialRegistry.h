@@ -9,6 +9,7 @@
 #include "MaterialData.h"
 #include "fast_rand.h"
 #include "Block.h"
+#include "Log.h"
 
 namespace scree {
 	class MaterialRegistry {
@@ -21,15 +22,20 @@ namespace scree {
 		// the first entry in materials.v2.json by contract.
 		static constexpr MaterialID AIR_ID = 0;
 
-		std::string LoadMaterials();
-		std::string ParseMaterial(nlohmann::json& material);
-		std::string ParseTags(nlohmann::json& data);
-		std::string ValidateMaterials(nlohmann::json& data);
-		std::string ParseIntrensics(const nlohmann::json& material, scree::MaterialData& out);
-		std::string ParseMovement(const nlohmann::json& material, scree::Movement& out);
-		std::string ParseTags(const nlohmann::json& material, scree::MaterialData& out);
-		std::string ParseLifespan(const nlohmann::json& material, scree::LifeSpan& out);
-		std::string ParseReactions(const nlohmann::json& material, scree::MaterialData& out);
+		// Every problem found goes into logs. The returned string is those logs flattened
+		// for the caller that still wants text; read GetLogs()/Worst() instead once the
+		// caller can act on a severity.
+		bool LoadMaterials();
+		void ParseMaterial(nlohmann::json& material, MaterialID id);
+		void ParseTags(nlohmann::json& data);
+		void ValidateMaterials(nlohmann::json& data);
+		void ParseIntrensics(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
+		void ParseMovement(const nlohmann::json& material, MaterialID id, scree::Movement& out);
+		void ParseTags(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
+		void ParseLifespan(const nlohmann::json& material, MaterialID id, scree::LifeSpan& out);
+		void ParseReactions(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
+
+		const std::vector<Log>& GetLogs() const { return logs; }
 
 		void Clear() {
 			materials.clear();
@@ -39,6 +45,7 @@ namespace scree {
 			materialNames.clear();
 			materialMap.clear();
 			tagMap.clear();
+			logs.clear();
 		}
 
 
@@ -146,6 +153,11 @@ namespace scree {
 		}
 
 	private:
+
+		// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
+		// wraps instead of failing -- an initial lifespan of 300 would silently become 44.
+		int ClampField(int value, int min, int max, const std::string& field, MaterialID materialID);
+
 		std::vector<MaterialData> materials;
 		std::vector<std::string> tags;
 		std::vector<Reaction>   reactions;
@@ -153,5 +165,6 @@ namespace scree {
 		std::vector<std::string> materialNames;
 		std::unordered_map<std::string, MaterialID> materialMap;
 		std::unordered_map<std::string, MaterialID> tagMap;
+		std::vector<Log> logs;
 	};
 }

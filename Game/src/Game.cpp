@@ -8,7 +8,9 @@
 scree::Game::Game()
 	: simulation(material_registry)
 {
-	load_materials();
+	if (!load_materials()) {
+		material_load_error_message = Log::FormatLogs(material_registry.GetLogs());
+	}
 
 	InitWindow(Window_size.x, Window_size.y, "Scree");
 	int grid_size_px = GridSize * TileSize;
@@ -69,7 +71,7 @@ void scree::Game::render()
 	DrawCircleLines(mouse_pos.x, mouse_pos.y, cursor_radius * TileSize, WHITE);
 	
 	rlImGuiBegin();
-	UI();          // unchanged
+	UI();
 	rlImGuiEnd();
 
 	EndDrawing();
@@ -224,14 +226,15 @@ void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 	}
 }
 
-void scree::Game::load_materials()
+bool scree::Game::load_materials()
 {
 	MaterialRegistry new_registry;
-	material_load_error_message = new_registry.LoadMaterials();
-	if (material_load_error_message == "")
+	bool success = new_registry.LoadMaterials();
+	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
+	if (success)
 		material_registry = std::move(new_registry);
-	else 
-		material_load_error_message = "Failed to load materials: \n" + material_load_error_message;
+	
+	return success;
 }
 
 std::vector<Vector2> scree::Game::GetLine(Vector2 start, Vector2 end)

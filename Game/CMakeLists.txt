@@ -30,6 +30,7 @@ add_executable(Game
     src/Chunk.h
     src/Game.h
     src/Grid.h
+    src/Log.h
     
     src/Simulation.h
     src/rgb.h
