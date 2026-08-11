@@ -38,13 +38,11 @@ scree::MaterialRegistry::MaterialRegistry()
 	LoadAir();
 }
 
-bool scree::MaterialRegistry::LoadMaterials()
+bool scree::MaterialRegistry::LoadMaterials(std::string	path)
 {
 	Clear();
-
 	LoadAir();
-	
-	std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
+
 	std::ifstream file(path);
 	if (!file.is_open()) {
 		logs.push_back(Log::CreateFileMissing(path));
@@ -60,14 +58,20 @@ bool scree::MaterialRegistry::LoadMaterials()
 		return false;
 	}
 
+
+	return LoadMaterialsFromJSON(data);
+}
+
+bool scree::MaterialRegistry::LoadMaterialsFromJSON(nlohmann::json& data)
+{
 	// Tags have to exist before any material is parsed -- ParseTags(material, out) looks
 	// every tag up in tagMap and reports an unknown tag otherwise.
 	ParseTags(data);
 	ValidateMaterials(data);
 
-	for (auto& material: data["materials"])
+	for (auto& material : data["materials"])
 	{
-		if(!material["valid"])
+		if (!material["valid"])
 			continue;
 
 		// ValidateMaterials put every valid entry in materialMap, so this is the id it
@@ -77,7 +81,7 @@ bool scree::MaterialRegistry::LoadMaterials()
 
 	if (Log::Worst(logs) == Log::Severity::RejectFile)
 		return false;
-	
+
 	return true;
 }
 

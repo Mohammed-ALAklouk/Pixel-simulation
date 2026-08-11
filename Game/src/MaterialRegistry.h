@@ -22,7 +22,8 @@ namespace scree {
 		static constexpr MaterialID AIR_ID = 0;
 
 		// False means nothing was loaded. Problems go to logs either way.
-		bool LoadMaterials();
+		bool LoadMaterials(std::string path);
+		bool LoadMaterialsFromJSON(nlohmann::json& data);
 		void LoadAir();
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);

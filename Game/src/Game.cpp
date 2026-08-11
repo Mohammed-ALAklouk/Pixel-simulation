@@ -237,7 +237,8 @@ void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 bool scree::Game::load_materials()
 {
 	MaterialRegistry new_registry;
-	bool success = new_registry.LoadMaterials();
+	std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
+	bool success = new_registry.LoadMaterials(path);
 	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
 	if (success) {
 		auto remap = get_registry_changes(new_registry);
