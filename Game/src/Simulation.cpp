@@ -90,10 +90,13 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 
 					if (fast_rand() % 100 >= chance)	continue;
 					hasReacted = true;
+					// Snapshot: the target transition below rewrites checked_tile in place, so the
+					// self transition would otherwise read the lifespan of what it just became.
+					const std::uint8_t checked_lifespan = checked_tile.lifespan;
 					const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
 					const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
 					if (targetTransition && !targetTransition->noTransition) {
-						std::uint8_t lifespan = checked_tile.lifespan;
+						std::uint8_t lifespan = checked_lifespan;
 						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
 						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
@@ -109,7 +112,7 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
 							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
 						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
-							lifespan = checked_tile.lifespan;
+							lifespan = checked_lifespan;
 
 						// The tile is a different material now, so everything above is stale.
 						grid.Create_at(x, y, selfTransition->nextID, lifespan);
@@ -217,8 +220,10 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 	// Liquid tiles
 	if (tile_material.movement.is_liquid)
 	{
+		// Everything below is relative to the tile's own gravity, not the screen: for a
+		// rising fluid the surface is the row under it and the drop is the row above.
 		bool is_on_surface = false;
-		if (grid.Is_in_bounds(x, y - 1) && grid.Get_at(x, y - 1).id == MaterialRegistry::AIR_ID)
+		if (grid.Is_in_bounds(x, y - gravityDirection) && grid.Get_at(x, y - gravityDirection).id == MaterialRegistry::AIR_ID)
 		{
 			is_on_surface = true;
 		}
@@ -246,14 +251,14 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 
 				target_x = check_x;
 
-				// Check if there is an empty space or lighter fluid directly below this new spot
-				if (grid.Is_in_bounds(check_x, y + 1))
+				// Check if there is an empty space or lighter fluid the tile could fall into
+				if (grid.Is_in_bounds(check_x, y + gravityDirection))
 				{
-					auto& below_tile = grid.Get_at(check_x, y + 1);
-					auto& below_material = m_registry.Get(below_tile.id);
+					auto& drop_tile = grid.Get_at(check_x, y + gravityDirection);
+					auto& drop_material = m_registry.Get(drop_tile.id);
 
-					if (below_tile.id == MaterialRegistry::AIR_ID ||
-						(below_material.movement.is_fluid && tile_material.movement.density > below_material.movement.density))
+					if (drop_tile.id == MaterialRegistry::AIR_ID ||
+						(drop_material.movement.is_fluid && tile_material.movement.density > drop_material.movement.density))
 					{
 						break; // Found the cliff edge, stop scanning and take it
 					}
@@ -302,7 +307,7 @@ bool scree::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, int x, in
 			if (!transition || transition->noTransition) return false;
 
 			std::uint8_t new_lifespan = m_registry.Get(transition->nextID).lifespanData.Initial;
-			grid.Recreate_at(x, y, transition->nextID, new_lifespan);
+			grid.Create_at(x, y, transition->nextID, new_lifespan);
 			return true;
 		}
 	}

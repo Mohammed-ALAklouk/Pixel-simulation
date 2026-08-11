@@ -121,7 +121,7 @@ namespace scree {
 
         // ---- per material -----------------------------------------------------
 
-        // Detail describes how the field is unusable when it is present but empty;
+        // Detail describes why the field is unusable when it is present;
         // leave it off when the field is simply absent.
         static Log CreateMissingField(int materialID, const std::string& materialName,
                                       const std::string& field, const std::string& detail = "") {

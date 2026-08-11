@@ -1,5 +1,10 @@
 #include "MaterialRegistry.h"
 
+#include <nlohmann/json.hpp>
+#include <raylib.h>
+#include <algorithm>
+#include <fstream>
+
 
 int scree::MaterialRegistry::ClampField(int value, int min, int max, const std::string& field, MaterialID materialID)
 {
@@ -408,6 +413,22 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	}
 
 	out.OnDeathTransitionSpan = ParseTransitionSpan(lifespan["on_death"], id, "on_death transition", false);
+
+	// Either of these leaves a dead tile sitting at lifespan 0 with nothing to become.
+	// Tick keeps reporting it dead, so it would re-roll and wake its chunk every frame,
+	// forever. Rejecting the material is what keeps it out of the simulation.
+	const auto& span = out.OnDeathTransitionSpan;
+	if (span.count && span.totalWeight == 0)
+		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
+			"every weight is 0, so nothing can be chosen"));
+
+	for (int i = 0; i < span.count; ++i) {
+		if (transitions[span.start + i].noTransition) {
+			logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
+				"a no_transition entry would leave the tile dead but unchanged"));
+			break;
+		}
+	}
 }
 
 void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)

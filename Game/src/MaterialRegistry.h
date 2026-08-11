@@ -1,11 +1,11 @@
 #pragma once
+// Only the parsing declarations below need json, and only by reference, so the full
+// header stays in MaterialRegistry.cpp -- Grid.h includes this, so everything that
+// touches the grid would otherwise compile nlohmann as well.
+#include <nlohmann/json_fwd.hpp>
 #include <vector>
-#include <nlohmann/json.hpp>
-#include <fstream>
-#include <raylib.h>
 #include <string>
 #include <unordered_map>
-#include <algorithm>
 #include "MaterialData.h"
 #include "fast_rand.h"
 #include "Block.h"
@@ -132,17 +132,6 @@ namespace scree {
 					lifespan_ratio(block.lifespan, data.lifespanData.Initial));
 
 			return block.lifespan == 0;
-		}
-
-		void RecreateBlock(Block& block, MaterialID id, std::uint8_t lifespan) const
-		{
-			auto& data = Get(id);
-			if (block.id != id) {
-				block.color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
-			}
-
-			block.id = id;
-			block.lifespan = lifespan;
 		}
 
 		void CreateBlock(Block& block, MaterialID id, std::uint8_t lifespan) const
