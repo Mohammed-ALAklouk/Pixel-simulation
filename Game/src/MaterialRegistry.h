@@ -1,10 +1,10 @@
 #pragma once
-// Only the parsing declarations below need json, and only by reference, so the full
-// header stays in MaterialRegistry.cpp -- Grid.h includes this, so everything that
-// touches the grid would otherwise compile nlohmann as well.
+// Grid.h includes this, so keep the full nlohmann header in the .cpp -- only the
+// parsing decls need json, and only by reference.
 #include <nlohmann/json_fwd.hpp>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include "MaterialData.h"
 #include "fast_rand.h"
@@ -16,14 +16,12 @@ namespace scree {
 	public:
 		MaterialRegistry();
 
-		// Air is "empty" rather than an ordinary material -- Grid::Clear fills with it and
-		// the eraser paints it -- so the code reaches it by id, not by name. LoadAir pins
-		// it to 0; it is not in materials.json.
+		// Air is reached by id, not name (Grid::Clear fills with it). LoadAir pins it to 0.
 		static constexpr MaterialID AIR_ID = 0;
 
-		// False means nothing was loaded. Problems go to logs either way.
-		bool LoadMaterials(std::string path);
-		bool LoadMaterialsFromJSON(nlohmann::json& data);
+		// False means nothing loaded; problems go to logs. Both replace existing contents.
+		bool LoadMaterials(const std::string& path);
+		bool LoadMaterialsFromJSON(std::string_view data);
 		void LoadAir();
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);
@@ -33,9 +31,8 @@ namespace scree {
 		void ParseTags(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
 		void ParseLifespan(const nlohmann::json& material, MaterialID id, scree::LifeSpan& out);
 		void ParseReactions(const nlohmann::json& material, MaterialID id, scree::MaterialData& out);
-		// Pushes into transitions and returns the span covering what it added. Label prefixes
-		// every error, e.g. "reaction target transition". allowReactorAndSelf is false for
-		// on_death, where neither base means anything and the result is always Initial.
+		// Pushes into transitions, returns the span it added. Label prefixes each error.
+		// allowReactorAndSelf is false for on_death (neither base applies there).
 		TransitionsSpan ParseTransitionSpan(const nlohmann::json& array, MaterialID id,
 			const std::string& label, bool allowReactorAndSelf);
 
@@ -95,8 +92,7 @@ namespace scree {
 			return materialNames.at(id);
 		}
 
-		// Divides by steps-1 so the last step lands exactly on max; dividing by steps
-		// leaves max unreachable. One step means one shade, and that shade is min.
+		// Divide by steps-1 so the last step lands exactly on max. One step = one shade (min).
 		static RGB Random_step(const RGB& min, const RGB& max, uint16_t number_of_steps)
 		{
 			if (number_of_steps <= 1) return min;
@@ -105,7 +101,7 @@ namespace scree {
 			return RGB::lerp(min, max, static_cast<float>(step) / (number_of_steps - 1));
 		}
 
-		// An Initial of 0 is accepted at load and would divide here, so guard it.
+		// Initial 0 is accepted at load, so guard the divide.
 		static float lifespan_ratio(std::uint8_t lifespan, std::uint8_t initial)
 		{
 			return initial ? static_cast<float>(lifespan) / initial : 0.0f;
@@ -149,8 +145,7 @@ namespace scree {
 
 	private:
 
-		// Every numeric field ends up in a uint8_t or an int8_t, and the narrowing conversion
-		// wraps instead of failing -- an initial lifespan of 300 would silently become 44.
+		// Numeric fields narrow to uint8_t/int8_t and wrap silently (300 -> 44), so clamp first.
 		int ClampField(int value, int min, int max, const std::string& field, MaterialID materialID);
 		// Same, but warns first if the JSON value was fractional.
 		int ClampField(const nlohmann::json& value, int min, int max, const std::string& field, MaterialID materialID);

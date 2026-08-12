@@ -111,5 +111,25 @@
       "name": "make-release",
       "configurePreset": "make-release"
     }
+  ],
+  "testPresets": [
+    {
+      "name": "vs2022",
+      "configurePreset": "vs2022",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "vs2026",
+      "configurePreset": "vs2026",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "ci-windows",
+      "configurePreset": "ci-windows",
+      "configuration": "Release",
+      "output": { "outputOnFailure": true }
+    }
   ]
 }

@@ -38,59 +38,68 @@ scree::MaterialRegistry::MaterialRegistry()
 	LoadAir();
 }
 
-bool scree::MaterialRegistry::LoadMaterials(std::string	path)
+bool scree::MaterialRegistry::LoadMaterials(const std::string& path)
 {
-	Clear();
-	LoadAir();
-
 	std::ifstream file(path);
 	if (!file.is_open()) {
+		// LoadMaterialsFromJSON resets on every other path; do it here too.
+		Clear();
+		LoadAir();
 		logs.push_back(Log::CreateFileMissing(path));
 		return false;
 	}
 
-	nlohmann::json data;
+	return LoadMaterialsFromJSON(std::string(std::istreambuf_iterator<char>(file), {}));
+}
+
+bool scree::MaterialRegistry::LoadMaterialsFromJSON(std::string_view data)
+{
+	Clear();
+	LoadAir();
+
+	nlohmann::json jsonData;
 	try {
-		data = nlohmann::json::parse(file);
+		jsonData = nlohmann::json::parse(data);
 	}
 	catch (const nlohmann::json::exception& e) {
 		logs.push_back(Log::CreateParseFailed(e.what()));
 		return false;
 	}
 
-
-	return LoadMaterialsFromJSON(data);
-}
-
-bool scree::MaterialRegistry::LoadMaterialsFromJSON(nlohmann::json& data)
-{
-	// Tags have to exist before any material is parsed -- ParseTags(material, out) looks
-	// every tag up in tagMap and reports an unknown tag otherwise.
-	ParseTags(data);
-	ValidateMaterials(data);
-
-	for (auto& material : data["materials"])
-	{
-		if (!material["valid"])
-			continue;
-
-		// ValidateMaterials put every valid entry in materialMap, so this is the id it
-		// was given there -- and the slot ParseMaterial's push_back is about to fill.
-		ParseMaterial(material, materialMap[material["name"].get<std::string>()]);
+	// A non-object top level (e.g. "[1,2,3]") would throw on the first jsonData["tags"] below.
+	if (!jsonData.is_object()) {
+		logs.push_back(Log::CreateParseFailed("expected an object at the top level, got "
+			+ std::string(jsonData.type_name()) + "."));
+		return false;
 	}
 
-	if (Log::Worst(logs) == Log::Severity::RejectFile)
-		return false;
+	// Catches throws the Parse* helpers don't, e.g. writing "valid" into a non-object entry.
+	try {
+		// Tags must be registered before materials, which look them up in tagMap.
+		ParseTags(jsonData);
+		ValidateMaterials(jsonData);
 
-	return true;
+		for (auto& material : jsonData["materials"])
+		{
+			if (!material["valid"])
+				continue;
+
+			// The id ValidateMaterials assigned, and the slot ParseMaterial will fill.
+			ParseMaterial(material, materialMap[material["name"].get<std::string>()]);
+		}
+	}
+	catch (const nlohmann::json::exception& e) {
+		logs.push_back(Log::CreateParseFailed(e.what()));
+		return false;
+	}
+
+	return Log::Worst(logs) != Log::Severity::RejectFile;
 }
 
 void scree::MaterialRegistry::LoadAir()
 {
-	// Air is not in materials.json because the simulation cannot run without it. Its name
-	// is registered before ValidateMaterials so that id 0 is taken, the ids handed out to
-	// file materials start at 1, and a stray "Air" entry in the file is caught as a
-	// duplicate. The name has to match the one file transitions refer to.
+	// Air holds id 0 (registered before ValidateMaterials), so file materials start at 1
+	// and a file "Air" entry is caught as a duplicate. Not in materials.json.
 	std::string airStr = R"({
 		"name": "Air",
 		"movement": {
@@ -116,8 +125,7 @@ void scree::MaterialRegistry::LoadAir()
 
 void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID id)
 {
-	// Only the logs this call adds decide this entry's fate. Folding over the whole
-	// vector would let the first rejected material condemn every one parsed after it.
+	// Judge only the logs this call adds, or one bad material condemns the rest.
 	const std::size_t logStart = logs.size();
 
 	MaterialData inMaterial{};
@@ -127,9 +135,8 @@ void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID
 	ParseLifespan(material, id, inMaterial.lifespanData);
 	ParseReactions(material, id, inMaterial);
 
-	// The id was handed out in ValidateMaterials, so the slot has to be filled either way --
-	// skipping the push would shift every later material off its name. A rejected entry
-	// gets the defaults: no reactions, no tick, and magenta so it is obvious.
+	// Fill the slot either way; skipping would shift every later material off its id.
+	// A reject gets the magenta defaults.
 	if (Log::Worst(logs, logStart) >= Log::Severity::RejectMaterial) {
 		materials.push_back(MaterialData{}); 
 		return;
@@ -210,8 +217,7 @@ void scree::MaterialRegistry::ParseMovement(const nlohmann::json& material, Mate
 	const auto& movement = material["movement"];
 
 	try {
-		// Y_direction is used as a grid offset, so anything outside -1..1 would step over
-		// neighbouring tiles.
+		// Used as a grid offset; outside -1..1 would step over neighbours.
 		out.Y_direction = ReadField(movement, "y_direction", 1, -1, 1, "y_direction", id);
 		if (out.Y_direction == 0) {
 			out.Y_direction = 1;
@@ -232,8 +238,7 @@ void scree::MaterialRegistry::ParseMovement(const nlohmann::json& material, Mate
 
 void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, MaterialID id, scree::MaterialData& out)
 {
-	// An omitted tags block is legal, and operator[] on a const json asserts rather than
-	// inserting, so bind to an empty object instead of indexing.
+	// Omitted tags is legal; operator[] on a const json asserts, so bind an empty object.
 	static const nlohmann::json emptyObject = nlohmann::json::object();
 	const auto& tagEntries = material.contains("tags") ? material["tags"] : emptyObject;
 
@@ -246,8 +251,7 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 		}
 
 		try {
-			// Intensity doubles as a reaction chance, so it is a percent rather than a
-			// free-running byte.
+			// Intensity doubles as a reaction chance, so it's a percent.
 			out.tagData[tag->second].intensity = ClampField(tagEntry.value(), 0, 100,
 				"tag '" + tagEntry.key() + "' intensity", id);
 		}
@@ -281,8 +285,7 @@ void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, Ma
 	try {
 		out.interpolateColor = material.value("interpolate_color", false);
 
-		// A short array converts without complaint, so the size has to be checked before
-		// indexing -- vector::operator[] would run off the end rather than throw.
+		// A short array converts without complaint, so check size before indexing.
 		auto color_min = material.value("color_min", std::vector<std::uint8_t>{255, 0, 255});
 		if (color_min.size() != 3) {
 			logs.push_back(Log::CreateWrongType(id, GetName(id), "color_min", "expected three channels"));
@@ -298,8 +301,7 @@ void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, Ma
 		out.minColor = RGB(color_min[0], color_min[1], color_min[2]);
 		out.maxColor = RGB(color_max[0], color_max[1], color_max[2]);
 
-		// Random_step takes fast_rand() % numberOfSteps, so zero is a divide by zero
-		// rather than a bad colour.
+		// Feeds fast_rand() % numberOfSteps, so 0 would divide by zero.
 		out.numberOfSteps = ReadField(material, "steps", 1, 1, 255, "steps", id);
 	}
 	catch (const nlohmann::json::exception& e) {
@@ -392,11 +394,11 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 		return;
 	}
 
-	// Committed here so the on_death paths below can bail without discarding them.
+	// Commit before the on_death checks below, which may bail.
 	out.Initial = initial;
 	out.Tick = tick;
 
-	// A material that never ticks never dies, so on_death is only read when it does.
+	// Never ticks, never dies; on_death only matters when it ticks.
 	if (tick == 0) return;
 
 	if (!lifespan.contains("on_death")) {
@@ -418,9 +420,8 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 
 	out.OnDeathTransitionSpan = ParseTransitionSpan(lifespan["on_death"], id, "on_death transition", false);
 
-	// Either of these leaves a dead tile sitting at lifespan 0 with nothing to become.
-	// Tick keeps reporting it dead, so it would re-roll and wake its chunk every frame,
-	// forever. Rejecting the material is what keeps it out of the simulation.
+	// Either leaves a dead tile with nothing to become, so it re-rolls and wakes its
+	// chunk every frame. Reject it.
 	const auto& span = out.OnDeathTransitionSpan;
 	if (span.count && span.totalWeight == 0)
 		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",
@@ -443,8 +444,8 @@ void scree::MaterialRegistry::ParseReactions(const nlohmann::json& material, Mat
 		return;
 	}
 
-	// Stands in for an absent transition list so the loops below can bind a reference
-	// without operator[] inserting a null into the DOM.
+	// Stand-in for an absent list so the loops bind a reference without operator[]
+	// inserting a null.
 	static const nlohmann::json emptyArray = nlohmann::json::array();
 
 	out.reactionSpan.start = static_cast<std::uint16_t>(reactions.size());

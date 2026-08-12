@@ -39,6 +39,9 @@ jobs:
       - name: Build
         run: cmake --build --preset ci-windows-release
 
+      - name: Test
+        run: ctest --preset ci-windows
+
       # The build tree's assets/ is a junction back into the source tree, so it
       # is copied from the source directly rather than from the output folder.
       - name: Stage package

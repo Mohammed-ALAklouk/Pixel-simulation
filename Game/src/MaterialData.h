@@ -9,28 +9,28 @@
 
 namespace scree
 {
-	static constexpr int MAX_TAGS = 8;
-	static constexpr int MAX_MATERIALS = 256;
+	static constexpr int MAX_TAGS = 8;			// one TagData slot per tag on every material
+	static constexpr int MAX_MATERIALS = 256;	// the whole MaterialID range; extras are dropped at load
 	using MaterialID = std::uint8_t;
 
-	// Index range into one of the g_* arenas below. Which arena depends on the field:
-	// every transition span points into g_transitions, reactionSpan into g_reactions.
+	// Index range into the reaction arena. Transition spans need a weight total too, so
+	// they use TransitionsSpan; reactionSpan is all that's left on this one.
 	struct Span {
 		std::uint16_t start = 0;
 		std::uint16_t count = 0;
 	};
 
+	// Index range into the transition arena, plus its weights summed at load. A total of 0
+	// (empty, or all weights 0) tells PickTransition there is nothing to pick.
 	struct TransitionsSpan {
 		std::uint16_t start = 0;
 		std::uint16_t count = 0;
-		std::uint16_t totalWeight = 0;	
+		std::uint16_t totalWeight = 0;
 	};
 
 	struct Movement {
 		std::int8_t Y_direction = 1;
-		// Integer scale, not the old float. Comparisons are strict, so equal densities
-		// never displace each other: air 0, smoke 1, fire 2, steam 10, oil 20,
-		// dirty water 20, water 30, acid 31, lava 50, sand/ash 80, stone/wood 100.
+		// Strict comparison, so equal densities never displace each other.
 		std::uint8_t density = 0;
 		std::uint8_t scatter_chance = 0;
 		bool can_fall = false;
@@ -39,17 +39,14 @@ namespace scree
 		bool is_liquid = false;
 	};
 
-	// One possible outcome. A transition span is a partition -- weights are relative to
-	// the others in the same span and exactly one entry is always chosen -- so "nothing
-	// happens" is not the absence of an entry, it is an entry with noTransition set.
+	// One weighted outcome in a span. "Nothing happens" is not an absent entry but one
+	// with noTransition set, and it needs a weight like any other.
 	struct Transition {
+		// on_death allows Initial only; ParseTransitionSpan warns on the other two.
 		enum class LifeSpanBase : std::uint8_t {
-			Self,		// use the old lifespan of the tile being rewritten
-			// Use the lifespan of the material that caused the transition, read AFTER
-			// that material has ticked this frame. Hot stone spreading through water
-			// relies on this to cool by one per generation, so the lifespan tick must
-			// stay ordered before reactions in Update_pixel.
-			// In on_death there is no reactor: warns at load and falls back to Initial.
+			Self,		// old lifespan of the tile being rewritten
+			// Lifespan of the other participant, read AFTER it ticks this frame -- so the
+			// lifespan tick must stay ordered before reactions in Update_pixel.
 			Reactor,
 			Initial,    // use the default lifespan of the new material it turns into
 		};
@@ -60,11 +57,11 @@ namespace scree
 		LifeSpanBase lifespanBase = LifeSpanBase::Initial;
 	};
 
-	// A material with no lifespan is Initial 255, Tick 0. An omitted lifespan block in
-	// the JSON resolves to those same values.
+	// No lifespan block resolves to Initial 255, Tick 0.
 	struct LifeSpan {
 		std::uint8_t Initial = 255;
-		std::uint8_t Tick = 0;			// subtracted once per update
+		// Subtracted once per update; 0 means never dies, so on_death is unused.
+		std::uint8_t Tick = 0;
 		TransitionsSpan OnDeathTransitionSpan = { 0, 0, 0};
 	};
 
@@ -75,25 +72,26 @@ namespace scree
 		};
 
 		enum class Sample : std::uint8_t {
-			All,
-			FirstToReact,
+			All,			// keep scanning; one reaction can fire on all four neighbours
+			FirstToReact,	// stop at the neighbour that fired
 		};
 
 		TargetType targetType = TargetType::Material;
 		MaterialID TargetID = 0;		// material id when Material, tag id when Tag
-		// Percent, Material targets only. Tag targets roll against the target's intensity
-		// instead, so Chance is neither parsed nor read for them.
+		// Percent, Material targets only (default 100). Tag targets use intensity instead.
 		std::uint8_t Chance = 0;
 		TransitionsSpan TargetTransitionsSpan = { 0, 0, 0 };
+		// Firing one ends the tile's update -- it's a different material now.
 		TransitionsSpan SelfTransitionsSpan = { 0, 0, 0 };
 
 		Sample sample = Sample::FirstToReact;
-		// On firing: stop scanning the remaining neighbours. Movement still runs.
+		// After firing once, skip this material's remaining reactions. Movement still runs.
 		bool HaltUpdate = false;
 	};
 
 	struct TagData {
-		std::uint8_t intensity = 0;		// 0 = this material does not have the tag
+		// 0 = untagged. Doubles as the percent chance a Tag target rolls against.
+		std::uint8_t intensity = 0;
 		// Stick to neighbours carrying this tag (suppresses movement). Independent of
 		// intensity -- fire anchors to flammable while being flammable 0 itself.
 		bool isAnchor = false;
@@ -105,9 +103,11 @@ namespace scree
 		LifeSpan lifespanData;
 
 		bool interpolateColor = false;		// colour from lifespan: minColor at 0, maxColor at Initial
+		// Magenta, which is also what a material rejected at load is left holding.
 		RGB minColor = {255, 0, 255};
 		RGB maxColor = {255, 0, 255};
-		std::uint8_t numberOfSteps = 1;	// random colour steps, used when not interpolating
+		// Random colour steps between min and max when not interpolating; 1 = minColor.
+		std::uint8_t numberOfSteps = 1;
 
 		std::array<TagData, MAX_TAGS> tagData;	// indexed by tag id
 	};

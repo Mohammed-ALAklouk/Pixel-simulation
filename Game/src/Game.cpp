@@ -10,7 +10,7 @@ scree::Game::Game()
 {
 	load_materials();
 
-	InitWindow(Window_size.x, Window_size.y, "Scree");
+	InitWindow(Window_size.x, Window_size.y, "scree");
 	int grid_size_px = static_cast<int>(GridSize * TileSize);
 	Grid_offset.x = static_cast<float>((Window_size.x - grid_size_px) / 2);
 	Grid_offset.y = static_cast<float>((Window_size.y - grid_size_px) / 2);

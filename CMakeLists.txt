@@ -45,3 +45,11 @@ FetchContent_Declare(rlimgui
 FetchContent_MakeAvailable(raylib nlohmann_json imgui rlimgui)
 
 add_subdirectory(Game)
+
+# Off when Scree is consumed as a subproject, and never installed or packaged -- the
+# release workflow copies Scree.exe by name, so the test binary cannot follow it.
+option(SCREE_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
+if (SCREE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
