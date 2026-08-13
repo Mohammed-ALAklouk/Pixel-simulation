@@ -109,10 +109,7 @@ void scree::Game::processInputs()
 		Vector2 cursor_end = mouse_pos;
 		auto line = GetLine(cursor_start, cursor_end);
 		MaterialID material = static_cast<MaterialID>(mouse_left_down ? SelectedMaterial : MaterialRegistry::AIR_ID);
-
-		for (auto point: line)
-			draw_cursor(point, material);
-
+		draw_stroke(line, material, cursor_radius);
 		cursor_start = cursor_end;
 	}
 	
@@ -145,9 +142,6 @@ void scree::Game::UI()
 		auto tile = grid.Get_at(static_cast<std::uint16_t>(hover_x), static_cast<std::uint16_t>(hover_y));
 		ImGui::Text("Pixel under mouse %s", material_registry.GetName(tile.id).c_str());
 	}
-
-
-
 
 	if (ImGui::Button("Clear"))
 		grid.Clear();
@@ -204,34 +198,43 @@ void scree::Game::run()
 	}
 }
 
-void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
+void scree::Game::draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius)
 {
-	int cx = static_cast<int>(pos.x);
-	int cy = static_cast<int>(pos.y);
+	int min_y = std::numeric_limits<int>::max();
+	int max_y = std::numeric_limits<int>::min();
+	for (auto point : points) {
+		min_y = std::min(min_y, int(point.y - radius));
+		max_y = std::max(max_y, int(point.y + radius));
+	}
 
-	for (int y = -cursor_radius; y < cursor_radius; y++)
+	for (int y = min_y; y <= max_y; y++)
 	{
-		int world_y = cy + y;
-		if (world_y < 0 || world_y >= GridSize) continue;
+		if (y < 0 || y >= GridSize) continue;
+		int min_x = std::numeric_limits<int>::max();
+		int max_x = std::numeric_limits<int>::min();
 
-		int rem = cursor_radius * cursor_radius - y * y;
-		if (rem <= 0) continue;
-		int dx = static_cast<int>(std::sqrt(static_cast<double>(rem)));
-		while (dx * dx >= rem) dx--;
-
-		int x_lo = std::max(cx - dx, 0);
-		int x_hi = std::min(cx + dx, int(GridSize) - 1);
-
-		for (int world_x = x_lo; world_x <= x_hi; world_x++)
-		{
-			// no x*x + y*y test here — every column in this range is already inside
-			if (material == MaterialRegistry::AIR_ID ||
-				grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID)
-			{
-				grid.Set_at(world_x, world_y, material_registry.CreateBlock(material));
-			}
+		for (auto point : points) {
+			int vertical_distance = y - point.y;
+			int horizontal_reach_squared = int(radius) * int(radius) - vertical_distance * vertical_distance;
+			if (horizontal_reach_squared <= 0) continue;
+			int half_width = int(sqrt(horizontal_reach_squared));
+			if (half_width * half_width >= horizontal_reach_squared) half_width--;
+			min_x = std::min(min_x, int(point.x) - half_width);
+			max_x = std::max(max_x, int(point.x) + half_width);
 		}
 
+		if (min_x > max_x) continue;
+		min_x = std::max(min_x, 0);
+		max_x = std::min(max_x, int(GridSize) - 1);
+
+		for (int x = min_x; x <= max_x; x++)
+		{
+			if (material == MaterialRegistry::AIR_ID ||
+				grid.Get_at(x, y).id == MaterialRegistry::AIR_ID)
+			{
+				grid.Set_at(x, y, material_registry.CreateBlock(material));
+			}
+		}
 	}
 }
 

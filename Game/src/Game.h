@@ -34,7 +34,7 @@ namespace scree
 		void processInputs();
 		void UI();
 		void run();
-		void draw_cursor(Vector2 pos, MaterialID material);
+		void draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius);
 		bool load_materials();
 		std::vector<MaterialID> get_registry_changes(const MaterialRegistry& new_registry);
 
