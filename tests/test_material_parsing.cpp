@@ -244,7 +244,8 @@ TEST_CASE("a known tag records its intensity and anchor flag")
 
 	REQUIRE(registry.GetLogs().empty());
 	CHECK(registry.GetTagIntensity(FIRST, 1) == 20);
-	CHECK(registry.Get(FIRST).tagData[0].isAnchor);
+	// Whole-mask compare, so a stray bit on another tag fails too.
+	CHECK(registry.Get(FIRST).anchorTagBitmask == 0b0000'0001);
 	// Anchoring to a tag is independent of carrying it.
 	CHECK(registry.GetTagIntensity(FIRST, 0) == 0);
 }
@@ -383,9 +384,9 @@ TEST_CASE("a reaction resolves a forward reference to a later material")
 
 // --- limits -----------------------------------------------------------------
 //
-// tagData is a std::array<TagData, MAX_TAGS> indexed by the ids ParseTags hands out, and
-// MaterialID is a uint8_t. These guards are the only thing keeping either in range, so
-// they get tested even though nothing in the shipped file comes near them.
+// tagIntensity is a std::array<std::uint8_t, MAX_TAGS> indexed by the ids ParseTags hands
+// out, and MaterialID is a uint8_t. These guards are the only thing keeping either in
+// range, so they get tested even though nothing in the shipped file comes near them.
 
 TEST_CASE("tags past MAX_TAGS are dropped rather than indexed out of the array")
 {

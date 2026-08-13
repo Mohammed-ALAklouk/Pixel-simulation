@@ -77,7 +77,7 @@ namespace scree {
 		}
 
 		std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) const {
-			return materials.at(id).tagInensity.at(tag);
+			return materials.at(id).tagIntensity.at(tag);
 		}
 
 		bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType) const
@@ -131,11 +131,14 @@ namespace scree {
 			return block.lifespan == 0;
 		}
 
-		void CreateBlock(Block& block, MaterialID id, std::uint8_t lifespan) const
+		void CreateBlock(Block& block, MaterialID id, std::uint8_t lifespan = 0) const
 		{
 			auto& data = Get(id);
 			block.id = id;
 			block.lifespan = lifespan;
+			if (lifespan == 0)
+				block.lifespan = data.lifespanData.Initial;
+
 			if (data.interpolateColor)
 				block.color = RGB::lerp(data.minColor, data.maxColor,
 					lifespan_ratio(lifespan, data.lifespanData.Initial));

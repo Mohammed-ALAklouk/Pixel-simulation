@@ -9,7 +9,7 @@
 
 namespace scree
 {
-	static constexpr int MAX_TAGS = 8;			// one TagData slot per tag on every material
+	static constexpr int MAX_TAGS = 8;			// one std::uint8_t slot per tag and an 8-bit mask on every material
 	static constexpr int MAX_MATERIALS = 256;	// the whole MaterialID range; extras are dropped at load
 	using MaterialID = std::uint8_t;
 
@@ -89,14 +89,6 @@ namespace scree
 		bool HaltUpdate = false;
 	};
 
-	struct TagData {
-		// 0 = untagged. Doubles as the percent chance a Tag target rolls against.
-		std::uint8_t intensity = 0;
-		// Stick to neighbours carrying this tag (suppresses movement). Independent of
-		// intensity -- fire anchors to flammable while being flammable 0 itself.
-		bool isAnchor = false;
-	};
-
 	struct MaterialData {
 		Movement movement;
 		Span reactionSpan;
@@ -109,7 +101,13 @@ namespace scree
 		// Random colour steps between min and max when not interpolating; 1 = minColor.
 		std::uint8_t numberOfSteps = 1;
 
-		std::uint8_t anchorTagBitmask = 0;	// bit i set if anchored to tag i
-		std::array<std::uint8_t, MAX_TAGS> tagInensity;	// indexed by tag id
+		// Bit i set = stick to neighbours carrying tag i (suppresses movement). Independent
+		// of tagIntensity -- fire anchors to flammable while being flammable 0 itself.
+		std::uint8_t anchorTagBitmask = 0;
+		static_assert(MAX_TAGS <= 8, "anchorTagBitmask is one bit per tag, so it caps at 8");
+
+		// Indexed by tag id. 0 = untagged; otherwise it doubles as the percent chance a
+		// Tag-target reaction rolls against.
+		std::array<std::uint8_t, MAX_TAGS> tagIntensity;
 	};
 }

@@ -86,7 +86,7 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 				if (m_registry.CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) {
 					int chance = reaction->Chance;
 					if (reaction->targetType == Reaction::TargetType::Tag) 
-						chance = m_registry.Get(checked_tile.id).tagInensity.at(reaction->TargetID);
+						chance = m_registry.Get(checked_tile.id).tagIntensity.at(reaction->TargetID);
 
 					if (fast_rand() % 100 >= chance)	continue;
 					hasReacted = true;
@@ -147,7 +147,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 					if (grid.Is_in_bounds(next_x, next_y)) {
 						auto& checked_tile = grid.Get_at(next_x, next_y);
 						auto& checked_tile_material = m_registry.Get(checked_tile.id);
-						if (checked_tile_material.tagInensity[i]) {
+						if (checked_tile_material.tagIntensity[i]) {
 							return; // Found an anchor tile nearby, do not move
 						}
 					}

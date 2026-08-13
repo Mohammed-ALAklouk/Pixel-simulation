@@ -35,7 +35,6 @@ int scree::MaterialRegistry::ReadField(const nlohmann::json& parent, const std::
 
 scree::MaterialRegistry::MaterialRegistry()
 {
-	assert(MAX_TAGS <= 8, "Tag bitmask must fit in a byte");
 	LoadAir();
 }
 
@@ -253,7 +252,7 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 
 		try {
 			// Intensity doubles as a reaction chance, so it's a percent.
-			out.tagInensity[tag->second] = ClampField(tagEntry.value(), 0, 100,
+			out.tagIntensity[tag->second] = ClampField(tagEntry.value(), 0, 100,
 				"tag '" + tagEntry.key() + "' intensity", id);
 		}
 		catch (const nlohmann::json::exception&) {
