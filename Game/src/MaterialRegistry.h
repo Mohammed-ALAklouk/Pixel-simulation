@@ -77,7 +77,7 @@ namespace scree {
 		}
 
 		std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) const {
-			return materials.at(id).tagData.at(tag).intensity;
+			return materials.at(id).tagInensity.at(tag);
 		}
 
 		bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType) const

@@ -109,6 +109,7 @@ namespace scree
 		// Random colour steps between min and max when not interpolating; 1 = minColor.
 		std::uint8_t numberOfSteps = 1;
 
-		std::array<TagData, MAX_TAGS> tagData;	// indexed by tag id
+		std::uint8_t anchorTagBitmask = 0;	// bit i set if anchored to tag i
+		std::array<std::uint8_t, MAX_TAGS> tagInensity;	// indexed by tag id
 	};
 }
