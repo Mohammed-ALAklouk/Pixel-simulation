@@ -15,6 +15,12 @@
 #include <utility>
 #include <vector>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+
+
 namespace scree
 {
 	

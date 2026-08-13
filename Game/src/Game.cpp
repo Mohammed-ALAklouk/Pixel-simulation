@@ -1,10 +1,5 @@
 #include "Game.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <ctime>
-
 scree::Game::Game()
 	: simulation(material_registry)
 {
@@ -211,21 +206,27 @@ void scree::Game::run()
 
 void scree::Game::draw_cursor(Vector2 pos, MaterialID material)
 {
-	int radius = static_cast<int>(cursor_radius);
-	int radiusSquared = radius * radius;
+	int cx = static_cast<int>(pos.x);
+	int cy = static_cast<int>(pos.y);
 
-	for (int x = -radius; x < radius; x++)
+	for (int y = -cursor_radius; y < cursor_radius; y++)
 	{
-		for (int y = -radius; y < radius; y++)
+		int world_y = cy + y;
+		if (world_y < 0 || world_y >= GridSize) continue;
+
+		int rem = cursor_radius * cursor_radius - y * y;
+		if (rem <= 0) continue;
+		int dx = static_cast<int>(std::sqrt(static_cast<double>(rem)));
+		while (dx * dx >= rem) dx--;
+
+		int x_lo = std::max(cx - dx, 0);
+		int x_hi = std::min(cx + dx, int(GridSize) - 1);
+
+		for (int world_x = x_lo; world_x <= x_hi; world_x++)
 		{
-			int world_x = static_cast<int>(pos.x) + x;
-			int world_y = static_cast<int>(pos.y) + y;
-
-			if (!in_bound(world_x, world_y))
-				continue;
-
-			if (x * x + y * y < radiusSquared &&
-				(material == MaterialRegistry::AIR_ID || grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID))
+			// no x*x + y*y test here — every column in this range is already inside
+			if (material == MaterialRegistry::AIR_ID ||
+				grid.Get_at(world_x, world_y).id == MaterialRegistry::AIR_ID)
 			{
 				grid.Set_at(world_x, world_y, material_registry.CreateBlock(material));
 			}
