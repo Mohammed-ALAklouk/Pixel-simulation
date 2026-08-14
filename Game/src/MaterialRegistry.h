@@ -50,8 +50,12 @@ namespace scree {
 		}
 
 
+		// Unchecked on purpose: this is the innermost call in the update, hit several
+		// times per pixel per pass. Every id reaching it comes out of a Block, and a
+		// Block only ever holds an id the registry handed out -- Grid::Remap rewrites
+		// the whole grid when materials reload, so no stale id survives.
 		const MaterialData& Get(MaterialID id) const {
-			return materials.at(id);
+			return materials[id];
 		}
 
 		int GetMaterialsCount() const {
@@ -65,19 +69,19 @@ namespace scree {
 			int roll = fast_rand() % span.totalWeight;
 			for (int i = 0; i < span.count; ++i)
 			{
-				roll -= transitions.at(span.start + i).weight;
+				roll -= transitions[span.start + i].weight;
 				if (roll < 0)
-					return &transitions.at(span.start + i);
+					return &transitions[span.start + i];
 			}
 			return nullptr; // unreachable when total > 0
 		}
 
 		const Reaction* GetReaction(int index) const {
-			return &reactions.at(index);
+			return &reactions[index];
 		}
 
 		std::uint8_t GetTagIntensity(MaterialID id, MaterialID tag) const {
-			return materials.at(id).tagIntensity.at(tag);
+			return materials[id].tagIntensity[tag];
 		}
 
 		bool CanReact(MaterialID id, MaterialID target, Reaction::TargetType targetType) const
@@ -117,7 +121,7 @@ namespace scree {
 
 		bool Tick(Block& block) const
 		{
-			auto& data = materials.at(block.id);
+			auto& data = materials[block.id];
 			if (block.lifespan < data.lifespanData.Tick) {
 				block.lifespan = 0;
 				return true;
