@@ -39,9 +39,16 @@ void scree::Game::render()
 {
 	BeginDrawing();
 	ClearBackground(BLACK);
+	// Walks the block array a row at a time rather than resolving each pixel's index
+	// on its own. The whole grid is still converted every frame -- the texture upload
+	// below wants the full buffer -- but the gather is now sequential in both arrays.
 	for (int y = 0; y < GridSize; y++)
+	{
+		const Block* row = grid.Row(y);
+		Color* out = pixels.data() + y * GridSize;
 		for (int x = 0; x < GridSize; x++)
-			pixels[y * GridSize + x] = grid.Get_at(x, y).color.toRaylibColor();
+			out[x] = row[x].color.toRaylibColor();
+	}
 
 	UpdateTexture(tex, pixels.data());
 
