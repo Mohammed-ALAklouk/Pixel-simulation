@@ -109,5 +109,10 @@ namespace scree
 		// Indexed by tag id. 0 = untagged; otherwise it doubles as the percent chance a
 		// Tag-target reaction rolls against.
 		std::array<std::uint8_t, MAX_TAGS> tagIntensity;
+
+		// Bit i set = tagIntensity[i] is non-zero. Derived from the array above at load,
+		// so that "does this neighbour carry any tag I anchor to" is one AND against
+		// anchorTagBitmask rather than a walk over all MAX_TAGS slots per neighbour.
+		std::uint8_t tagBitmask = 0;
 	};
 }

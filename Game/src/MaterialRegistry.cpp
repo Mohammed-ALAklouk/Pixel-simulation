@@ -262,6 +262,10 @@ void scree::MaterialRegistry::ParseTags(const nlohmann::json& material, Material
 		}
 	}
 
+	out.tagBitmask = 0;
+	for (int i = 0; i < MAX_TAGS; i++)
+		if (out.tagIntensity[i]) out.tagBitmask |= static_cast<std::uint8_t>(1 << i);
+
 	if (material.contains("anchor")) {
 		try {
 			auto anchor = material["anchor"].get<std::string>();
