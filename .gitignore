@@ -48,3 +48,9 @@ Testing/
 TODO.md
 /BUGS.md
 /Scree UI Redesign Prototype
+
+# Benchmark build output; bench/ itself is tracked
+/bench/obj/
+/bench/baseline_src/
+/bench/out.txt
+/bench
