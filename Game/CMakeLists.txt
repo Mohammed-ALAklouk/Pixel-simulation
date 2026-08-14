@@ -52,6 +52,15 @@ set_target_properties(Game PROPERTIES
     OUTPUT_NAME scree
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Windows subsystem instead of console, so launching the exe does not spawn a
+# console window alongside the game. MSVC then expects WinMain as the entry point;
+# /ENTRY:mainCRTStartup points it back at the standard main() we actually have.
+# MinGW/g++ supplies that glue itself, so the entry override is MSVC-only.
+if (WIN32)
+    set_target_properties(Game PROPERTIES WIN32_EXECUTABLE TRUE)
+    target_link_options(Game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/ENTRY:mainCRTStartup>)
+endif()
+
 # MaterialRegistry.h opens files under "assets/" relative to the exe's own
 # directory (GetApplicationDirectory), not the working directory, so it finds
 # them no matter how the exe was launched. A link (not a copy) points the build
