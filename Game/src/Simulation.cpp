@@ -2,8 +2,16 @@
 
 void scree::Simulation::Update_grid(Grid& grid)
 {
-	grid.Reset_processed();
+	// Order matters: the clear only covers the chunks that are active, so the active
+	// set has to be the one this update will actually sweep. Clearing against the
+	// previous set would leave a stale flag on any tile that was swapped across a
+	// chunk boundary into a chunk that had been asleep, and that tile would then sit
+	// out an update.
 	grid.Mark_chunks_for_next_update();
+	grid.Reset_processed();
+	// The downward pass rebuilds the rising set as it goes, so it has to run first and
+	// start from empty.
+	grid.Clear_rising();
 	Update_grid_directional(grid, 1);
 	Update_grid_directional(grid, -1);
 }
@@ -14,56 +22,78 @@ void scree::Simulation::Update_grid_directional(Grid& grid, int gravityDirection
 	int y_start = y_increment == 1 ? 0 : grid.Get_height_px() - 1;
 	int y_end = y_increment == 1 ? grid.Get_height_px() : -1;
 
+	int chunk_count_x = grid.Get_width_chunks();
+
 	for (int y = y_start; y != y_end; y += y_increment)
 	{
 		int x_increment = fast_rand() & 1 ? 1 : -1;
-		int start = x_increment == 1 ? 0 : grid.Get_width_px() - 1;
-		int end = x_increment == 1 ? grid.Get_width_px() : -1;
+		int chunk_start = x_increment == 1 ? 0 : chunk_count_x - 1;
+		int chunk_end = x_increment == 1 ? chunk_count_x : -1;
+		int chunk_y = y >> CHUNK_SHIFT;
 
-		for (int x = start; x != end; x += x_increment)
+		// Stepping chunk by chunk rather than pixel by pixel: a sleeping chunk used to
+		// cost a chunk lookup on its first pixel before the loop jumped over the other
+		// 31, and an awake one cost that lookup on all 32.
+		for (int chunk_x = chunk_start; chunk_x != chunk_end; chunk_x += x_increment)
 		{
-			if (!grid.Is_chunk_active_at_pixel(x, y))
-			{
-				x += (CHUNK_SIZE - 1) * x_increment;
-				if (x >= grid.Get_width_px() || x < 0) break;
-				continue;
-			}
+			if (!grid.Is_chunk_active(chunk_x, chunk_y)) continue;
+			// Nothing in this chunk moves upward, so the upward pass has no work here.
+			if (gravityDirection != 1 && !grid.Chunk_has_rising(chunk_x, chunk_y)) continue;
 
-			Update_pixel(grid, x, y, gravityDirection);
+			int x0 = chunk_x << CHUNK_SHIFT; // equivalent to chunk_x * CHUNK_SIZE, but faster
+			int x = x_increment == 1 ? x0 : x0 + CHUNK_SIZE - 1;
+			for (int i = 0; i < CHUNK_SIZE; i++, x += x_increment)
+				Update_pixel(grid, x, y, gravityDirection);
 		}
 	}
 }
 
 void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection)
 {
-	if (grid.Is_processed(x, y)) return;
-
+	// Air first: it is most of a typical grid, and testing it here skips the load from
+	// the processed array entirely. The three checks are all plain early-outs, so the
+	// order between them only changes what gets loaded, not what runs.
 	auto& tile = grid.Get_at(x, y);
 	if (tile.id == MaterialRegistry::AIR_ID) return;
 
 	auto&& tile_material = m_registry.Get(tile.id);
-	if (tile_material.movement.Y_direction != gravityDirection) return;
-
-	bool shouldDie = update_pixel_lifespan(grid, tile, x, y);
-	if (shouldDie)
+	if (tile_material.movement.Y_direction != gravityDirection)
 	{
-		grid.set_processed(x, y);
+		// Seen on the downward pass, so this is a tile the upward pass will want. Its
+		// chunk goes into the rising set that pass reads.
+		if (gravityDirection == 1) grid.mark_rising_at_pixel(x, y);
 		return;
 	}
 
-	if (update_pixel_reaction(grid, tile, x, y))
+	if (grid.Is_processed(x, y)) return;
+
+	// tile_material is threaded through the three steps rather than looked up again in
+	// each: none of them can change this tile's material without also ending its
+	// update, so the one fetched above stays good for as long as it is used.
+	if (tile_material.lifespanData.Tick)
 	{
-		grid.set_processed(x, y);
-		return;
+		if (update_pixel_lifespan(grid, tile, tile_material, x, y))
+		{
+			grid.set_processed(x, y);
+			return;
+		}
 	}
 
-	update_pixel_movement(grid, tile, x, y);
+	if (tile_material.reactionSpan.count)
+	{
+		if (update_pixel_reaction(grid, tile, tile_material, x, y))
+		{
+			grid.set_processed(x, y);
+			return;
+		}
+	}
+
+	update_pixel_movement(grid, tile, tile_material, x, y);
 	grid.set_processed(x, y);
 }
 
-bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, int y)
+bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, const MaterialData& tile_material, int x, int y)
 {
-	auto&& tile_material = m_registry.Get(tile.id);
 	int start_index = tile_material.reactionSpan.start;
 	int count = tile_material.reactionSpan.count;
 	auto tile_cpy = tile; // Copy of the tile to avoid issues with self-reactions
@@ -80,49 +110,49 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 		{
 			int next_x = x + dir.x;
 			int next_y = y + dir.y;
-			if (grid.Is_in_bounds(next_x, next_y))
-			{
-				auto& checked_tile = grid.Get_at(next_x, next_y);
-				if (m_registry.CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) {
-					int chance = reaction->Chance;
-					if (reaction->targetType == Reaction::TargetType::Tag) 
-						chance = m_registry.Get(checked_tile.id).tagIntensity.at(reaction->TargetID);
+			if (!grid.Is_in_bounds(next_x, next_y)) continue;
 
-					if (fast_rand() % 100 >= chance)	continue;
-					hasReacted = true;
-					// Snapshot: the target transition below rewrites checked_tile in place, so the
-					// self transition would otherwise read the lifespan of what it just became.
-					const std::uint8_t checked_lifespan = checked_tile.lifespan;
-					const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
-					const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
-					if (targetTransition && !targetTransition->noTransition) {
-						std::uint8_t lifespan = checked_lifespan;
-						if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial)
-							lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
-						else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
-							lifespan = tile_cpy.lifespan;
+			auto& checked_tile = grid.Get_at(next_x, next_y);
+			if (!m_registry.CanReact(checked_tile.id, reaction->TargetID, reaction->targetType)) continue;
+			
+			int chance = reaction->Chance;
+			if (reaction->targetType == Reaction::TargetType::Tag)
+				chance = m_registry.Get(checked_tile.id).tagIntensity.at(reaction->TargetID);
 
-						// Only the neighbour changes, so the loop's material data is still good.
-						grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
-						grid.set_processed(next_x, next_y);
-					}
+			if (fast_rand() % 100 >= chance)	continue;
 
-					if (selfTransition && !selfTransition->noTransition) {
-						std::uint8_t lifespan = tile_cpy.lifespan;
-						if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
-							lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
-						else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
-							lifespan = checked_lifespan;
+			hasReacted = true;
+			// Snapshot: the target transition below rewrites checked_tile in place, so the
+			// self transition would otherwise read the lifespan of what it just became.
+			const std::uint8_t checked_lifespan = checked_tile.lifespan;
+			const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
+			const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
+			if (targetTransition && !targetTransition->noTransition) {
+				std::uint8_t lifespan = checked_lifespan;
+				if (targetTransition->lifespanBase == Transition::LifeSpanBase::Initial)
+					lifespan = m_registry.Get(targetTransition->nextID).lifespanData.Initial;
+				else if (targetTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
+					lifespan = tile_cpy.lifespan;
 
-						// The tile is a different material now, so everything above is stale.
-						grid.Create_at(x, y, selfTransition->nextID, lifespan);
-						return true;
-					}
-
-					if (reaction->sample == Reaction::Sample::FirstToReact)
-						break;
-				}
+				// Only the neighbour changes, so the loop's material data is still good.
+				grid.Create_at(next_x, next_y, targetTransition->nextID, lifespan);
+				grid.set_processed(next_x, next_y);
 			}
+
+			if (selfTransition && !selfTransition->noTransition) {
+				std::uint8_t lifespan = tile_cpy.lifespan;
+				if (selfTransition->lifespanBase == Transition::LifeSpanBase::Initial)
+					lifespan = m_registry.Get(selfTransition->nextID).lifespanData.Initial;
+				else if (selfTransition->lifespanBase == Transition::LifeSpanBase::Reactor)
+					lifespan = checked_lifespan;
+
+				// The tile is a different material now, so everything above is stale.
+				grid.Create_at(x, y, selfTransition->nextID, lifespan);
+				return true;
+			}
+
+			if (reaction->sample == Reaction::Sample::FirstToReact)
+				break;
 		}
 
 		if (reaction->HaltUpdate && hasReacted) return false;
@@ -131,26 +161,25 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, int x, in
 	return false;
 }
 
-void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, int y) {
-	auto&& tile_material = m_registry.Get(tile.id);
+void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, const MaterialData& tile_material, int x, int y) {
 	std::int8_t gravityDirection = tile_material.movement.Y_direction;
-	
-	// Anchor tiles
-	if (tile_material.anchorTagBitmask) {
-		for (int i = 0; i < MAX_TAGS; i++) {
-			if (tile_material.anchorTagBitmask & (1 << i)) {
-				std::array<Vec2i, 4> directions = { {{0, -gravityDirection}, {1, 0}, {-1, 0}, {0, gravityDirection}} };
 
-				for (auto dir : directions) {
-					int next_x = x + dir.x;
-					int next_y = y + dir.y;
-					if (grid.Is_in_bounds(next_x, next_y)) {
-						auto& checked_tile = grid.Get_at(next_x, next_y);
-						auto& checked_tile_material = m_registry.Get(checked_tile.id);
-						if (checked_tile_material.tagIntensity[i]) {
-							return; // Found an anchor tile nearby, do not move
-						}
-					}
+	// Anchor tiles
+	//
+	// This used to walk all MAX_TAGS slots, and for every anchor tag it found, rebuild
+	// a direction array and re-read the same four neighbours -- so a material anchored
+	// to two tags read eight neighbours to look at four tiles. Each neighbour is now
+	// read once and matched against every anchor tag at once.
+	if (tile_material.anchorTagBitmask) {
+		const std::array<Vec2i, 4> directions = { {{0, -gravityDirection}, {1, 0}, {-1, 0}, {0, gravityDirection}} };
+
+		for (auto dir : directions) {
+			int next_x = x + dir.x;
+			int next_y = y + dir.y;
+			if (grid.Is_in_bounds(next_x, next_y)) {
+				auto& checked_tile = grid.Get_at(next_x, next_y);
+				if (m_registry.Get(checked_tile.id).tagBitmask & tile_material.anchorTagBitmask) {
+					return; // Found an anchor tile nearby, do not move
 				}
 			}
 		}
@@ -187,7 +216,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 		}
 	}
 
-	// Cacading tiles 
+	// Cacading tiles
 	if (tile_material.movement.can_cascade)
 	{
 		if (fast_rand() & 1)
@@ -296,29 +325,20 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, int x, in
 	}
 }
 
-bool scree::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, int x, int y)
+// The caller has already checked that this material ticks.
+bool scree::Simulation::update_pixel_lifespan(Grid& grid, Block& tile, const MaterialData& tile_material, int x, int y)
 {
-	auto&& tile_material = m_registry.Get(tile.id);
-	if (tile_material.lifespanData.Tick)
+	grid.set_chunk_active_at_pixel(x, y);
+
+	if (m_registry.Tick(tile))
 	{
-		grid.set_chunk_active_at_pixel(x, y);
+		auto transition = m_registry.PickTransition(tile_material.lifespanData.OnDeathTransitionSpan);
+		if (!transition || transition->noTransition) return false;
 
-		if (m_registry.Tick(tile))
-		{
-			auto transition = m_registry.PickTransition(tile_material.lifespanData.OnDeathTransitionSpan);
-			if (!transition || transition->noTransition) return false;
-
-			std::uint8_t new_lifespan = m_registry.Get(transition->nextID).lifespanData.Initial;
-			grid.Create_at(x, y, transition->nextID, new_lifespan);
-			return true;
-		}
+		std::uint8_t new_lifespan = m_registry.Get(transition->nextID).lifespanData.Initial;
+		grid.Create_at(x, y, transition->nextID, new_lifespan);
+		return true;
 	}
 
 	return false;
 }
-
-
-
-
-
-
