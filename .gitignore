@@ -53,4 +53,5 @@ TODO.md
 /bench/obj/
 /bench/baseline_src/
 /bench/out.txt
+/bench/*.exe
 /bench
