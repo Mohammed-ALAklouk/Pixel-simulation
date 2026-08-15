@@ -35,6 +35,7 @@ namespace scree
 		inline bool Is_chunk_active_at_pixel(int x, int y) const { return m_chunk_active[get_chunk_index_from_pixel(x, y)] != 0; }
 		inline bool Is_chunk_active(int chunk_x, int chunk_y) const { return m_chunk_active[get_chunk_index(chunk_x, chunk_y)] != 0; }
 		inline bool Is_in_bounds(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
+		inline bool Should_render_chunk(int chunk_x, int chunk_y) const { return m_chunks_to_render[get_chunk_index(chunk_x, chunk_y)] != 0; }
 
 		// Which chunks hold a tile that moves against gravity. Rebuilt from scratch on
 		// every downward pass -- see Simulation::Update_pixel -- so that the upward pass
@@ -63,6 +64,22 @@ namespace scree
 			std::fill(m_chunk_active_next.begin(), m_chunk_active_next.end(), std::uint8_t{ 0 });
 		}
 
+		// Both arrays, not just the swept one. m_chunk_active_next is the true write
+		// set -- every write goes through set_chunk_active_at_pixel -- and it catches
+		// three things the swept set misses: a write with no update behind it (the
+		// brush and Remap, which is all that happens while paused), and a liquid
+		// skimming up to 10 cells into a chunk the one-pixel edge halo never woke,
+		// which would otherwise render a frame late.
+		//
+		// Called at the end of an update and again before the render reads the mask,
+		// so a write that lands between the two is still picked up in the same frame.
+		inline void Mark_chunks_for_render()
+		{
+			for (std::size_t i = 0; i < m_chunk_active.size(); i++) {
+				if (m_chunk_active[i] || m_chunk_active_next[i]) m_chunks_to_render[i] = 1;
+			}
+		}
+
 		inline void Clear()
 		{
 			Block air = m_material_registry->CreateBlock(MaterialRegistry::AIR_ID);
@@ -71,8 +88,16 @@ namespace scree
 			std::fill(m_chunk_active_next.begin(), m_chunk_active_next.end(), std::uint8_t{ 0 });
 			std::fill(m_processed.begin(), m_processed.end(), std::uint8_t{ 0 });
 			Clear_rising();
+			// Every pixel just became air, and both activity arrays were zeroed, so
+			// nothing else will mark these. Without this the render mask stays empty
+			// and the screen keeps showing the grid from before the clear.
+			std::fill(m_chunks_to_render.begin(), m_chunks_to_render.end(), std::uint8_t{ 1 });
 		}
 
+		inline void Clear_chunks_to_render()
+		{
+			std::fill(m_chunks_to_render.begin(), m_chunks_to_render.end(), std::uint8_t{ 0 });
+		}
 	private:
 		const MaterialRegistry* m_material_registry = nullptr;
 		// Helper functions
@@ -89,6 +114,7 @@ namespace scree
 		std::vector<std::uint8_t> m_chunk_active;
 		std::vector<std::uint8_t> m_chunk_active_next;
 		std::vector<std::uint8_t> m_chunk_rising;
+		std::vector<std::uint8_t> m_chunks_to_render;
 
 		// Dimensions in chunks
 		int	m_width_ch = 0;
@@ -114,6 +140,7 @@ namespace scree
 			material_registry->CreateBlock(MaterialRegistry::AIR_ID));
 		m_chunk_active.assign(static_cast<std::size_t>(m_width_ch) * m_height_ch, 0);
 		m_chunk_active_next.assign(static_cast<std::size_t>(m_width_ch) * m_height_ch, 0);
+		m_chunks_to_render.assign(static_cast<std::size_t>(m_width_ch) * m_height_ch, 0);
 		m_chunk_rising.assign(static_cast<std::size_t>(m_width_ch) * m_height_ch, 0);
 		m_processed.assign(static_cast<std::size_t>(m_width_px) * m_height_px, 0);
 	}

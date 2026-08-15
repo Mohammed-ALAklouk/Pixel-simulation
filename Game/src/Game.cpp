@@ -39,16 +39,33 @@ void scree::Game::render()
 {
 	BeginDrawing();
 	ClearBackground(BLACK);
-	// Walks the block array a row at a time rather than resolving each pixel's index
-	// on its own. The whole grid is still converted every frame -- the texture upload
-	// below wants the full buffer -- but the gather is now sequential in both arrays.
-	for (int y = 0; y < GridSize; y++)
+
+	// Update_grid marks the mask itself, but it is not the only thing that writes to
+	// the grid: the brush and a material reload both land between updates, and while
+	// paused they are the only writes there are. Marking again here picks those up.
+	grid.Mark_chunks_for_render();
+
+	// Only the chunks that changed are converted -- the rest of `pixels` still holds
+	// what they looked like last frame, which is still what they look like now. The
+	// upload below is unchanged and still covers the whole buffer: one UpdateTexture
+	// costs ~0.2ms, while a per-chunk UpdateTextureRec pays driver overhead per call
+	// and overtakes it once a scene gets busy.
+	for (int y = 0; y != GridSize; y++)
 	{
-		const Block* row = grid.Row(y);
-		Color* out = pixels.data() + y * GridSize;
-		for (int x = 0; x < GridSize; x++)
-			out[x] = row[x].color.toRaylibColor();
+		int chunk_y = y >> CHUNK_SHIFT; // equivalent to y / CHUNK_SIZE, but faster
+		for (int chunk_x = 0; chunk_x != grid.Get_width_chunks(); chunk_x++)
+		{
+			if (!grid.Should_render_chunk(chunk_x, chunk_y)) continue;
+			
+			int x0 = chunk_x << CHUNK_SHIFT; // equivalent to chunk_x * CHUNK_SIZE, but faster
+			const Block* row = grid.Row(y);
+			Color* out = pixels.data() + y * GridSize;
+			for (int x = x0; x < x0 + CHUNK_SIZE; x++)
+				out[x] = row[x].color.toRaylibColor();
+		}
 	}
+
+	grid.Clear_chunks_to_render();
 
 	UpdateTexture(tex, pixels.data());
 

@@ -14,6 +14,8 @@ void scree::Simulation::Update_grid(Grid& grid)
 	grid.Clear_rising();
 	Update_grid_directional(grid, 1);
 	Update_grid_directional(grid, -1);
+
+	grid.Mark_chunks_for_render();
 }
 
 void scree::Simulation::Update_grid_directional(Grid& grid, int gravityDirection)
