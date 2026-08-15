@@ -98,9 +98,11 @@ ignored by the canvas while it is over an ImGui window.
 
 ## How it works
 
-The grid is stored as a flat array of `Chunk`s, each holding a 32 × 32 array of
-`Block`s — an integer material id, a colour, and a lifespan counter. At 640 × 640
-that is a 20 × 20 grid of chunks. Colours are randomised per particle within the
+The grid is stored as one flat row-major array of `Block`s — each an integer
+material id, a colour, and a lifespan counter. Chunks are no longer containers:
+a chunk is just the activity bookkeeping for a 32 × 32 square of pixels, kept as
+separate byte-per-chunk arrays indexed by chunk coordinate. At 640 × 640 that is
+a 20 × 20 grid of chunks. Colours are randomised per particle within the
 material's `color_min`/`color_max` range, quantised into `steps` bands, which gives
 piles texture without storing anything extra.
 
@@ -112,10 +114,10 @@ reactions on purpose, so a reaction that reads a neighbour's remaining lifespan 
 this frame's value. A per-pixel processed flag stops a particle from being updated
 twice after it has been swapped forward.
 
-Chunk activity is tracked with two flags — active this frame and active next frame.
-Any write marks the containing chunk for the next frame, and a write on a chunk edge
-marks the neighbour too, which is what keeps interactions from stalling at chunk
-boundaries.
+Chunk activity is tracked with two byte-per-chunk arrays — active this frame and
+active next frame — swapped each update. Any write marks the containing chunk for
+the next frame, and a write on a chunk edge marks the neighbour too, which is what
+keeps interactions from stalling at chunk boundaries.
 
 ## Adding a material
 
@@ -332,7 +334,8 @@ unlike a real symlink never needs admin rights or Developer Mode), and
 
 - A per-pixel heat field to replace the hot-stone / hot-ash lifespan hacks, with
   ice, glass and obsidian falling out of it
-- Bitmap rendering and dirty-chunk uploads, then multithreaded chunk passes
+- Multithreaded chunk passes, now that the render buffer only reconverts the
+  chunks that changed
 - Brush shapes, a size slider, line and rectangle tools
 - Save / load worlds and image import
 - A downloadable build, and a web build via Emscripten
