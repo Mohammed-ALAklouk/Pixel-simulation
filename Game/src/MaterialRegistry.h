@@ -62,6 +62,10 @@ namespace scree {
 			return static_cast<int>(materials.size());
 		}
 
+		int GetTagsCount() const {
+			return static_cast<int>(tags.size());
+		}
+
 		const Transition* PickTransition(TransitionsSpan span) const
 		{
 			if (span.totalWeight <= 0) return nullptr;

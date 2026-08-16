@@ -1,16 +1,28 @@
 #include "Game.h"
+#include "UI.h"
 
 scree::Game::Game()
 	: simulation(material_registry)
 {
 	load_materials();
 
+	// The chrome is fixed but the grid is centred in whatever is left, so the layout
+	// survives a resize -- compute_layout re-runs every frame off the live window size.
+	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	InitWindow(Window_size.x, Window_size.y, "scree");
-	int grid_size_px = static_cast<int>(GridSize * TileSize);
-	Grid_offset.x = static_cast<float>((Window_size.x - grid_size_px) / 2);
-	Grid_offset.y = static_cast<float>((Window_size.y - grid_size_px) / 2);
+	// Maximised after the window exists, not via FLAG_WINDOW_MAXIMIZED: the flag makes GLFW
+	// open it maximised without raising the resize callback, so raylib keeps reporting the
+	// requested size and the whole interface renders into the top-left corner of a much
+	// larger window. Window_size stays the size it restores down to.
+	MaximizeWindow();
+	SetWindowMinSize(1300, 820);
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
+	ui::LoadFonts();
+	// Before ApplyTheme, whose initial UpdateTheme snaps the chrome to ActiveTheme -- so the
+	// first frame is already on the saved theme rather than easing over from the default.
+	ui::LoadSettings();
+	ui::ApplyTheme();
 
 	pixels.resize(GridSize * GridSize);
 
@@ -19,26 +31,133 @@ scree::Game::Game()
 	UnloadImage(blank);                      // GPU has it now; drop the CPU copy
 	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
 
-	frame = Rectangle{ Grid_offset.x, Grid_offset.y,
-					   GridSize * TileSize, GridSize * TileSize };
+	// The backdrop, from the prototype: empty space there is a two-step dither rather than
+	// flat black. Generated once -- it never changes, so it costs one texture and one draw.
+	{
+		std::vector<Color> backdrop(static_cast<std::size_t>(GridSize) * GridSize);
+		for (Color& px : backdrop)
+			px = (fast_rand() & 1) ? ui::col::GridBgHigh : ui::col::GridBgLow;
+
+		Image noise{ backdrop.data(), static_cast<int>(GridSize), static_cast<int>(GridSize), 1,
+					 PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		grid_bg = LoadTextureFromImage(noise);   // uploads a copy; `backdrop` can go
+		SetTextureFilter(grid_bg, TEXTURE_FILTER_POINT);
+	}
 
 	grid.Create(GridSize, GridSize,  &material_registry);
+	// `pixels` starts fully transparent, and the renderer only converts chunks marked
+	// dirty -- so a chunk untouched since startup would never be written and the canvas
+	// behind would show through it. Clear marks every chunk, so frame one fills the lot.
+	grid.Clear();
+	compute_layout();
 	srand(static_cast<unsigned int>(time(NULL)));
+}
+
+void scree::Game::compute_layout()
+{
+	Window_size.x = GetScreenWidth();
+	Window_size.y = GetScreenHeight();
+
+	if (material_load_error_message.empty())
+	{
+		layout_banner_h = 0.0f;
+	}
+	else
+	{
+		// A single log line is often long enough to wrap, so count the rows it will
+		// actually occupy rather than the newlines it contains.
+		const float text_width = static_cast<float>(Window_size.x)
+			- ui::metrics::BannerTextInset - ui::metrics::BannerTextRight;
+		const int per_line = std::max(20, static_cast<int>(text_width / ui::metrics::BannerGlyphW));
+
+		int lines = 0;
+		for (std::size_t start = 0; start < material_load_error_message.size(); )
+		{
+			std::size_t end = material_load_error_message.find('\n', start);
+			if (end == std::string::npos) end = material_load_error_message.size();
+
+			const int length = static_cast<int>(end - start);
+			lines += std::max(1, (length + per_line - 1) / per_line);
+			start = end + 1;
+		}
+
+		lines = std::clamp(lines, 1, ui::metrics::BannerMaxLines);
+		layout_banner_h = lines * ui::metrics::BannerLineH + ui::metrics::BannerPad;
+	}
+
+	const float top = ui::metrics::TopBarH + layout_banner_h;
+	canvas_region = Rectangle{
+		ui::metrics::LeftRailW,
+		top,
+		static_cast<float>(Window_size.x) - ui::metrics::LeftRailW,
+		static_cast<float>(Window_size.y) - top - ui::metrics::BottomBarH
+	};
+
+	// Never magnified past 1:1 -- a fractional tile size larger than a pixel would make
+	// some grid cells a pixel wider than their neighbours under point filtering.
+	const float room = ui::metrics::CanvasPad * 2.0f;
+	const float fit = std::min(canvas_region.width - room, canvas_region.height - room) / GridSize;
+	TileSize = std::clamp(fit, 0.1f, 1.0f);
+
+	const float side = GridSize * TileSize;
+	Grid_offset.x = canvas_region.x + (canvas_region.width - side) * 0.5f;
+	Grid_offset.y = canvas_region.y + (canvas_region.height - side) * 0.5f;
+	frame = Rectangle{ Grid_offset.x, Grid_offset.y, side, side };
+}
+
+void scree::Game::update_stats()
+{
+	stats_delta_accum += delta;
+	if (++stats_counter < StatsInterval) return;
+
+	if (stats_delta_accum > 0.0f)
+		fps_display = stats_counter / stats_delta_accum;
+	stats_counter = 0;
+	stats_delta_accum = 0.0f;
+
+	awake_chunk_count = 0;
+	for (int chunk_y = 0; chunk_y < grid.Get_height_chunks(); chunk_y++)
+		for (int chunk_x = 0; chunk_x < grid.Get_width_chunks(); chunk_x++)
+			if (grid.Is_chunk_active(chunk_x, chunk_y)) awake_chunk_count++;
+
+	int particles = 0;
+	for (int y = 0; y < grid.Get_height_px(); y++)
+	{
+		const Block* row = grid.Row(y);
+		for (int x = 0; x < grid.Get_width_px(); x++)
+			if (row[x].id != MaterialRegistry::AIR_ID) particles++;
+	}
+	particle_count = particles;
 }
 
 void scree::Game::update()
 {
 	if (!paused)
 	{
-		for (size_t i = 0; i < updates_per_frame; i++)
+		for (int i = 0; i < updates_per_frame; i++)
 			simulation.Update_grid(grid);
 	}
+	else if (step_once)
+	{
+		simulation.Update_grid(grid);
+	}
+
+	step_once = false;
 }
 
 void scree::Game::render()
 {
+	auto render_clock = std::chrono::high_resolution_clock::now();
+
+	compute_layout();
+	// Re-tints the whole chrome off the theme chosen in the bottom bar. Done before drawing
+	// so the backgrounds below agree with the panels rlImGui puts on top of them; the ease
+	// inside means switching theme sweeps across rather than snapping.
+	ui::UpdateTheme(ui::ThemeOptions[ui::ActiveTheme].seed, delta);
+
 	BeginDrawing();
-	ClearBackground(BLACK);
+	ClearBackground(ui::theme.WindowBg);
+	DrawRectangleRec(canvas_region, ui::theme.CanvasBg);
 
 	// Update_grid marks the mask itself, but it is not the only thing that writes to
 	// the grid: the brush and a material reload both land between updates, and while
@@ -60,8 +179,12 @@ void scree::Game::render()
 			int x0 = chunk_x << CHUNK_SHIFT; // equivalent to chunk_x * CHUNK_SIZE, but faster
 			const Block* row = grid.Row(y);
 			Color* out = pixels.data() + y * GridSize;
+			// Air is written clear rather than black so the backdrop drawn under the grid
+			// shows through it; every other material stays fully opaque.
 			for (int x = x0; x < x0 + CHUNK_SIZE; x++)
-				out[x] = row[x].color.toRaylibColor();
+				out[x] = (row[x].id == MaterialRegistry::AIR_ID)
+					? Color{ 0, 0, 0, 0 }
+					: row[x].color.toRaylibColor();
 		}
 	}
 
@@ -70,8 +193,9 @@ void scree::Game::render()
 	UpdateTexture(tex, pixels.data());
 
 	Rectangle src{ 0, 0, (float)GridSize, (float)GridSize };
+	DrawTexturePro(grid_bg, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
 	DrawTexturePro(tex, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
-	DrawRectangleLinesEx(frame, 5, WHITE);
+	DrawRectangleLinesEx(frame, 1, ui::col::GridEdge);
 
 	if (show_active_chunks)
 	{
@@ -79,21 +203,32 @@ void scree::Game::render()
 		grid.Get_active_chunks(active_chunks);
 		for (auto chunk: active_chunks)
 		{
-			DrawRectangleLines(static_cast<int>(chunk.first * 32 * TileSize + Grid_offset.x),
-				static_cast<int>(chunk.second * 32 * TileSize + Grid_offset.y),
-				static_cast<int>(32 * TileSize), static_cast<int>(32 * TileSize), RED);
+			DrawRectangleLines(static_cast<int>(chunk.first * CHUNK_SIZE * TileSize + Grid_offset.x),
+				static_cast<int>(chunk.second * CHUNK_SIZE * TileSize + Grid_offset.y),
+				static_cast<int>(CHUNK_SIZE * TileSize), static_cast<int>(CHUNK_SIZE * TileSize),
+				ui::col::ChunkEdge);
 		}
 	}
 
-	auto mouse_pos = GetMousePosition();
+	// WantCaptureMouse is last frame's -- ImGui has not started this one yet -- which is
+	// close enough to keep the brush ring off the panels.
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		auto mouse_pos = GetMousePosition();
+		DrawCircleLines(static_cast<int>(mouse_pos.x), static_cast<int>(mouse_pos.y),
+			cursor_radius * TileSize, ui::theme.Ring);
+	}
 
-	DrawCircleLines(static_cast<int>(mouse_pos.x), static_cast<int>(mouse_pos.y), cursor_radius * TileSize, WHITE);
-	
 	auto ui_clock = std::chrono::high_resolution_clock::now();
 	rlImGuiBegin();
 	UI();
 	rlImGuiEnd();
 	UI_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - ui_clock).count();
+
+	// Everything above is the actual work of building the frame. EndDrawing below blocks on
+	// the 60 FPS frame limiter -- pure idle, not rendering -- so it is left out of the span.
+	render_time = std::chrono::duration<float>(
+		std::chrono::high_resolution_clock::now() - render_clock).count() - UI_time;
 
 	EndDrawing();
 }
@@ -107,6 +242,8 @@ void scree::Game::processInputs()
 	if (cursor_radius > 100)
 		cursor_radius = 100;
 
+
+	handle_hotkeys();
 
 	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 	bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
@@ -139,58 +276,26 @@ void scree::Game::processInputs()
 	
 }
 
-void scree::Game::UI()
+std::string scree::Game::materials_path() const
 {
-	ImGui::Begin("Material menu");
-	
-	if (material_load_error_message != "") {
-		ImGui::Text("%s", material_load_error_message.c_str());
-		if (ImGui::Button("Clear error message"))
-			material_load_error_message = "";
-	}
+	return std::string(GetApplicationDirectory()) + "assets/materials.json";
+}
 
-	for (int i = 0; i < material_registry.GetMaterialsCount(); i++)
+void scree::Game::handle_hotkeys()
+{
+	if (ImGui::GetIO().WantCaptureKeyboard) return;
+
+	if (IsKeyPressed(KEY_SPACE)) paused = !paused;
+	if (IsKeyPressed(KEY_C)) grid.Clear();
+	if (IsKeyPressed(KEY_R)) load_materials();
+
+	// 1-9 map onto the first nine file materials, which is what the rail's "1-9" says.
+	for (int key = KEY_ONE; key <= KEY_NINE; key++)
 	{
-		MaterialID id = static_cast<MaterialID>(i);
-		if (ImGui::Button(material_registry.GetName(id).c_str()))
-			SelectedMaterial = id;
-	}
-
-	ImGui::Text("%s", material_registry.GetName(SelectedMaterial).c_str());
-	auto mouse_pos = GetMousePosition();
-	mouse_pos.x -= Grid_offset.x;
-	mouse_pos.y -= Grid_offset.y;
-	int hover_x = static_cast<int>(mouse_pos.x), hover_y = static_cast<int>(mouse_pos.y);
-	if (grid.Is_in_bounds(hover_x, hover_y))
-	{
-		auto tile = grid.Get_at(static_cast<std::uint16_t>(hover_x), static_cast<std::uint16_t>(hover_y));
-		ImGui::Text("Pixel under mouse %s", material_registry.GetName(tile.id).c_str());
-	}
-
-	if (ImGui::Button("Clear"))
-		grid.Clear();
-
-	ImGui::Checkbox("Pause", &paused);
-	ImGui::SliderInt("Updates per frame", &updates_per_frame, 1, 10);
-	if (ImGui::Button("Reload material file"))
-		load_materials();
-
-	ImGui::Checkbox("Show active chunks", &show_active_chunks);
-	ImGui::Checkbox("Show benchmarks", &show_bench_marks);
-	
-	ImGui::End();
-
-	if (show_bench_marks)
-	{
-		ImGui::Begin("BenchMarks");
-
-		ImGui::Text("FPS: %f", 1.0f / delta);
-		ImGui::Text("Update time: %f", update_time);
-		ImGui::Text("Input time: %f", input_time);
-		ImGui::Text("UI time: %f", UI_time);
-		ImGui::Text("Render time: %f", render_time);
-		
-		ImGui::End();
+		if (!IsKeyPressed(key)) continue;
+		const int id = key - KEY_ONE + 1;
+		if (id < material_registry.GetMaterialsCount())
+			SelectedMaterial = static_cast<MaterialID>(id);
 	}
 }
 
@@ -215,10 +320,10 @@ void scree::Game::run()
 		update();
 		update_time = since(bench_clock);
 
-		// render() times the UI block itself, so take it back out.
-		bench_clock = clock::now();
+		// render() sets render_time itself, measured to exclude the frame-limiter wait.
 		render();
-		render_time = since(bench_clock) - UI_time;
+
+		update_stats();
 	}
 }
 
@@ -265,9 +370,12 @@ void scree::Game::draw_stroke(const std::vector<Vector2>& points, const Material
 bool scree::Game::load_materials()
 {
 	MaterialRegistry new_registry;
-	std::string path = std::string(GetApplicationDirectory()) + "assets/materials.json";
-	bool success = new_registry.LoadMaterials(path);
+	bool success = new_registry.LoadMaterials(materials_path());
 	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
+	// A rejected material still counts as failure for the banner even though the load
+	// itself succeeded -- something in the file is unusable either way.
+	material_load_failed = !new_registry.GetLogs().empty() &&
+		Log::Worst(new_registry.GetLogs()) != Log::Severity::Warning;
 	if (success) {
 		auto remap = get_registry_changes(new_registry);
 		material_registry = std::move(new_registry);

@@ -25,6 +25,7 @@ add_executable(Game
     src/Game.cpp
     src/Simulation.cpp
     src/MaterialRegistry.cpp
+    src/UI.cpp
 
     src/Block.h
     src/Chunk.h
@@ -33,6 +34,7 @@ add_executable(Game
     src/Log.h
     
     src/Simulation.h
+    src/UI.h
     src/rgb.h
     src/fast_rand.h
     src/vec2i.h
