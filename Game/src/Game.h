@@ -41,7 +41,11 @@ namespace scree
 		bool load_materials();
 		// Resolved against the executable, not the working directory, so it holds wherever
 		// the exe was launched from. Shared by the loader and the top bar's link.
+		std::string assets_path() const;
 		std::string materials_path() const;
+		// Opens a picker and reloads with the chosen file as the custom overlay.
+		void import_materials();
+		void clear_custom_materials();
 		std::vector<MaterialID> get_registry_changes(const MaterialRegistry& new_registry);
 
 		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
@@ -129,5 +133,7 @@ namespace scree
 		int stats_counter = 0;
 		float stats_delta_accum = 0.0f;
 		float fps_display = 60.0f;
+
+		std::string custom_file_path = "";
 	};
 }

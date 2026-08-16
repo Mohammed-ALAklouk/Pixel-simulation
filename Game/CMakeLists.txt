@@ -27,8 +27,10 @@ add_executable(Game
     src/Simulation.cpp
     src/MaterialRegistry.cpp
     src/UI.cpp
+    src/FileDialog.cpp
 
     src/Block.h
+    src/FileDialog.h
     src/Chunk.h
     src/Game.h
     src/Grid.h

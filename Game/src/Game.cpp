@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "UI.h"
+#include "FileDialog.h"
 
 scree::Game::Game()
 	: simulation(material_registry)
@@ -308,9 +309,29 @@ void scree::Game::delete_material(MaterialID id)
 	begin_new_material();
 }
 
+void scree::Game::import_materials()
+{
+	std::string picked = OpenFileDialog("JSON files\0*.json\0All files\0*.*\0", "Import materials", assets_path());
+	if (picked.empty()) return;
+
+	custom_file_path = picked;
+	load_materials();
+}
+
+void scree::Game::clear_custom_materials()
+{
+	custom_file_path.clear();
+	load_materials();
+}
+
+std::string scree::Game::assets_path() const
+{
+	return std::string(GetApplicationDirectory()) + "assets";
+}
+
 std::string scree::Game::materials_path() const
 {
-	return std::string(GetApplicationDirectory()) + "assets/materials.json";
+	return assets_path() + "/materials.json";
 }
 
 void scree::Game::handle_hotkeys()
@@ -402,7 +423,7 @@ void scree::Game::draw_stroke(const std::vector<Vector2>& points, const Material
 bool scree::Game::load_materials()
 {
 	MaterialRegistry new_registry;
-	bool success = new_registry.LoadMaterials(materials_path());
+	bool success = new_registry.LoadMaterials(materials_path(), custom_file_path);
 	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
 	// A rejected material still counts as failure for the banner even though the load
 	// itself succeeded -- something in the file is unusable either way.

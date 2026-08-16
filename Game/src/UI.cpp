@@ -341,6 +341,12 @@ namespace
 		return scree::ui::hex(mid.r, mid.g, mid.b);
 	}
 
+	std::string FileName(const std::string& path)
+	{
+		const std::size_t cut = path.find_last_of("/\\");
+		return cut == std::string::npos ? path : path.substr(cut + 1);
+	}
+
 	// Hands the file to whatever the desktop has registered for it.
 	void OpenInEditor(std::string path)
 	{
@@ -418,35 +424,76 @@ namespace
 			r -= S(14.0f);
 
 			const char* name = "materials.json";
+			const std::string customName = FileName(g.custom_file_path);
+			const bool hasCustom = !customName.empty();
+
 			const float reloadW = S(94.0f);
+			const float importW = S(88.0f);
+			const float clearW = S(28.0f);
+			const float nameW = TextW(name);
+			const float customW = hasCustom ? TextW(customName.c_str()) : 0.0f;
 			const float chipH = S(39.0f);
-			const float chipW = S(14.0f) + TextW(name) + S(10.0f) + reloadW + S(8.0f);
+
+			float chipW = S(14.0f) + nameW + S(10.0f) + reloadW + S(6.0f) + importW + S(8.0f);
+			if (hasCustom) chipW += S(10.0f) + customW + S(6.0f) + clearW;
 			r -= chipW;
 
 			const ImVec2 chipMin(org.x + r, org.y + CenterY(H, chipH));
 			const ImVec2 chipMax(chipMin.x + chipW, chipMin.y + chipH);
 			dl->AddRectFilled(chipMin, chipMax, U32(ui::theme.Button), S(3.0f));
 			dl->AddRect(chipMin, chipMax, U32(ui::theme.ButtonBorder), S(3.0f));
-			// The file name opens the file in whatever the desktop has registered for it.
+
 			const float ty = chipMin.y + (chipH - th) * 0.5f;
-			const float nameW = TextW(name);
-			ImGui::SetCursorPos(ImVec2(r + S(14.0f), ty - org.y));
+			const float buttonY = CenterY(H, S(31.0f));
+			float cx = r + S(14.0f);
+
+			// The file name opens the file in whatever the desktop has registered for it.
+			ImGui::SetCursorPos(ImVec2(cx, ty - org.y));
 			if (ImGui::InvisibleButton("##openjson", ImVec2(nameW, th)))
 				OpenInEditor(g.materials_path());
 
-			const bool hot = ImGui::IsItemHovered();
+			bool hot = ImGui::IsItemHovered();
 			if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-			DrawLabel(dl, ImVec2(chipMin.x + S(14.0f), ty), name,
-				hot ? ui::theme.AccentLight : ui::theme.TextDim);
+			DrawLabel(dl, ImVec2(org.x + cx, ty), name, hot ? ui::theme.AccentLight : ui::theme.TextDim);
 			if (hot)
-				dl->AddLine(ImVec2(chipMin.x + S(14.0f), ty + th - S(2.0f)),
-					ImVec2(chipMin.x + S(14.0f) + nameW, ty + th - S(2.0f)), U32(ui::theme.AccentLight));
+				dl->AddLine(ImVec2(org.x + cx, ty + th - S(2.0f)),
+					ImVec2(org.x + cx + nameW, ty + th - S(2.0f)), U32(ui::theme.AccentLight));
+			cx += nameW + S(10.0f);
 
-			ImGui::SetCursorPos(ImVec2(r + S(14.0f) + nameW + S(10.0f), CenterY(H, S(31.0f))));
+			ImGui::SetCursorPos(ImVec2(cx, buttonY));
 			ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.AccentLight);
 			if (ChromeButton("RELOAD", ImVec2(reloadW, S(31.0f))))
 				g.load_materials();
 			ImGui::PopStyleColor();
+			cx += reloadW + S(6.0f);
+
+			ImGui::SetCursorPos(ImVec2(cx, buttonY));
+			if (ChromeButton("IMPORT", ImVec2(importW, S(31.0f)), hasCustom))
+				g.import_materials();
+			cx += importW;
+
+			if (hasCustom) {
+				cx += S(10.0f);
+				ImGui::SetCursorPos(ImVec2(cx, ty - org.y));
+				if (ImGui::InvisibleButton("##opencustom", ImVec2(customW, th)))
+					OpenInEditor(g.custom_file_path);
+
+				hot = ImGui::IsItemHovered();
+				if (hot) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+					ImGui::SetTooltip("%s", g.custom_file_path.c_str());
+				}
+				DrawLabel(dl, ImVec2(org.x + cx, ty), customName.c_str(),
+					hot ? ui::theme.AccentLight : ui::theme.TextDim);
+				if (hot)
+					dl->AddLine(ImVec2(org.x + cx, ty + th - S(2.0f)),
+						ImVec2(org.x + cx + customW, ty + th - S(2.0f)), U32(ui::theme.AccentLight));
+				cx += customW + S(6.0f);
+
+				ImGui::SetCursorPos(ImVec2(cx, buttonY));
+				if (ChromeButton("X", ImVec2(clearW, S(31.0f))))
+					g.clear_custom_materials();
+			}
 		}
 		const float rightStart = r;
 
