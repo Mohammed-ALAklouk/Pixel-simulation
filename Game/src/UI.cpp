@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <vector>
 
 using namespace scree;
 namespace c = scree::ui::col;
@@ -30,6 +31,8 @@ extern "C" __declspec(dllimport) void* __stdcall ShellExecuteA(
 
 namespace
 {
+	static const char* const lifeSpanBaseStr[] = { "Self", "Reactor", "Initial" };
+
 	ImU32 U32(const ImVec4& v) { return ImGui::GetColorU32(v); }
 
 	// Design units to pixels. Every offset, padding and control size below is written at
@@ -128,6 +131,199 @@ namespace
 		ImGui::PopStyleColor(5);
 		return pressed;
 	}
+
+	bool ColorEditRGB(const char* label, scree::RGB& c)
+	{
+		float col[3] = { c.r / 255.0f, c.g / 255.0f, c.b / 255.0f };
+		if (ImGui::ColorEdit3(label, col))
+		{
+			c.r = static_cast<std::uint8_t>(std::clamp(col[0], 0.0f, 1.0f) * 255.0f + 0.5f);
+			c.g = static_cast<std::uint8_t>(std::clamp(col[1], 0.0f, 1.0f) * 255.0f + 0.5f);
+			c.b = static_cast<std::uint8_t>(std::clamp(col[2], 0.0f, 1.0f) * 255.0f + 0.5f);
+			return true;
+		}
+		return false;
+	}
+
+	bool Uint8Edit(const char* label, std::uint8_t& v, int lo, int hi)
+	{
+		int n = v;
+		if (ImGui::SliderInt(label, &n, lo, hi, "%d", ImGuiSliderFlags_NoInput))
+		{
+			v = static_cast<std::uint8_t>(std::clamp(n, 0, 255));
+			return true;
+		}
+		return false;
+	}
+
+	bool TransitionEdit(Transition& transition, Game& g, bool lifespanInput) {
+		if (ImGui::Button("X")) return true;
+		ImGui::Checkbox("No Transition", &transition.noTransition);
+
+		if (transition.noTransition) return false;
+
+		const std::string& preview = g.material_registry.GetName(transition.nextID);
+
+		ImGui::Text("Target");
+		ImGui::SameLine();
+		if (ImGui::BeginCombo("##nextid", preview.c_str()))
+		{
+			for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++)
+			{
+				const MaterialID id = static_cast<MaterialID>(i);
+				const bool selected = (id == transition.nextID);
+
+				if (ImGui::Selectable(g.material_registry.GetName(id).c_str(), selected))
+					transition.nextID = id;
+
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		Uint8Edit("Weight", transition.weight, 1, 255);
+
+		if (lifespanInput) return false;
+
+		ImGui::Text("Lifespan base");
+		ImGui::SameLine();
+		if (ImGui::BeginCombo("##lifespanbase", lifeSpanBaseStr[int(transition.lifespanBase)])) {
+			for (int i = 0; i < 3; i++)
+			{
+				const Transition::LifeSpanBase base = static_cast<Transition::LifeSpanBase>(i);
+				const bool selected = (base == transition.lifespanBase);
+
+				if (ImGui::Selectable(lifeSpanBaseStr[i], selected))
+					transition.lifespanBase = base;
+
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		return false;
+	}
+
+	void TransitionList(const char* addLabel, std::vector<Transition>& list, Game& g) {
+		for (size_t i = 0; i < list.size();) {
+			ImGui::PushID(static_cast<int>(i));
+			if (TransitionEdit(list[i], g, false))
+				list.erase(list.begin() + i);
+			else
+				++i;
+
+			ImGui::Separator();
+			ImGui::PopID();
+		}
+		if (ImGui::Button(addLabel))
+			list.push_back(Transition());
+	}
+
+	bool ReactionEdit(EditReaction& er, Game& g) {
+		static const char* const targetTypeStr[] = { "Material", "Tag" };
+		static const char* const sampleStr[] = { "All", "FirstToReact" };
+
+		if (ImGui::Button("X")) return true;
+
+		Reaction& r = er.reaction;
+
+		ImGui::Text("Target type");
+		ImGui::SameLine();
+		if (ImGui::BeginCombo("##targettype", targetTypeStr[int(r.targetType)])) {
+			for (int i = 0; i < 2; i++) {
+				const Reaction::TargetType t = static_cast<Reaction::TargetType>(i);
+				const bool selected = (t == r.targetType);
+
+				if (ImGui::Selectable(targetTypeStr[i], selected)) {
+					r.targetType = t;
+					r.TargetID = 0;
+				}
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		if (r.targetType == Reaction::TargetType::Material) {
+			const std::string& preview = g.material_registry.GetName(r.TargetID);
+
+			ImGui::Text("Target");
+			ImGui::SameLine();
+			if (ImGui::BeginCombo("##target", preview.c_str())) {
+				for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++) {
+					const MaterialID id = static_cast<MaterialID>(i);
+					const bool selected = (id == r.TargetID);
+
+					if (ImGui::Selectable(g.material_registry.GetName(id).c_str(), selected))
+						r.TargetID = id;
+
+					if (selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			Uint8Edit("Chance", r.Chance, 0, 100);
+		}
+		else {
+			std::vector<std::pair<std::string, MaterialID>> tags(
+				g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
+			std::sort(tags.begin(), tags.end(),
+				[](const auto& a, const auto& b) { return a.second < b.second; });
+
+			const char* preview = "";
+			for (const auto& p : tags)
+				if (p.second == r.TargetID) preview = p.first.c_str();
+
+			ImGui::Text("Target tag");
+			ImGui::SameLine();
+			if (ImGui::BeginCombo("##targettag", preview)) {
+				for (const auto& p : tags) {
+					const bool selected = (p.second == r.TargetID);
+
+					if (ImGui::Selectable(p.first.c_str(), selected))
+						r.TargetID = p.second;
+
+					if (selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+		}
+
+		ImGui::Text("Sample");
+		ImGui::SameLine();
+		if (ImGui::BeginCombo("##sample", sampleStr[int(r.sample)])) {
+			for (int i = 0; i < 2; i++) {
+				const Reaction::Sample s = static_cast<Reaction::Sample>(i);
+				const bool selected = (s == r.sample);
+
+				if (ImGui::Selectable(sampleStr[i], selected))
+					r.sample = s;
+
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::Checkbox("Halt Update", &r.HaltUpdate);
+
+		ImGui::PushID("target");
+		ImGui::Text("Target transitions");
+		TransitionList("Add Target Transition", er.targetTransitions, g);
+		ImGui::PopID();
+
+		ImGui::PushID("self");
+		ImGui::Text("Self transitions");
+		TransitionList("Add Self Transition", er.selfTransitions, g);
+		ImGui::PopID();
+
+		return false;
+	}
+
 
 	const char* MaterialClass(const MaterialData& data, MaterialID id)
 	{
@@ -458,6 +654,28 @@ namespace
 
 				ImGui::PopID();
 			}
+
+			ImGui::SetCursorPosX(S(6.0f));
+			const float rowW = ImGui::GetContentRegionAvail().x;
+			if (ChromeButton("+ NEW MATERIAL", ImVec2(rowW, m::RowH))) {
+				g.begin_new_material();
+				g.new_material_pannel_open = true;
+			}
+
+			ImGui::SetCursorPosX(S(6.0f));
+			ImGui::BeginDisabled(g.SelectedMaterial == MaterialRegistry::AIR_ID);
+			if (ChromeButton("EDIT SELECTED", ImVec2(rowW, m::RowH))) {
+				g.begin_edit_material(g.SelectedMaterial);
+				g.new_material_pannel_open = true;
+			}
+
+			ImGui::SetCursorPosX(S(6.0f));
+			if (ChromeButton("DELETE SELECTED", ImVec2(rowW, m::RowH))) {
+				g.pending_delete_id = g.SelectedMaterial;
+				g.confirm_delete_open = true;
+			}
+			ImGui::EndDisabled();
+
 			ImGui::PopStyleVar();
 		}
 		ImGui::EndChild();
@@ -752,6 +970,187 @@ namespace
 
 		EndChrome();
 	}
+
+	// -------------------------------------------------------------- new material pannel
+	void NewMaterialPannel(Game& g) {
+		const ImVec2 c = ImGui::GetMainViewport()->GetCenter();
+		const ImVec2 VPsize = ImGui::GetMainViewport()->Size;
+		const ImVec2 size(VPsize.x * 0.5f, VPsize.y * 0.8f);
+		const ImVec2 pos(c.x - size.x * 0.5f, c.y - size.y * 0.5f);
+		BeginChrome("##newmat", pos, size, ui::theme.Panel, true);
+
+		ImGui::SetCursorPos(ImVec2(size.x - S(34.0f), S(8.0f)));
+		if (ChromeButton("X", ImVec2(S(26.0f), S(26.0f)))) {
+			g.new_material_pannel_open = false;
+			g.begin_new_material();
+		}
+
+
+		ImGui::Indent(S(16.0f));
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
+		ImGui::TextUnformatted(g.editing() ? "Edit Material" : "New Material");
+		ImGui::PopStyleColor();
+
+		ImGui::TextUnformatted("Name");
+		ImGui::SameLine();
+		ImGui::InputText("##name", &g.newMaterialName);
+
+		auto& material = *g.editedMaterial;
+
+		if (ImGui::CollapsingHeader("Appearance", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ColorEditRGB("Min Color", material.minColor);
+			ColorEditRGB("Max Color", material.maxColor);
+			ImGui::Checkbox("Interpolate color over lifespan", &material.interpolateColor);
+			if (!material.interpolateColor)
+				Uint8Edit("Number of steps", material.numberOfSteps, 1, 10);
+		}
+
+		if (ImGui::CollapsingHeader("Tags")) {
+			std::vector<std::pair<std::string, MaterialID>> tags(
+				g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
+			std::sort(tags.begin(), tags.end(),
+				[](const auto& a, const auto& b) { return a.second < b.second; });
+
+			for (const auto& pair : tags) {
+				ImGui::PushID(pair.second);
+				const std::uint8_t tagBit = 1u << pair.second;
+
+				ImGui::TextUnformatted(pair.first.c_str());
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(S(150.0f));
+				if (Uint8Edit("Intensity", material.tagIntensity[pair.second], 0, 100)) {
+					if (material.tagIntensity[pair.second])
+						material.tagBitmask |= tagBit;
+					else
+						material.tagBitmask &= ~tagBit;
+				}
+				ImGui::SameLine();
+				bool anchor = material.anchorTagBitmask & tagBit;
+				if (ImGui::Checkbox("Anchor", &anchor)) {
+					if (anchor) material.anchorTagBitmask |= tagBit;
+					else		material.anchorTagBitmask &= ~tagBit;
+				}
+				ImGui::PopID();
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Lifespan")) {
+			Uint8Edit("Initial lifespan", material.lifespanData.Initial, 0, 255);
+			Uint8Edit("Tick", material.lifespanData.Tick, 0, 255);
+			if (material.lifespanData.Tick) {
+				Uint8Edit("Tick Chance", material.lifespanData.Chance, 0, 100);
+				ImGui::Text("Transitions");
+				for (size_t i = 0; i < g.newMaterialTransitions.size();) {
+					ImGui::PushID(static_cast<int>(i));
+					if (TransitionEdit(g.newMaterialTransitions[i], g, true))
+						g.newMaterialTransitions.erase(g.newMaterialTransitions.begin() + i);
+					else
+						++i;
+
+					ImGui::Separator();
+
+					ImGui::PopID();
+				}
+
+				if (ImGui::Button("Add Transition"))
+					g.newMaterialTransitions.push_back(Transition());
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Reactions")) {
+			for (size_t i = 0; i < g.newMaterialReactions.size();) {
+				ImGui::PushID(static_cast<int>(i));
+				if (ReactionEdit(g.newMaterialReactions[i], g))
+					g.newMaterialReactions.erase(g.newMaterialReactions.begin() + i);
+				else
+					++i;
+
+				ImGui::Separator();
+				ImGui::PopID();
+			}
+
+			if (ImGui::Button("Add Reaction"))
+				g.newMaterialReactions.push_back(EditReaction());
+		}
+
+		if (ImGui::CollapsingHeader("Movement")) {
+			bool up = (material.movement.Y_direction < 0);
+			if (ImGui::Checkbox("Rises (gravity up)", &up))
+				material.movement.Y_direction = up ? -1 : 1;
+			Uint8Edit("Density", material.movement.density, 0, 255);
+			Uint8Edit("Scatter Chance", material.movement.scatter_chance, 0, 255);
+			ImGui::Checkbox("Can Fall", &material.movement.can_fall);
+			ImGui::Checkbox("Can Cascade", &material.movement.can_cascade);
+			ImGui::Checkbox("Is Fluid", &material.movement.is_fluid);
+			ImGui::Checkbox("Is Liquid", &material.movement.is_liquid);
+		}
+
+		ImGui::Separator();
+
+		const bool nameTaken = !g.editing() && g.material_registry.HasMaterial(g.newMaterialName);
+		const bool canCommit = !g.newMaterialName.empty() && !nameTaken;
+
+		ImGui::BeginDisabled(!canCommit);
+		if (ChromeButton(g.editing() ? "APPLY CHANGES" : "ADD MATERIAL", ImVec2(S(160.0f), S(31.0f))))
+			g.commit_material();
+		ImGui::EndDisabled();
+
+		if (g.newMaterialName.empty()) {
+			ImGui::SameLine();
+			ImGui::TextUnformatted("a name is required");
+		}
+		else if (nameTaken) {
+			ImGui::SameLine();
+			ImGui::TextUnformatted("that name is taken");
+		}
+
+		if (g.editing()) {
+			ImGui::SameLine();
+			if (ChromeButton("DELETE", ImVec2(S(90.0f), S(31.0f)))) {
+				g.pending_delete_id = g.editedMaterialID;
+				g.confirm_delete_open = true;
+			}
+		}
+
+		EndChrome();
+
+	}
+
+	// ------------------------------------------------------------ delete confirmation
+	void ConfirmDeletePanel(Game& g)
+	{
+		const ImVec2 c = ImGui::GetMainViewport()->GetCenter();
+		const ImVec2 size(S(420.0f), S(150.0f));
+		const ImVec2 pos(c.x - size.x * 0.5f, c.y - size.y * 0.5f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(S(16.0f), S(16.0f)));
+		BeginChrome("##confirmdelete", pos, size, ui::theme.PanelSunk);
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.Text);
+		ImGui::TextUnformatted("Delete material");
+		ImGui::PopStyleColor();
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
+		ImGui::PushTextWrapPos(size.x - S(16.0f));
+		ImGui::Text("Every %s block on the grid is cleared and this cannot be undone.",
+			g.material_registry.GetName(g.pending_delete_id).c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
+
+		ImGui::SetCursorPosY(size.y - S(47.0f));
+		if (ChromeButton("DELETE", ImVec2(S(110.0f), S(31.0f)))) {
+			g.delete_material(g.pending_delete_id);
+			g.confirm_delete_open = false;
+			g.new_material_pannel_open = false;
+		}
+		ImGui::SameLine();
+		if (ChromeButton("CANCEL", ImVec2(S(110.0f), S(31.0f))))
+			g.confirm_delete_open = false;
+
+		EndChrome();
+		ImGui::PopStyleVar();
+	}
 }
 
 // ---------------------------------------------------------------------- theme
@@ -1014,4 +1413,10 @@ void scree::Game::UI()
 	BottomBar(*this);
 	CanvasOverlays(*this);
 	BenchmarkPanel(*this);
+
+	if (new_material_pannel_open)
+		NewMaterialPannel(*this);
+
+	if (confirm_delete_open)
+		ConfirmDeletePanel(*this);
 }

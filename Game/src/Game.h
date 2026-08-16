@@ -23,7 +23,6 @@
 
 namespace scree
 {
-	
 	class Game
 	{
 	public:
@@ -90,6 +89,7 @@ namespace scree
 
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;
+		bool new_material_pannel_open = true;
 		bool paused = false;
 		// Set by the STEP button, consumed by the next update. The UI runs inside render(),
 		// after update(), so the step it asks for lands on the following frame.
@@ -106,6 +106,21 @@ namespace scree
 		// The region the grid is centred inside, once the chrome has taken its share.
 		Rectangle canvas_region{};
 
+		MaterialData newMaterial{};
+		std::string newMaterialName = "";
+		std::vector<Transition> newMaterialTransitions;
+		std::vector<EditReaction> newMaterialReactions;
+		// Points at newMaterial while creating; at a registry entry while editing one.
+		MaterialData* editedMaterial = &newMaterial;
+		MaterialID editedMaterialID = 0;
+		bool confirm_delete_open = false;
+		MaterialID pending_delete_id = 0;
+
+		bool editing() const { return editedMaterial != &newMaterial; }
+		void begin_new_material();
+		void begin_edit_material(MaterialID id);
+		void commit_material();
+		void delete_material(MaterialID id);
 		// Counting particles means walking all 640x640 blocks, so the readouts refresh on
 		// a slower cadence than the frame does.
 		static constexpr int StatsInterval = 12;

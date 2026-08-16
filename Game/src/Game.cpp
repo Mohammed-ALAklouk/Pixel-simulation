@@ -262,6 +262,52 @@ void scree::Game::processInputs()
 	
 }
 
+void scree::Game::begin_new_material()
+{
+	newMaterial = MaterialData();
+	newMaterialName.clear();
+	newMaterialTransitions.clear();
+	newMaterialReactions.clear();
+	editedMaterial = &newMaterial;
+	editedMaterialID = 0;
+}
+
+void scree::Game::begin_edit_material(MaterialID id)
+{
+	begin_new_material();
+	editedMaterialID = id;
+	editedMaterial = &material_registry.GetMutable(id);
+	newMaterialName = material_registry.GetName(id);
+	newMaterialTransitions = material_registry.ReadTransitions(editedMaterial->lifespanData.OnDeathTransitionSpan);
+	newMaterialReactions = material_registry.ReadReactions(editedMaterial->reactionSpan);
+}
+
+void scree::Game::commit_material()
+{
+	if (editing()) {
+		material_registry.RenameMaterial(editedMaterialID, newMaterialName);
+		material_registry.ReplaceMaterial(editedMaterialID, *editedMaterial,
+			newMaterialTransitions, newMaterialReactions);
+	}
+	else {
+		material_registry.AddMaterial(newMaterialName, newMaterial,
+			newMaterialTransitions, newMaterialReactions);
+	}
+
+	begin_new_material();
+}
+
+void scree::Game::delete_material(MaterialID id)
+{
+	auto remap = material_registry.DeleteMaterial(id);
+	if (remap.empty()) return;
+
+	grid.Remap(remap);
+	SelectedMaterial = remap[SelectedMaterial];
+	// The erase shifted the materials vector, so editedMaterial cannot be trusted.
+	begin_new_material();
+}
+
 std::string scree::Game::materials_path() const
 {
 	return std::string(GetApplicationDirectory()) + "assets/materials.json";
@@ -367,6 +413,8 @@ bool scree::Game::load_materials()
 		material_registry = std::move(new_registry);
 		grid.Remap(remap);
 		SelectedMaterial = MaterialRegistry::AIR_ID;
+		// editedMaterial would dangle into the registry that was just replaced.
+		begin_new_material();
 	}
 	
 	return success;

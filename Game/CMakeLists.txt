@@ -10,6 +10,7 @@ add_library(imgui-backend STATIC
     "${imgui_SOURCE_DIR}/imgui_tables.cpp"
     "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
     "${imgui_SOURCE_DIR}/imgui_demo.cpp"
+    "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp"
     "${rlimgui_SOURCE_DIR}/rlImGui.cpp"
 )
 target_include_directories(imgui-backend PUBLIC

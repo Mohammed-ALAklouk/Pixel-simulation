@@ -123,6 +123,170 @@ void scree::MaterialRegistry::LoadAir()
 	ParseMaterial(airJSON, AIR_ID);
 }
 
+scree::MaterialID scree::MaterialRegistry::RegisterMaterialName(const std::string& name)
+{
+	if (materialNames.size() >= static_cast<std::size_t>(MAX_MATERIALS)) {
+		logs.push_back(Log::CreateLimitExceeded("materials", MAX_MATERIALS));
+		return AIR_ID;
+	}
+
+	if (name.empty()) {
+		logs.push_back(Log::CreateMissingName());
+		return AIR_ID;
+	}
+
+	if (materialMap.find(name) != materialMap.end()) {
+		logs.push_back(Log::CreateDuplicateName(name));
+		return AIR_ID;
+	}
+
+	const MaterialID id = static_cast<MaterialID>(materialNames.size());
+	materialNames.push_back(name);
+	materialMap[name] = id;
+	return id;
+}
+
+scree::MaterialID scree::MaterialRegistry::AddMaterial(const std::string& name, const MaterialData& data)
+{
+	const MaterialID id = RegisterMaterialName(name);
+	if (id == AIR_ID) return AIR_ID;
+
+	materials.push_back(data);
+	return id;
+}
+
+scree::TransitionsSpan scree::MaterialRegistry::AddTransitions(const std::vector<Transition>& list)
+{
+	TransitionsSpan span = { static_cast<std::uint16_t>(transitions.size()), 0, 0 };
+
+	for (const auto& transition : list) {
+		transitions.push_back(transition);
+		span.count++;
+		span.totalWeight += transition.weight;
+	}
+
+	return span;
+}
+
+// Reactions and transitions are separate arenas, so the nested spans cannot split this block.
+scree::Span scree::MaterialRegistry::AddReactions(const std::vector<EditReaction>& list)
+{
+	Span span = { static_cast<std::uint16_t>(reactions.size()), 0 };
+
+	for (const auto& entry : list) {
+		Reaction reaction = entry.reaction;
+		reaction.TargetTransitionsSpan = AddTransitions(entry.targetTransitions);
+		reaction.SelfTransitionsSpan = AddTransitions(entry.selfTransitions);
+		reactions.push_back(reaction);
+		span.count++;
+	}
+
+	return span;
+}
+
+std::vector<scree::Transition> scree::MaterialRegistry::ReadTransitions(TransitionsSpan span) const
+{
+	std::vector<Transition> list;
+	list.reserve(span.count);
+	for (int i = 0; i < span.count; ++i)
+		list.push_back(transitions[span.start + i]);
+
+	return list;
+}
+
+std::vector<scree::EditReaction> scree::MaterialRegistry::ReadReactions(Span span) const
+{
+	std::vector<EditReaction> list;
+	list.reserve(span.count);
+	for (int i = 0; i < span.count; ++i) {
+		const Reaction& reaction = reactions[span.start + i];
+		list.push_back(EditReaction{
+			reaction,
+			ReadTransitions(reaction.TargetTransitionsSpan),
+			ReadTransitions(reaction.SelfTransitionsSpan),
+		});
+	}
+
+	return list;
+}
+
+scree::MaterialID scree::MaterialRegistry::AddMaterial(const std::string& name, MaterialData data,
+	const std::vector<Transition>& deathTransitions,
+	const std::vector<EditReaction>& reactionList)
+{
+	const MaterialID id = RegisterMaterialName(name);
+	if (id == AIR_ID) return AIR_ID;
+
+	data.lifespanData.OnDeathTransitionSpan = AddTransitions(deathTransitions);
+	data.reactionSpan = AddReactions(reactionList);
+	materials.push_back(data);
+	return id;
+}
+
+bool scree::MaterialRegistry::RenameMaterial(MaterialID id, const std::string& name)
+{
+	if (name.empty() || name == materialNames[id]) return false;
+
+	if (materialMap.find(name) != materialMap.end()) {
+		logs.push_back(Log::CreateDuplicateName(name));
+		return false;
+	}
+
+	materialMap.erase(materialNames[id]);
+	materialNames[id] = name;
+	materialMap[name] = id;
+	return true;
+}
+
+// Every id above the removed one shifts down, so the grid and every stored id must follow.
+std::vector<scree::MaterialID> scree::MaterialRegistry::DeleteMaterial(MaterialID id)
+{
+	if (id == AIR_ID || id >= materials.size()) return {};
+
+	std::vector<MaterialID> remap(materials.size());
+	for (std::size_t i = 0; i < remap.size(); ++i) {
+		if (i < id)       remap[i] = static_cast<MaterialID>(i);
+		else if (i == id) remap[i] = AIR_ID;
+		else              remap[i] = static_cast<MaterialID>(i - 1);
+	}
+
+	materials.erase(materials.begin() + id);
+	materialNames.erase(materialNames.begin() + id);
+
+	materialMap.clear();
+	for (std::size_t i = 0; i < materialNames.size(); ++i)
+		materialMap[materialNames[i]] = static_cast<MaterialID>(i);
+
+	// A transition into the removed material becomes "nothing happens" rather than a hole.
+	for (auto& transition : transitions) {
+		if (transition.noTransition) continue;
+		if (transition.nextID == id) transition.noTransition = true;
+		else transition.nextID = remap[transition.nextID];
+	}
+
+	// Tag targets index the tag table, not the material table, so they are left alone.
+	for (auto& reaction : reactions) {
+		if (reaction.targetType != Reaction::TargetType::Material) continue;
+		if (reaction.TargetID == id) {
+			reaction.TargetID = AIR_ID;
+			reaction.Chance = 0;
+		}
+		else reaction.TargetID = remap[reaction.TargetID];
+	}
+
+	return remap;
+}
+
+// The material's previous spans are left behind in the arenas rather than compacted out.
+void scree::MaterialRegistry::ReplaceMaterial(MaterialID id, MaterialData data,
+	const std::vector<Transition>& deathTransitions,
+	const std::vector<EditReaction>& reactionList)
+{
+	data.lifespanData.OnDeathTransitionSpan = AddTransitions(deathTransitions);
+	data.reactionSpan = AddReactions(reactionList);
+	materials[id] = data;
+}
+
 void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID id)
 {
 	// Judge only the logs this call adds, or one bad material condemns the rest.
@@ -170,10 +334,9 @@ void scree::MaterialRegistry::ParseTags(nlohmann::json& data)
 
 void scree::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 {
-	int index = 1;
 	bool overflow_reported = false;
 	for (auto& material : data["materials"]) {
-		if (index >= scree::MAX_MATERIALS) {
+		if (materialNames.size() >= static_cast<std::size_t>(scree::MAX_MATERIALS)) {
 			if (!overflow_reported) {
 				logs.push_back(Log::CreateLimitExceeded("materials", scree::MAX_MATERIALS));
 				overflow_reported = true;
@@ -191,17 +354,7 @@ void scree::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 
 		try {
 			auto name = material["name"].get<std::string>();
-
-			if (std::find(materialNames.begin(), materialNames.end(), name) != materialNames.end()) {
-				logs.push_back(Log::CreateDuplicateName(name));
-				material["valid"] = false;
-				continue;
-			}
-
-			material["valid"] = true;
-			materialNames.push_back(name);
-			materialMap[name] = static_cast<MaterialID>(index);
-			index++;
+			material["valid"] = (RegisterMaterialName(name) != AIR_ID);
 		}
 		catch (const nlohmann::json::exception&) {
 			logs.push_back(Log::CreateBadMaterialName(material["name"].dump()));

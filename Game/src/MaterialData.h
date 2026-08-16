@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 #include <cstdint>
 #include "rgb.h"
 
@@ -53,7 +54,7 @@ namespace scree
 
 		bool noTransition = false;			// leaves the block untouched; nextID unused
 		MaterialID nextID = 0;
-		std::uint8_t weight = 0;		// relative to the other weights in the same span
+		std::uint8_t weight = 1;		// relative to the other weights in the same span
 		LifeSpanBase lifespanBase = LifeSpanBase::Initial;
 	};
 
@@ -115,5 +116,12 @@ namespace scree
 		// so that "does this neighbour carry any tag I anchor to" is one AND against
 		// anchorTagBitmask rather than a walk over all MAX_TAGS slots per neighbour.
 		std::uint8_t tagBitmask = 0;
+	};
+
+	// Editing form of a reaction: the spans only exist once the arenas are appended to.
+	struct EditReaction {
+		Reaction reaction;
+		std::vector<Transition> targetTransitions;
+		std::vector<Transition> selfTransitions;
 	};
 }

@@ -4,6 +4,7 @@
 #include "rgb.h"
 
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <raylib.h>
 
 // Palette and chrome metrics for the UI. Everything deciding what the window looks

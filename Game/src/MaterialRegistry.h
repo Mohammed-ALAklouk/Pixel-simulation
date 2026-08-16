@@ -23,6 +23,30 @@ namespace scree {
 		bool LoadMaterials(const std::string& path);
 		bool LoadMaterialsFromJSON(std::string_view data);
 		void LoadAir();
+		MaterialID AddMaterial(const std::string& name, const MaterialData& data);
+		MaterialID AddMaterial(const std::string& name, MaterialData data,
+			const std::vector<Transition>& deathTransitions,
+			const std::vector<EditReaction>& reactionList);
+		MaterialID RegisterMaterialName(const std::string& name);
+
+		// Appends to the arenas and returns the span covering what was added.
+		TransitionsSpan AddTransitions(const std::vector<Transition>& list);
+		Span AddReactions(const std::vector<EditReaction>& list);
+
+		// The reverse, for loading an existing material back into the editor.
+		std::vector<Transition> ReadTransitions(TransitionsSpan span) const;
+		std::vector<EditReaction> ReadReactions(Span span) const;
+
+		void ReplaceMaterial(MaterialID id, MaterialData data,
+			const std::vector<Transition>& deathTransitions,
+			const std::vector<EditReaction>& reactionList);
+		bool RenameMaterial(MaterialID id, const std::string& name);
+		// Returns the old-id -> new-id table the grid needs, or empty when nothing was removed.
+		std::vector<MaterialID> DeleteMaterial(MaterialID id);
+
+		MaterialData& GetMutable(MaterialID id) { return materials[id]; }
+
+		bool HasMaterial(const std::string& name) const { return materialMap.find(name) != materialMap.end(); }
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);
 		void ValidateMaterials(nlohmann::json& data);
@@ -156,6 +180,10 @@ namespace scree {
 					lifespan_ratio(lifespan, data.lifespanData.Initial));
 			else
 				block.color = Random_step(data.minColor, data.maxColor, data.numberOfSteps);
+		}
+
+		const std::unordered_map<std::string, MaterialID>& GetTags() {
+			return tagMap;
 		}
 
 	private:
