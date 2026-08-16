@@ -89,7 +89,7 @@ namespace scree
 
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;
-		bool new_material_pannel_open = true;
+		bool new_material_pannel_open = false;
 		bool paused = false;
 		// Set by the STEP button, consumed by the next update. The UI runs inside render(),
 		// after update(), so the step it asks for lands on the following frame.

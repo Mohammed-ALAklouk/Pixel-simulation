@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 #include <fstream>
+#include <string_view>
 #include <nlohmann/json.hpp>
 #include "MaterialRegistry.h"
 
@@ -35,6 +37,35 @@ namespace {
 
 		return document.dump();
 	}
+
+	// The two-file overload takes paths, so the overlay cases need files on disk.
+	struct TempFile {
+		std::filesystem::path path;
+
+		TempFile(const std::string& name, std::string_view contents)
+			: path(std::filesystem::temp_directory_path() / name)
+		{
+			std::ofstream file(path);
+			file << contents;
+		}
+
+		~TempFile()
+		{
+			std::error_code ignored;
+			std::filesystem::remove(path, ignored);
+		}
+
+		std::string str() const { return path.string(); }
+	};
+
+	// Air 0, Sand 1, Water 2, and one tag for the custom entries to reach for.
+	constexpr const char* CORE_DOC = R"({
+		"tags": [ "flammable" ],
+		"materials": [
+			{ "name": "Sand", "steps": 4 },
+			{ "name": "Water", "movement": { "density": 30 } }
+		]
+	})";
 }
 
 // --- document level ---------------------------------------------------------
@@ -571,6 +602,143 @@ TEST_CASE("a non-array reactions field is rejected, not iterated")
 	})"));
 
 	CHECK(CountOfType(registry, Log::Type::WrongType) == 1);
+}
+
+// --- the custom overlay -----------------------------------------------------
+
+TEST_CASE("custom materials are appended after the core ones")
+{
+	TempFile core("scree_core_append.json", CORE_DOC);
+	TempFile custom("scree_custom_append.json", R"({
+		"materials": [ { "name": "Glass" }, { "name": "Slime" } ]
+	})");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(registry.GetMaterialsCount() == 5);
+	CHECK(registry.GetName(FIRST) == "Sand");
+	CHECK(registry.GetName(2) == "Water");
+	CHECK(registry.GetName(3) == "Glass");
+	CHECK(registry.GetName(4) == "Slime");
+	CHECK(registry.GetLogs().empty());
+}
+
+TEST_CASE("a custom material resolves a transition into a core material")
+{
+	TempFile core("scree_core_ref.json", CORE_DOC);
+	TempFile custom("scree_custom_ref.json", R"({
+		"materials": [ {
+			"name": "Ember",
+			"lifespan": {
+				"initial": 100, "tick": 1,
+				"on_death": [ { "material": "Water", "weight": 1 } ]
+			}
+		} ]
+	})");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	INFO(Log::FormatLogs(registry.GetLogs()));
+	CHECK(CountOfType(registry, Log::Type::UnknownReference) == 0);
+
+	const Transition* transition = registry.PickTransition(registry.Get(3).lifespanData.OnDeathTransitionSpan);
+	REQUIRE(transition != nullptr);
+	CHECK(transition->nextID == 2);
+}
+
+TEST_CASE("a custom material can carry a core tag")
+{
+	TempFile core("scree_core_tagref.json", CORE_DOC);
+	TempFile custom("scree_custom_tagref.json", R"({
+		"materials": [ { "name": "Slime", "tags": { "flammable": 40 } } ]
+	})");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(CountOfType(registry, Log::Type::UnknownReference) == 0);
+	CHECK(registry.GetTagIntensity(3, 0) == 40);
+}
+
+TEST_CASE("tags declared in a custom file are ignored")
+{
+	TempFile core("scree_core_tags.json", CORE_DOC);
+	TempFile custom("scree_custom_tags.json", R"({
+		"tags": [ "explosive" ],
+		"materials": [ { "name": "Glass" } ]
+	})");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(registry.GetTagsCount() == 1);
+}
+
+// Core is read-only, so the core entry keeps both the id and the data.
+TEST_CASE("a custom material duplicating a core name is rejected")
+{
+	TempFile core("scree_core_dup.json", CORE_DOC);
+	TempFile custom("scree_custom_dup.json", R"({
+		"materials": [ { "name": "Water", "movement": { "density": 200 } } ]
+	})");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(CountOfType(registry, Log::Type::Duplicate) == 1);
+	CHECK(registry.GetMaterialsCount() == 3);
+	CHECK(registry.Get(2).movement.density == 30);
+}
+
+TEST_CASE("a missing custom file warns without taking the core down")
+{
+	TempFile core("scree_core_nocustom.json", CORE_DOC);
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), "no/such/custom.json"));
+
+	CHECK(CountOfType(registry, Log::Type::FileMissing) == 1);
+	CHECK(Log::Worst(registry.GetLogs()) == Log::Severity::Warning);
+	CHECK(registry.GetMaterialsCount() == 3);
+}
+
+TEST_CASE("a malformed custom file warns once without taking the core down")
+{
+	TempFile core("scree_core_badcustom.json", CORE_DOC);
+	TempFile custom("scree_custom_bad.json", R"({ "materials": [)");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(CountOfType(registry, Log::Type::ParseFailed) == 1);
+	CHECK(Log::Worst(registry.GetLogs()) == Log::Severity::Warning);
+	CHECK(registry.GetMaterialsCount() == 3);
+}
+
+TEST_CASE("a custom file with no materials array warns once")
+{
+	TempFile core("scree_core_nomats.json", CORE_DOC);
+	TempFile custom("scree_custom_nomats.json", "{}");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(CountOfType(registry, Log::Type::ParseFailed) == 1);
+	CHECK(registry.GetMaterialsCount() == 3);
+}
+
+TEST_CASE("a custom file whose materials key is not an array warns once")
+{
+	TempFile core("scree_core_objmats.json", CORE_DOC);
+	TempFile custom("scree_custom_objmats.json", R"({ "materials": {} })");
+
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterials(core.str(), custom.str()));
+
+	CHECK(CountOfType(registry, Log::Type::ParseFailed) == 1);
+	CHECK(registry.GetMaterialsCount() == 3);
 }
 
 // --- the shipped asset ------------------------------------------------------

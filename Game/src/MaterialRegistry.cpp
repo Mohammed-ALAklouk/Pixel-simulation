@@ -38,28 +38,77 @@ scree::MaterialRegistry::MaterialRegistry()
 	LoadAir();
 }
 
-bool scree::MaterialRegistry::LoadMaterials(const std::string& path)
+bool scree::MaterialRegistry::LoadMaterials(const std::string& corePath, const std::string& customPath)
 {
-	std::ifstream file(path);
+	ClearLogs();
+
+	std::ifstream file(corePath);
 	if (!file.is_open()) {
-		// LoadMaterialsFromJSON resets on every other path; do it here too.
-		Clear();
-		LoadAir();
-		logs.push_back(Log::CreateFileMissing(path));
+		logs.push_back(Log::CreateFileMissing(corePath));
 		return false;
 	}
 
-	return LoadMaterialsFromJSON(std::string(std::istreambuf_iterator<char>(file), {}));
+	nlohmann::json data;
+	try {
+		data = nlohmann::json::parse(std::string(std::istreambuf_iterator<char>(file), {}));
+	}
+	catch (const nlohmann::json::exception& e) {
+		logs.push_back(Log::CreateParseFailed(e.what()));
+		return false;
+	}
+
+	// A non-object top level (e.g. "[1,2,3]") would throw on the first jsonData["tags"] below.
+	if (!data.is_object()) {
+		logs.push_back(Log::CreateParseFailed("expected an object at the top level, got "
+			+ std::string(data.type_name()) + "."));
+		return false;
+	}
+
+	if (!customPath.empty()) {
+		std::ifstream customFile(customPath);
+		if (!customFile.is_open()) {
+			logs.push_back(Log::CreateOptionalFileMissing(customPath));
+		}
+		else {
+			bool loaded = true;
+			nlohmann::json customData;
+			try {
+				customData = nlohmann::json::parse(std::string(std::istreambuf_iterator<char>(customFile), {}));
+			}
+			catch (const nlohmann::json::exception& e) {
+				logs.push_back(Log::CreateOptionalParseFailed(customPath, e.what()));
+				loaded = false;
+			}
+
+			if (loaded && !customData.is_object()) {
+				logs.push_back(Log::CreateOptionalParseFailed(customPath,
+					"expected an object at the top level, got " + std::string(customData.type_name()) + "."));
+				loaded = false;
+			}
+
+			if (loaded && (!customData.contains("materials") || !customData["materials"].is_array())) {
+				logs.push_back(Log::CreateOptionalParseFailed(customPath, "expected a 'materials' array."));
+				loaded = false;
+			}
+
+			if (loaded) {
+				for (auto& material : customData["materials"])
+					data["materials"].push_back(material);
+			}
+		}
+	}
+
+	return LoadMaterialsFromJSON(data);
 }
 
-bool scree::MaterialRegistry::LoadMaterialsFromJSON(std::string_view data)
+
+bool scree::MaterialRegistry::LoadMaterialsFromJSON(std::string_view str)
 {
-	Clear();
-	LoadAir();
+	ClearLogs();
 
 	nlohmann::json jsonData;
 	try {
-		jsonData = nlohmann::json::parse(data);
+		jsonData = nlohmann::json::parse(str);
 	}
 	catch (const nlohmann::json::exception& e) {
 		logs.push_back(Log::CreateParseFailed(e.what()));
@@ -72,14 +121,21 @@ bool scree::MaterialRegistry::LoadMaterialsFromJSON(std::string_view data)
 			+ std::string(jsonData.type_name()) + "."));
 		return false;
 	}
+	return LoadMaterialsFromJSON(jsonData);
+}
+
+bool scree::MaterialRegistry::LoadMaterialsFromJSON(nlohmann::json& data)
+{
+	Clear();
+	LoadAir();
 
 	// Catches throws the Parse* helpers don't, e.g. writing "valid" into a non-object entry.
 	try {
 		// Tags must be registered before materials, which look them up in tagMap.
-		ParseTags(jsonData);
-		ValidateMaterials(jsonData);
+		ParseTags(data);
+		ValidateMaterials(data);
 
-		for (auto& material : jsonData["materials"])
+		for (auto& material : data["materials"])
 		{
 			if (!material["valid"])
 				continue;
@@ -95,6 +151,7 @@ bool scree::MaterialRegistry::LoadMaterialsFromJSON(std::string_view data)
 
 	return Log::Worst(logs) != Log::Severity::RejectFile;
 }
+
 
 void scree::MaterialRegistry::LoadAir()
 {

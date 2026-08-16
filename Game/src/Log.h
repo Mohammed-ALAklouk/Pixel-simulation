@@ -72,6 +72,22 @@ namespace scree {
             };
         }
 
+        static Log CreateOptionalFileMissing(const std::string& path) {
+            return Log{
+                .message  = "Failed to open " + path + ", continuing without it.",
+                .severity = Severity::Warning,
+                .type     = Type::FileMissing,
+            };
+        }
+
+        static Log CreateOptionalParseFailed(const std::string& path, const std::string& what) {
+            return Log{
+                .message  = "Failed to parse " + path + ": " + what + " Continuing without it.",
+                .severity = Severity::Warning,
+                .type     = Type::ParseFailed,
+            };
+        }
+
         // What is the plural noun -- "tags", "materials".
         static Log CreateLimitExceeded(const std::string& what, int max) {
             return Log{

@@ -20,7 +20,8 @@ namespace scree {
 		static constexpr MaterialID AIR_ID = 0;
 
 		// False means nothing loaded; problems go to logs. Both replace existing contents.
-		bool LoadMaterials(const std::string& path);
+		bool LoadMaterials(const std::string& corePath, const std::string& customPath = "");
+		bool LoadMaterialsFromJSON(nlohmann::json& data);
 		bool LoadMaterialsFromJSON(std::string_view data);
 		void LoadAir();
 		MaterialID AddMaterial(const std::string& name, const MaterialData& data);
@@ -70,6 +71,9 @@ namespace scree {
 			materialNames.clear();
 			materialMap.clear();
 			tagMap.clear();
+		}
+
+		void ClearLogs() {
 			logs.clear();
 		}
 
