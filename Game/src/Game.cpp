@@ -31,19 +31,6 @@ scree::Game::Game()
 	UnloadImage(blank);                      // GPU has it now; drop the CPU copy
 	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
 
-	// The backdrop, from the prototype: empty space there is a two-step dither rather than
-	// flat black. Generated once -- it never changes, so it costs one texture and one draw.
-	{
-		std::vector<Color> backdrop(static_cast<std::size_t>(GridSize) * GridSize);
-		for (Color& px : backdrop)
-			px = (fast_rand() & 1) ? ui::col::GridBgHigh : ui::col::GridBgLow;
-
-		Image noise{ backdrop.data(), static_cast<int>(GridSize), static_cast<int>(GridSize), 1,
-					 PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-		grid_bg = LoadTextureFromImage(noise);   // uploads a copy; `backdrop` can go
-		SetTextureFilter(grid_bg, TEXTURE_FILTER_POINT);
-	}
-
 	grid.Create(GridSize, GridSize,  &material_registry);
 	// `pixels` starts fully transparent, and the renderer only converts chunks marked
 	// dirty -- so a chunk untouched since startup would never be written and the canvas
@@ -193,7 +180,6 @@ void scree::Game::render()
 	UpdateTexture(tex, pixels.data());
 
 	Rectangle src{ 0, 0, (float)GridSize, (float)GridSize };
-	DrawTexturePro(grid_bg, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
 	DrawTexturePro(tex, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
 	DrawRectangleLinesEx(frame, 1, ui::col::GridEdge);
 

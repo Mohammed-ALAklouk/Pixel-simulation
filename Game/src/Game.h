@@ -69,7 +69,6 @@ namespace scree
 		Texture2D tex;
 		// Static dither drawn behind the grid, so empty space reads as textured rather
 		// than as a black hole. Built once in the constructor.
-		Texture2D grid_bg;
 		Rectangle frame;
 
 
