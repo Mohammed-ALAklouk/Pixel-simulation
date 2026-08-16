@@ -92,8 +92,10 @@ bool scree::MaterialRegistry::LoadMaterials(const std::string& corePath, const s
 			}
 
 			if (loaded) {
-				for (auto& material : customData["materials"])
+				for (auto& material : customData["materials"]) {
+					if (material.is_object()) material["custom"] = true;
 					data["materials"].push_back(material);
+				}
 			}
 		}
 	}
@@ -177,6 +179,7 @@ void scree::MaterialRegistry::LoadAir()
 	nlohmann::json airJSON = nlohmann::json::parse(airStr);
 	materialNames.push_back(airJSON["name"].get<std::string>());
 	materialMap[airJSON["name"].get<std::string>()] = AIR_ID;
+	coreMaterialCount = 1;
 	ParseMaterial(airJSON, AIR_ID);
 }
 
@@ -298,7 +301,7 @@ bool scree::MaterialRegistry::RenameMaterial(MaterialID id, const std::string& n
 // Every id above the removed one shifts down, so the grid and every stored id must follow.
 std::vector<scree::MaterialID> scree::MaterialRegistry::DeleteMaterial(MaterialID id)
 {
-	if (id == AIR_ID || id >= materials.size()) return {};
+	if (IsCore(id) || id >= materials.size()) return {};
 
 	std::vector<MaterialID> remap(materials.size());
 	for (std::size_t i = 0; i < remap.size(); ++i) {
@@ -527,7 +530,10 @@ void scree::MaterialRegistry::ValidateMaterials(nlohmann::json& data)
 
 		try {
 			auto name = material["name"].get<std::string>();
-			material["valid"] = (RegisterMaterialName(name) != AIR_ID);
+			const bool registered = (RegisterMaterialName(name) != AIR_ID);
+			material["valid"] = registered;
+			if (registered && !material.value("custom", false))
+				coreMaterialCount = static_cast<MaterialID>(materialNames.size());
 		}
 		catch (const nlohmann::json::exception&) {
 			logs.push_back(Log::CreateBadMaterialName(material["name"].dump()));

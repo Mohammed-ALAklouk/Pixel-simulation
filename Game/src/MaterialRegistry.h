@@ -49,6 +49,9 @@ namespace scree {
 
 		bool HasMaterial(const std::string& name) const { return materialMap.find(name) != materialMap.end(); }
 
+		bool IsCore(MaterialID id) const { return id < coreMaterialCount; }
+		int GetCoreMaterialsCount() const { return coreMaterialCount; }
+
 		nlohmann::json MaterialToJSON(MaterialID id) const;
 
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
@@ -74,6 +77,7 @@ namespace scree {
 			materialNames.clear();
 			materialMap.clear();
 			tagMap.clear();
+			coreMaterialCount = 0;
 		}
 
 		void ClearLogs() {
@@ -217,6 +221,7 @@ namespace scree {
 		std::vector<Transition> transitions;
 		std::vector<std::string> materialNames;
 		std::unordered_map<std::string, MaterialID> materialMap;
+		MaterialID coreMaterialCount = 0;
 		std::unordered_map<std::string, MaterialID> tagMap;
 		std::vector<Log> logs;
 	};
