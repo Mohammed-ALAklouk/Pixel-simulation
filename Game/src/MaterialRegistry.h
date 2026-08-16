@@ -48,6 +48,9 @@ namespace scree {
 		MaterialData& GetMutable(MaterialID id) { return materials[id]; }
 
 		bool HasMaterial(const std::string& name) const { return materialMap.find(name) != materialMap.end(); }
+
+		nlohmann::json MaterialToJSON(MaterialID id) const;
+
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);
 		void ValidateMaterials(nlohmann::json& data);
@@ -92,6 +95,10 @@ namespace scree {
 
 		int GetTagsCount() const {
 			return static_cast<int>(tags.size());
+		}
+
+		const std::string& GetTagName(MaterialID tag) const {
+			return tags[tag];
 		}
 
 		const Transition* PickTransition(TransitionsSpan span) const
@@ -191,6 +198,10 @@ namespace scree {
 		}
 
 	private:
+
+		nlohmann::json TransitionToJSON(const Transition& transition, bool allowBase) const;
+		nlohmann::json TransitionsToJSON(TransitionsSpan span, bool allowBase) const;
+		nlohmann::json ReactionToJSON(const Reaction& reaction) const;
 
 		// Numeric fields narrow to uint8_t/int8_t and wrap silently (300 -> 44), so clamp first.
 		int ClampField(int value, int min, int max, const std::string& field, MaterialID materialID);

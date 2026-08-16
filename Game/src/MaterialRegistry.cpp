@@ -344,6 +344,122 @@ void scree::MaterialRegistry::ReplaceMaterial(MaterialID id, MaterialData data,
 	materials[id] = data;
 }
 
+nlohmann::json scree::MaterialRegistry::TransitionToJSON(const Transition& transition, bool allowBase) const
+{
+	nlohmann::json out = nlohmann::json::object();
+
+	if (transition.noTransition) {
+		out["no_transition"] = true;
+		out["weight"] = transition.weight;
+		return out;
+	}
+
+	out["material"] = GetName(transition.nextID);
+	out["weight"] = transition.weight;
+
+	if (allowBase && transition.lifespanBase == Transition::LifeSpanBase::Self)
+		out["lifespan_base"] = "self";
+	else if (allowBase && transition.lifespanBase == Transition::LifeSpanBase::Reactor)
+		out["lifespan_base"] = "reactor";
+
+	return out;
+}
+
+nlohmann::json scree::MaterialRegistry::TransitionsToJSON(TransitionsSpan span, bool allowBase) const
+{
+	nlohmann::json out = nlohmann::json::array();
+	for (int i = 0; i < span.count; ++i)
+		out.push_back(TransitionToJSON(transitions[span.start + i], allowBase));
+
+	return out;
+}
+
+nlohmann::json scree::MaterialRegistry::ReactionToJSON(const Reaction& reaction) const
+{
+	nlohmann::json out = nlohmann::json::object();
+
+	if (reaction.targetType == Reaction::TargetType::Material) {
+		out["target_type"] = "material";
+		out["target"] = GetName(reaction.TargetID);
+		if (reaction.Chance != 100)
+			out["chance"] = reaction.Chance;
+	}
+	else {
+		out["target_type"] = "tag";
+		out["target"] = tags[reaction.TargetID];
+	}
+
+	if (reaction.sample == Reaction::Sample::All)
+		out["scan_sample"] = "all";
+	if (reaction.HaltUpdate)
+		out["halt_update"] = true;
+
+	if (reaction.TargetTransitionsSpan.count)
+		out["target_transitions"] = TransitionsToJSON(reaction.TargetTransitionsSpan, true);
+	if (reaction.SelfTransitionsSpan.count)
+		out["self_transitions"] = TransitionsToJSON(reaction.SelfTransitionsSpan, true);
+
+	return out;
+}
+
+nlohmann::json scree::MaterialRegistry::MaterialToJSON(MaterialID id) const
+{
+	const MaterialData& data = materials[id];
+	nlohmann::json out = nlohmann::json::object();
+
+	out["name"] = GetName(id);
+
+	if (data.interpolateColor)
+		out["interpolate_color"] = true;
+
+	if (data.minColor.r != 255 || data.minColor.g != 0 || data.minColor.b != 255)
+		out["color_min"] = nlohmann::json::array({ int(data.minColor.r), int(data.minColor.g), int(data.minColor.b) });
+	if (data.maxColor.r != 255 || data.maxColor.g != 0 || data.maxColor.b != 255)
+		out["color_max"] = nlohmann::json::array({ int(data.maxColor.r), int(data.maxColor.g), int(data.maxColor.b) });
+
+	if (!data.interpolateColor && data.numberOfSteps != 1)
+		out["steps"] = data.numberOfSteps;
+
+	nlohmann::json movement = nlohmann::json::object();
+	if (data.movement.Y_direction != 1) movement["y_direction"] = int(data.movement.Y_direction);
+	if (data.movement.density != 0) movement["density"] = data.movement.density;
+	const int scatter = std::min<int>(data.movement.scatter_chance, 100);
+	if (scatter != 0) movement["scatter_chance"] = scatter;
+	if (data.movement.can_fall) movement["can_fall"] = true;
+	if (data.movement.can_cascade) movement["can_cascade"] = true;
+	if (data.movement.is_fluid) movement["is_fluid"] = true;
+	if (data.movement.is_liquid) movement["is_liquid"] = true;
+	if (!movement.empty()) out["movement"] = movement;
+
+	nlohmann::json tagsOut = nlohmann::json::object();
+	for (std::size_t i = 0; i < tags.size(); ++i)
+		if (data.tagIntensity[i]) tagsOut[tags[i]] = data.tagIntensity[i];
+	if (!tagsOut.empty()) out["tags"] = tagsOut;
+
+	for (std::size_t i = 0; i < tags.size(); ++i)
+		if (data.anchorTagBitmask & (1u << i)) {
+			out["anchor"] = tags[i];
+			break;
+		}
+
+	nlohmann::json lifespan = nlohmann::json::object();
+	if (data.lifespanData.Initial != 255) lifespan["initial"] = data.lifespanData.Initial;
+	if (data.lifespanData.Tick != 0) lifespan["tick"] = data.lifespanData.Tick;
+	if (data.lifespanData.Chance != 100) lifespan["chance"] = data.lifespanData.Chance;
+	if (data.lifespanData.Tick != 0)
+		lifespan["on_death"] = TransitionsToJSON(data.lifespanData.OnDeathTransitionSpan, false);
+	if (!lifespan.empty()) out["lifespan"] = lifespan;
+
+	if (data.reactionSpan.count) {
+		nlohmann::json reactionsOut = nlohmann::json::array();
+		for (int i = 0; i < data.reactionSpan.count; ++i)
+			reactionsOut.push_back(ReactionToJSON(reactions[data.reactionSpan.start + i]));
+		out["reactions"] = reactionsOut;
+	}
+
+	return out;
+}
+
 void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID id)
 {
 	// Judge only the logs this call adds, or one bad material condemns the rest.

@@ -753,3 +753,45 @@ TEST_CASE("the shipped materials.json loads with nothing rejected")
 	CHECK(Log::Worst(registry.GetLogs()) == Log::Severity::Warning);
 	CHECK(registry.GetMaterialsCount() > 1);
 }
+
+// --- serialization ----------------------------------------------------------
+
+TEST_CASE("every shipped material round-trips through MaterialToJSON without logs")
+{
+	MaterialRegistry source;
+	REQUIRE(source.LoadMaterials(SCREE_ASSETS_DIR "/materials.json"));
+	REQUIRE(source.GetLogs().empty());
+
+	nlohmann::json document;
+	document["tags"] = nlohmann::json::array();
+	for (int i = 0; i < source.GetTagsCount(); ++i)
+		document["tags"].push_back(source.GetTagName(static_cast<MaterialID>(i)));
+
+	document["materials"] = nlohmann::json::array();
+	for (int i = 1; i < source.GetMaterialsCount(); ++i)
+		document["materials"].push_back(source.MaterialToJSON(static_cast<MaterialID>(i)));
+
+	MaterialRegistry round;
+	REQUIRE(round.LoadMaterialsFromJSON(document));
+	INFO(Log::FormatLogs(round.GetLogs()));
+	CHECK(round.GetLogs().empty());
+	CHECK(round.GetMaterialsCount() == source.GetMaterialsCount());
+}
+
+TEST_CASE("MaterialToJSON omits fields left at their defaults")
+{
+	MaterialRegistry registry;
+	REQUIRE(registry.LoadMaterialsFromJSON(R"({
+		"tags": [], "materials": [{ "name": "Rock", "color_min": [10, 20, 30], "color_max": [40, 50, 60] }]
+	})"));
+
+	nlohmann::json out = registry.MaterialToJSON(FIRST);
+
+	CHECK(out["name"] == "Rock");
+	CHECK_FALSE(out.contains("steps"));
+	CHECK_FALSE(out.contains("interpolate_color"));
+	CHECK_FALSE(out.contains("movement"));
+	CHECK_FALSE(out.contains("tags"));
+	CHECK_FALSE(out.contains("lifespan"));
+	CHECK_FALSE(out.contains("reactions"));
+}
