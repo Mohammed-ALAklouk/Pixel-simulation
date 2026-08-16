@@ -429,12 +429,14 @@ namespace
 
 			const float reloadW = S(94.0f);
 			const float importW = S(88.0f);
+			const float saveW = S(74.0f);
 			const float clearW = S(28.0f);
 			const float nameW = TextW(name);
 			const float customW = hasCustom ? TextW(customName.c_str()) : 0.0f;
 			const float chipH = S(39.0f);
 
-			float chipW = S(14.0f) + nameW + S(10.0f) + reloadW + S(6.0f) + importW + S(8.0f);
+			float chipW = S(14.0f) + nameW + S(10.0f) + reloadW + S(6.0f) + importW
+				+ S(6.0f) + saveW + S(8.0f);
 			if (hasCustom) chipW += S(10.0f) + customW + S(6.0f) + clearW;
 			r -= chipW;
 
@@ -470,7 +472,14 @@ namespace
 			ImGui::SetCursorPos(ImVec2(cx, buttonY));
 			if (ChromeButton("IMPORT", ImVec2(importW, S(31.0f)), hasCustom))
 				g.import_materials();
-			cx += importW;
+			cx += importW + S(6.0f);
+
+			ImGui::SetCursorPos(ImVec2(cx, buttonY));
+			ImGui::BeginDisabled(g.material_registry.GetMaterialsCount() <= g.material_registry.GetCoreMaterialsCount());
+			if (ChromeButton("SAVE", ImVec2(saveW, S(31.0f))))
+				g.export_materials();
+			ImGui::EndDisabled();
+			cx += saveW;
 
 			if (hasCustom) {
 				cx += S(10.0f);

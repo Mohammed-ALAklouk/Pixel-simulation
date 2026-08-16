@@ -318,6 +318,22 @@ void scree::Game::import_materials()
 	load_materials();
 }
 
+void scree::Game::export_materials()
+{
+	const std::string suggested = custom_file_path.empty() ? "custom_materials.json" : custom_file_path;
+	std::string picked = SaveFileDialog("JSON files\0*.json\0All files\0*.*\0", "Save materials",
+		assets_path(), suggested);
+	if (picked.empty()) return;
+
+	if (!material_registry.SaveCustomMaterials(picked)) {
+		material_load_error_message = "Failed to write " + picked + ".";
+		material_load_failed = true;
+		return;
+	}
+
+	custom_file_path = picked;
+}
+
 void scree::Game::clear_custom_materials()
 {
 	custom_file_path.clear();

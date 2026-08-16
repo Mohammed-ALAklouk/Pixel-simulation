@@ -53,6 +53,8 @@ namespace scree {
 		int GetCoreMaterialsCount() const { return coreMaterialCount; }
 
 		nlohmann::json MaterialToJSON(MaterialID id) const;
+		nlohmann::json CustomMaterialsToJSON() const;
+		bool SaveCustomMaterials(const std::string& path) const;
 
 		void ParseMaterial(nlohmann::json& material, MaterialID id);
 		void ParseTags(nlohmann::json& data);

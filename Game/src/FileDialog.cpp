@@ -12,15 +12,25 @@
 #endif
 #endif
 
+#if defined(_WIN32)
+namespace {
+	// lpstrInitialDir is silently ignored when the separators are the wrong way round.
+	std::string NormalizeDir(const std::string& dir)
+	{
+		std::string out = dir;
+		for (char& ch : out) if (ch == '/') ch = '\\';
+		while (!out.empty() && out.back() == '\\') out.pop_back();
+
+		return out;
+	}
+}
+#endif
+
 std::string scree::OpenFileDialog(const char* filter, const char* title, const std::string& initialDir)
 {
 #if defined(_WIN32)
 	char path[MAX_PATH] = {};
-
-	// lpstrInitialDir is silently ignored when the separators are the wrong way round.
-	std::string startDir = initialDir;
-	for (char& ch : startDir) if (ch == '/') ch = '\\';
-	while (!startDir.empty() && startDir.back() == '\\') startDir.pop_back();
+	const std::string startDir = NormalizeDir(initialDir);
 
 	OPENFILENAMEA ofn = {};
 	ofn.lStructSize = sizeof(ofn);
@@ -40,6 +50,36 @@ std::string scree::OpenFileDialog(const char* filter, const char* title, const s
 	(void)filter;
 	(void)title;
 	(void)initialDir;
+	return "";
+#endif
+}
+
+std::string scree::SaveFileDialog(const char* filter, const char* title, const std::string& initialDir,
+	const std::string& suggestedName)
+{
+#if defined(_WIN32)
+	char path[MAX_PATH] = {};
+	suggestedName.copy(path, sizeof(path) - 1);
+	const std::string startDir = NormalizeDir(initialDir);
+
+	OPENFILENAMEA ofn = {};
+	ofn.lStructSize = sizeof(ofn);
+	ofn.lpstrFilter = filter;
+	ofn.lpstrFile = path;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrTitle = title;
+	ofn.lpstrInitialDir = startDir.empty() ? nullptr : startDir.c_str();
+	ofn.lpstrDefExt = "json";
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
+
+	if (!GetSaveFileNameA(&ofn)) return "";
+
+	return path;
+#else
+	(void)filter;
+	(void)title;
+	(void)initialDir;
+	(void)suggestedName;
 	return "";
 #endif
 }

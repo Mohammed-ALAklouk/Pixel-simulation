@@ -463,6 +463,30 @@ nlohmann::json scree::MaterialRegistry::MaterialToJSON(MaterialID id) const
 	return out;
 }
 
+nlohmann::json scree::MaterialRegistry::CustomMaterialsToJSON() const
+{
+	nlohmann::json out = nlohmann::json::object();
+
+	out["tags"] = nlohmann::json::array();
+	for (const auto& tag : tags)
+		out["tags"].push_back(tag);
+
+	out["materials"] = nlohmann::json::array();
+	for (int i = coreMaterialCount; i < GetMaterialsCount(); ++i)
+		out["materials"].push_back(MaterialToJSON(static_cast<MaterialID>(i)));
+
+	return out;
+}
+
+bool scree::MaterialRegistry::SaveCustomMaterials(const std::string& path) const
+{
+	std::ofstream file(path);
+	if (!file.is_open()) return false;
+
+	file << CustomMaterialsToJSON().dump(2) << "\n";
+	return file.good();
+}
+
 void scree::MaterialRegistry::ParseMaterial(nlohmann::json& material, MaterialID id)
 {
 	// Judge only the logs this call adds, or one bad material condemns the rest.

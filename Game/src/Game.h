@@ -45,6 +45,7 @@ namespace scree
 		std::string materials_path() const;
 		// Opens a picker and reloads with the chosen file as the custom overlay.
 		void import_materials();
+		void export_materials();
 		void clear_custom_materials();
 		std::vector<MaterialID> get_registry_changes(const MaterialRegistry& new_registry);
 
