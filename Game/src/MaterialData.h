@@ -62,6 +62,7 @@ namespace scree
 		std::uint8_t Initial = 255;
 		// Subtracted once per update; 0 means never dies, so on_death is unused.
 		std::uint8_t Tick = 0;
+		std::uint8_t Chance = 100;
 		TransitionsSpan OnDeathTransitionSpan = { 0, 0, 0};
 	};
 

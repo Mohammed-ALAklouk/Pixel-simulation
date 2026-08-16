@@ -126,17 +126,21 @@ namespace scree {
 		bool Tick(Block& block) const
 		{
 			auto& data = materials[block.id];
-			if (block.lifespan < data.lifespanData.Tick) {
-				block.lifespan = 0;
-				return true;
+			if (fast_rand() % 100 < data.lifespanData.Chance) {
+				if (block.lifespan < data.lifespanData.Tick) {
+					block.lifespan = 0;
+					return true;
+				}
+
+				block.lifespan -= data.lifespanData.Tick;
+				if (data.interpolateColor)
+					block.color = RGB::lerp(data.minColor, data.maxColor,
+						lifespan_ratio(block.lifespan, data.lifespanData.Initial));
+
+				return block.lifespan == 0;
 			}
 
-			block.lifespan -= data.lifespanData.Tick;
-			if (data.interpolateColor)
-				block.color = RGB::lerp(data.minColor, data.maxColor,
-					lifespan_ratio(block.lifespan, data.lifespanData.Initial));
-
-			return block.lifespan == 0;
+			return false;
 		}
 
 		void CreateBlock(Block& block, MaterialID id, std::uint8_t lifespan = 0) const

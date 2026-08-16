@@ -389,10 +389,12 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	const auto& lifespan = material["lifespan"];
 	int initial = 255;
 	int tick = 0;
+	int chance = 100;
 
 	try {
 		initial = ReadField(lifespan, "initial", initial, 0, 255, "lifespan.initial", id);
 		tick = ReadField(lifespan, "tick", tick, 0, 255, "lifespan.tick", id);
+		chance = ReadField(lifespan, "chance", chance, 0, 100, "lifespan.chance", id);
 	}
 	catch (const nlohmann::json::exception& e) {
 		logs.push_back(Log::CreateWrongType(id, GetName(id), "lifespan", e.what()));
@@ -402,9 +404,14 @@ void scree::MaterialRegistry::ParseLifespan(const nlohmann::json& material, Mate
 	// Commit before the on_death checks below, which may bail.
 	out.Initial = initial;
 	out.Tick = tick;
+	out.Chance = chance;
 
 	// Never ticks, never dies; on_death only matters when it ticks.
 	if (tick == 0) return;
+
+	if (chance == 0)
+		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.chance",
+			"0, so the lifespan ticks but can never expire"));
 
 	if (!lifespan.contains("on_death")) {
 		logs.push_back(Log::CreateMissingField(id, GetName(id), "lifespan.on_death",

@@ -116,6 +116,7 @@
       "lifespan": {
         "initial": 255,
         "tick": 6,
+        "chance": 30,
         "on_death": [
           { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
         ]
@@ -252,6 +253,7 @@
       "lifespan": {
         "initial": 255,
         "tick": 1,
+        "chance": 10,
         "on_death": [
           { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
         ]
