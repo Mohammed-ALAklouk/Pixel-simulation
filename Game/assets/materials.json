@@ -29,8 +29,8 @@
     {
       "name": "Stone",
       "interpolate_color": false,
-      "color_min": [ 100, 100, 100 ],
-      "color_max": [ 120, 120, 120 ],
+      "color_min": [ 104, 102, 99 ],
+      "color_max": [ 142, 139, 134 ],
       "steps": 4,
       "movement": {
         "y_direction": 1,
@@ -53,8 +53,8 @@
     {
       "name": "Water",
       "interpolate_color": false,
-      "color_min": [ 0, 0, 200 ],
-      "color_max": [ 0, 0, 250 ],
+      "color_min": [ 38, 88, 196 ],
+      "color_max": [ 58, 120, 236 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -77,9 +77,9 @@
     {
       "name": "Oil",
       "interpolate_color": false,
-      "color_min": [ 15, 10, 20 ],
-      "color_max": [ 30, 45, 50 ],
-      "steps": 8,
+      "color_min": [ 42, 36, 30 ],
+      "color_max": [ 70, 58, 44 ],
+      "steps": 4,
       "movement": {
         "y_direction": 1,
         "density": 20,
@@ -100,10 +100,10 @@
 
     {
       "name": "Smoke",
-      "interpolate_color": false,
-      "color_min": [ 100, 100, 100 ],
-      "color_max": [ 150, 150, 150 ],
-      "steps": 8,
+      "interpolate_color": true,
+      "color_min": [ 44, 42, 44 ],
+      "color_max": [ 92, 88, 90 ],
+      "steps": 4,
       "movement": {
         "y_direction": -1,
         "density": 1,
@@ -128,8 +128,8 @@
     {
       "name": "Acid",
       "interpolate_color": false,
-      "color_min": [ 50, 255, 50 ],
-      "color_max": [ 200, 200, 0 ],
+      "color_min": [ 116, 216, 58 ],
+      "color_max": [ 162, 255, 96 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -197,6 +197,7 @@
       "lifespan": {
         "initial": 255,
         "tick": 8,
+        "chance": 80,
         "on_death": [
           { "no_transition": false, "material": "Smoke", "weight": 25, "lifespan_base": "initial" },
           { "no_transition": false, "material": "Air", "weight": 75, "lifespan_base": "initial" }
@@ -237,10 +238,10 @@
 
     {
       "name": "Steam",
-      "interpolate_color": false,
-      "color_min": [ 200, 200, 200 ],
-      "color_max": [ 240, 240, 240 ],
-      "steps": 8,
+      "interpolate_color": true,
+      "color_min": [ 150, 162, 180 ],
+      "color_max": [ 228, 238, 250 ],
+      "steps": 4,
       "movement": {
         "y_direction": -1,
         "density": 10,
@@ -265,8 +266,8 @@
     {
       "name": "Wood",
       "interpolate_color": false,
-      "color_min": [ 82, 58, 40 ],
-      "color_max": [ 133, 94, 66 ],
+      "color_min": [ 88, 58, 34 ],
+      "color_max": [ 124, 84, 48 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -289,8 +290,8 @@
     {
       "name": "Lava",
       "interpolate_color": false,
-      "color_min": [ 200, 40, 0 ],
-      "color_max": [ 255, 170, 0 ],
+      "color_min": [ 196, 52, 8 ],
+      "color_max": [ 255, 146, 32 ],
       "steps": 6,
       "movement": {
         "y_direction": 1,
@@ -336,8 +337,8 @@
     {
       "name": "Hot Stone",
       "interpolate_color": false,
-      "color_min": [ 100, 100, 100 ],
-      "color_max": [ 120, 120, 120 ],
+      "color_min": [ 104, 102, 99 ],
+      "color_max": [ 142, 139, 134 ],
       "steps": 4,
       "movement": {
         "y_direction": 1,
@@ -375,9 +376,9 @@
     {
       "name": "Dirty Water",
       "interpolate_color": false,
-      "color_min": [ 15, 75, 15 ],
-      "color_max": [ 15, 75, 15 ],
-      "steps": 1,
+      "color_min": [ 74, 92, 60 ],
+      "color_max": [ 104, 120, 82 ],
+      "steps": 5,
       "movement": {
         "y_direction": 1,
         "density": 20,
@@ -399,8 +400,8 @@
     {
       "name": "Ash",
       "interpolate_color": false,
-      "color_min": [ 0, 0, 0 ],
-      "color_max": [ 150, 150, 150 ],
+      "color_min": [ 62, 60, 60 ],
+      "color_max": [ 96, 92, 90 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -423,8 +424,8 @@
     {
       "name": "Hot Ash",
       "interpolate_color": false,
-      "color_min": [ 0, 0, 0 ],
-      "color_max": [ 150, 150, 150 ],
+      "color_min": [ 62, 60, 60 ],
+      "color_max": [ 96, 92, 90 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,

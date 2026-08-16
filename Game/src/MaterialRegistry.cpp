@@ -113,9 +113,9 @@ void scree::MaterialRegistry::LoadAir()
 		},
 		"tags": {},
 		"interpolate_color": false,
-		"color_min": [0, 0, 0],
-		"color_max": [0, 0, 0],
-		"steps": 1
+		"color_min": [8, 8, 10],
+		"color_max": [10, 10, 12],
+		"steps": 2
 	})";
 	nlohmann::json airJSON = nlohmann::json::parse(airStr);
 	materialNames.push_back(airJSON["name"].get<std::string>());
