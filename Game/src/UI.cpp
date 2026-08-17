@@ -133,23 +133,365 @@ namespace
 		return pressed;
 	}
 
+	// ---------------------------------------------- material editor building blocks
+
+	ImVec4 SwatchColour(const MaterialData& data);
+
+	// Where every control in the editor starts, measured from the left edge of the card it
+	// sits in. Names sit to the left of it and widgets to the right, at any nesting depth.
+	constexpr float FormLabelW = 168.0f;
+
+	// How far the current nesting level is held off the body's right edge. Cards stack, so
+	// each one adds its own inset and padding and puts the previous value back at the end.
+	// Widths are measured off this because ImGui resolves a negative item width against the
+	// window's content edge and knows nothing about the card drawn inside it.
+	float RightMargin = 0.0f;
+
+	// Width from the cursor to the right edge of the card the cursor is in.
+	float AvailW() { return ImGui::GetContentRegionAvail().x - RightMargin; }
+
+	// Depth is carried by the fill: each level alternates between recessed and raised, which
+	// is what makes a transition list inside a reaction inside a section readable at a glance.
+	enum class CardTone { Sunk, Raised };
+
+	// A filled, bordered box behind a run of widgets. Its height is only known once they have
+	// been laid out, so the fill goes on its own draw channel and is merged back in after.
+	class Card
+	{
+	public:
+		explicit Card(CardTone tone, float inset = 0.0f, float pad = S(11.0f))
+			: m_pad(pad), m_inset(inset), m_outerMargin(RightMargin)
+		{
+			m_fill = (tone == CardTone::Sunk) ? ui::theme.PanelSunk : ui::theme.Button;
+			m_edge = (tone == CardTone::Sunk) ? ui::theme.BorderSoft : ui::theme.ButtonBorder;
+
+			if (m_inset > 0.0f) ImGui::Indent(m_inset);
+			m_dl = ImGui::GetWindowDrawList();
+			m_min = ImGui::GetCursorScreenPos();
+			m_w = ImGui::GetContentRegionAvail().x - m_outerMargin - m_inset;
+
+			m_split.Split(m_dl, 2);
+			m_split.SetCurrentChannel(m_dl, 1);
+
+			RightMargin = m_outerMargin + m_inset + m_pad;
+			ImGui::Indent(m_pad);
+			ImGui::PushItemWidth(-RightMargin);
+			ImGui::Dummy(ImVec2(0.0f, S(2.0f)));
+		}
+
+		~Card()
+		{
+			ImGui::Dummy(ImVec2(0.0f, S(2.0f)));
+			ImGui::PopItemWidth();
+			ImGui::Unindent(m_pad);
+			RightMargin = m_outerMargin;
+
+			const ImVec2 max(m_min.x + m_w, ImGui::GetCursorScreenPos().y);
+			m_split.SetCurrentChannel(m_dl, 0);
+			m_dl->AddRectFilled(m_min, max, U32(m_fill), S(4.0f));
+			m_dl->AddRect(m_min, max, U32(m_edge), S(4.0f));
+			m_split.Merge(m_dl);
+
+			if (m_inset > 0.0f) ImGui::Unindent(m_inset);
+		}
+
+		Card(const Card&) = delete;
+		Card& operator=(const Card&) = delete;
+
+	private:
+		ImDrawList* m_dl = nullptr;
+		ImDrawListSplitter m_split;
+		ImVec2 m_min{};
+		float m_w = 0.0f, m_pad, m_inset, m_outerMargin;
+		ImVec4 m_fill{}, m_edge{};
+	};
+
+	// A tracked caps caption on a row of its own -- the same treatment the bars and the rail
+	// give their section names.
+	void Caption(const char* text, const ImVec4& colour)
+	{
+		FontScope f(m::FontLabel);
+		const ImVec2 p = ImGui::GetCursorScreenPos();
+		const float th = ImGui::GetTextLineHeight();
+		DrawTracked(ImGui::GetWindowDrawList(), ImVec2(p.x, p.y + S(2.0f)), text, m::TrackLabel, colour);
+		ImGui::Dummy(ImVec2(TrackedW(text, m::TrackLabel), th + S(4.0f)));
+	}
+
+	// Caption plus a remove button hard against the card's right edge. True when it was hit.
+	bool CardHeader(const char* text, int index)
+	{
+		char title[64];
+		if (index >= 0) std::snprintf(title, sizeof(title), "%s %d", text, index + 1);
+		else            std::snprintf(title, sizeof(title), "%s", text);
+
+		const float btn = S(25.0f);
+		const ImVec2 p = ImGui::GetCursorScreenPos();
+		const float w = AvailW();
+
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + w - btn);
+		const bool remove = ChromeButton("X", ImVec2(btn, btn));
+
+		FontScope f(m::FontLabel);
+		const float th = ImGui::GetTextLineHeight();
+		DrawTracked(ImGui::GetWindowDrawList(), ImVec2(p.x, p.y + (btn - th) * 0.5f), title,
+			m::TrackLabel, ui::theme.TextFaint);
+		return remove;
+	}
+
+	// A folding section band, styled like a selected row in the rail. The open state lives in
+	// ImGui's own per-window storage, so no member has to be added for each section.
+	bool Section(const char* label, bool defaultOpen = false)
+	{
+		ImGui::Dummy(ImVec2(0.0f, S(3.0f)));
+
+		ImGuiStorage* store = ImGui::GetStateStorage();
+		const ImGuiID key = ImGui::GetID(label);
+		bool open = store->GetBool(key, defaultOpen);
+
+		const float h = S(34.0f);
+		const ImVec2 p = ImGui::GetCursorScreenPos();
+		const float w = AvailW();
+
+		if (ImGui::InvisibleButton(label, ImVec2(w, h)))
+		{
+			open = !open;
+			store->SetBool(key, open);
+		}
+		const bool hovered = ImGui::IsItemHovered();
+
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		if (open || hovered)
+			dl->AddRectFilled(p, ImVec2(p.x + w, p.y + h),
+				U32(open ? ui::theme.AccentBg : ui::theme.RowHover), S(3.0f));
+		if (open)
+			dl->AddRectFilled(p, ImVec2(p.x + S(2.0f), p.y + h), U32(ui::theme.Accent));
+
+		const float cx = p.x + S(15.0f);
+		const float cy = p.y + h * 0.5f;
+		const ImU32 caret = U32(open ? ui::theme.Accent : ui::theme.TextMute);
+		if (open)
+			dl->AddTriangleFilled(ImVec2(cx - S(5.0f), cy - S(3.0f)), ImVec2(cx + S(5.0f), cy - S(3.0f)),
+				ImVec2(cx, cy + S(4.0f)), caret);
+		else
+			dl->AddTriangleFilled(ImVec2(cx - S(3.0f), cy - S(5.0f)), ImVec2(cx - S(3.0f), cy + S(5.0f)),
+				ImVec2(cx + S(4.0f), cy), caret);
+
+		FontScope f(m::FontLabel);
+		const float th = ImGui::GetTextLineHeight();
+		DrawTracked(dl, ImVec2(p.x + S(31.0f), p.y + (h - th) * 0.5f), label, m::TrackLabel,
+			open ? ui::theme.AccentText : ui::theme.TextFaint);
+		return open;
+	}
+
+	// Cards carry their own border, so the global item spacing is not enough between two of
+	// them -- stacked that close they read as one box with a line drawn through it.
+	void Gap(float h = S(4.0f)) { ImGui::Dummy(ImVec2(0.0f, h)); }
+
+	// What a list says when it is empty, rather than leaving a blank card.
+	void Hint(const char* text)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextGhost);
+		ImGui::TextUnformatted(text);
+		ImGui::PopStyleColor();
+	}
+
+	// The left half of a control row. Leaves the cursor on the control column; the widget that
+	// follows inherits the card's item width, so every field ends on the same right edge too.
+	void FormLabel(const char* text)
+	{
+		const float x = ImGui::GetCursorPosX();
+		ImGui::AlignTextToFramePadding();
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextMute);
+		ImGui::TextUnformatted(text);
+		ImGui::PopStyleColor();
+		ImGui::SameLine(0.0f, 0.0f);
+		ImGui::SetCursorPosX(std::max(x + S(FormLabelW), ImGui::GetCursorPosX() + S(10.0f)));
+	}
+
+	bool ChromeCheckbox(const char* label, bool* v)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, *v ? ui::theme.Text : ui::theme.TextDim);
+		const bool changed = ImGui::Checkbox(label, v);
+		ImGui::PopStyleColor();
+		return changed;
+	}
+
+	// A checkbox carries its own label, so it takes the control column and leaves the label
+	// column empty -- that keeps its box in line with the sliders and combos above it.
+	bool FormCheck(const char* label, bool* v)
+	{
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + S(FormLabelW));
+		return ChromeCheckbox(label, v);
+	}
+
+	// Combos are the one widget that dresses two windows: the box in the panel and the popup
+	// over it, which is why the colours are pushed around the whole call rather than one item.
+	void PushComboStyle()
+	{
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ui::theme.Button);
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ui::theme.ButtonHover);
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ui::theme.Button);
+		ImGui::PushStyleColor(ImGuiCol_Border, ui::theme.ButtonBorder);
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
+		ImGui::PushStyleColor(ImGuiCol_PopupBg, ui::theme.Panel);
+		ImGui::PushStyleColor(ImGuiCol_Header, ui::theme.AccentBg);
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ui::theme.RowHover);
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ui::theme.AccentBg);
+	}
+
+	void PopComboStyle() { ImGui::PopStyleColor(9); }
+
+	bool EnumCombo(const char* label, const char* id, int& value, const char* const* names, int count)
+	{
+		FormLabel(label);
+		bool changed = false;
+
+		PushComboStyle();
+		if (ImGui::BeginCombo(id, names[value]))
+		{
+			for (int i = 0; i < count; i++)
+			{
+				const bool selected = (i == value);
+				if (ImGui::Selectable(names[i], selected))
+				{
+					value = i;
+					changed = true;
+				}
+				if (selected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		PopComboStyle();
+		return changed;
+	}
+
+	// Every row carries the material's swatch, the same one the rail lists it by, so a target
+	// is picked by the colour it will actually paint rather than by name alone.
+	bool MaterialCombo(const char* label, const char* id, MaterialID& value, Game& g)
+	{
+		FormLabel(label);
+
+		// Captured before the combo opens: while the popup is up it is the current window, and
+		// the swatch has to land on the box back in the panel.
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		const ImVec2 box = ImGui::GetCursorScreenPos();
+		const float boxH = ImGui::GetFrameHeight();
+		const float sw = S(15.0f);
+
+		// Leading spaces reserve the room the swatch is drawn into; a combo preview is a
+		// string and nothing else.
+		char preview[80];
+		std::snprintf(preview, sizeof(preview), "     %s", g.material_registry.GetName(value).c_str());
+
+		bool changed = false;
+		PushComboStyle();
+		if (ImGui::BeginCombo(id, preview))
+		{
+			ImDrawList* pdl = ImGui::GetWindowDrawList();
+			for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++)
+			{
+				const MaterialID rowID = static_cast<MaterialID>(i);
+				const bool selected = (rowID == value);
+
+				ImGui::PushID(i);
+				if (ImGui::Selectable("##opt", selected, 0, ImVec2(0.0f, ImGui::GetTextLineHeight() + S(6.0f))))
+				{
+					value = rowID;
+					changed = true;
+				}
+				if (selected) ImGui::SetItemDefaultFocus();
+
+				const ImVec2 p = ImGui::GetItemRectMin();
+				const float rowH = ImGui::GetItemRectSize().y;
+				const float sy = std::floor(p.y + (rowH - sw) * 0.5f);
+				pdl->AddRectFilled(ImVec2(p.x + S(7.0f), sy), ImVec2(p.x + S(7.0f) + sw, sy + sw),
+					U32(SwatchColour(g.material_registry.Get(rowID))), S(2.0f));
+				pdl->AddText(ImVec2(p.x + S(29.0f), p.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f),
+					U32(selected ? ui::theme.AccentText : ui::theme.TextDim),
+					g.material_registry.GetName(rowID).c_str());
+				ImGui::PopID();
+			}
+			ImGui::EndCombo();
+		}
+		PopComboStyle();
+
+		dl->AddRectFilled(ImVec2(box.x + S(9.0f), box.y + (boxH - sw) * 0.5f),
+			ImVec2(box.x + S(9.0f) + sw, box.y + (boxH + sw) * 0.5f),
+			U32(SwatchColour(g.material_registry.Get(value))), S(2.0f));
+		return changed;
+	}
+
+	bool TagCombo(const char* label, const char* id, MaterialID& value, Game& g)
+	{
+		std::vector<std::pair<std::string, MaterialID>> tags(
+			g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
+		std::sort(tags.begin(), tags.end(),
+			[](const auto& a, const auto& b) { return a.second < b.second; });
+
+		const char* preview = "";
+		for (const auto& p : tags)
+			if (p.second == value) preview = p.first.c_str();
+
+		FormLabel(label);
+		bool changed = false;
+
+		PushComboStyle();
+		if (ImGui::BeginCombo(id, preview))
+		{
+			for (const auto& p : tags)
+			{
+				const bool selected = (p.second == value);
+				if (ImGui::Selectable(p.first.c_str(), selected))
+				{
+					value = p.second;
+					changed = true;
+				}
+				if (selected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		PopComboStyle();
+		return changed;
+	}
+
+	// A swatch that opens the picker, with the value beside it: the three drag boxes ImGui
+	// puts there by default do not fit the column and read as three unrelated numbers.
 	bool ColorEditRGB(const char* label, scree::RGB& c)
 	{
+		FormLabel(label);
+
+		char id[64];
+		std::snprintf(id, sizeof(id), "##%s", label);
+
 		float col[3] = { c.r / 255.0f, c.g / 255.0f, c.b / 255.0f };
-		if (ImGui::ColorEdit3(label, col))
+		const bool changed = ImGui::ColorEdit3(id, col,
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+		if (changed)
 		{
 			c.r = static_cast<std::uint8_t>(std::clamp(col[0], 0.0f, 1.0f) * 255.0f + 0.5f);
 			c.g = static_cast<std::uint8_t>(std::clamp(col[1], 0.0f, 1.0f) * 255.0f + 0.5f);
 			c.b = static_cast<std::uint8_t>(std::clamp(col[2], 0.0f, 1.0f) * 255.0f + 0.5f);
-			return true;
 		}
-		return false;
+
+		char hex[16];
+		std::snprintf(hex, sizeof(hex), "%02X %02X %02X", c.r, c.g, c.b);
+		ImGui::SameLine(0.0f, S(10.0f));
+		ImGui::AlignTextToFramePadding();
+		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
+		ImGui::TextUnformatted(hex);
+		ImGui::PopStyleColor();
+		return changed;
 	}
 
 	bool Uint8Edit(const char* label, std::uint8_t& v, int lo, int hi)
 	{
+		FormLabel(label);
+
+		char id[64];
+		std::snprintf(id, sizeof(id), "##%s", label);
+
 		int n = v;
-		if (ImGui::SliderInt(label, &n, lo, hi, "%d", ImGuiSliderFlags_NoInput))
+		if (ImGui::SliderInt(id, &n, lo, hi, "%d", ImGuiSliderFlags_NoInput))
 		{
 			v = static_cast<std::uint8_t>(std::clamp(n, 0, 255));
 			return true;
@@ -157,172 +499,103 @@ namespace
 		return false;
 	}
 
-	bool TransitionEdit(Transition& transition, Game& g, bool lifespanInput) {
-		if (ImGui::Button("X")) return true;
-		ImGui::Checkbox("No Transition", &transition.noTransition);
+	// One weighted outcome. `initialLifespanOnly` is the on_death case, where the loader
+	// accepts nothing but Initial and there is no choice to offer.
+	bool TransitionEdit(Transition& transition, int index, Game& g, bool initialLifespanOnly)
+	{
+		Card card(CardTone::Raised, S(6.0f));
+		const bool remove = CardHeader("OUTCOME", index);
 
-		if (transition.noTransition) return false;
-
-		const std::string& preview = g.material_registry.GetName(transition.nextID);
-
-		ImGui::Text("Target");
-		ImGui::SameLine();
-		if (ImGui::BeginCombo("##nextid", preview.c_str()))
-		{
-			for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++)
-			{
-				const MaterialID id = static_cast<MaterialID>(i);
-				const bool selected = (id == transition.nextID);
-
-				if (ImGui::Selectable(g.material_registry.GetName(id).c_str(), selected))
-					transition.nextID = id;
-
-				if (selected)
-					ImGui::SetItemDefaultFocus();
-			}
-			ImGui::EndCombo();
-		}
-
+		// Weight applies either way: an entry that changes nothing still competes with the
+		// others for the roll.
 		Uint8Edit("Weight", transition.weight, 1, 255);
+		FormCheck("Leave the block unchanged", &transition.noTransition);
 
-		if (lifespanInput) return false;
+		if (!transition.noTransition)
+		{
+			MaterialCombo("Turns into", "##nextid", transition.nextID, g);
 
-		ImGui::Text("Lifespan base");
-		ImGui::SameLine();
-		if (ImGui::BeginCombo("##lifespanbase", lifeSpanBaseStr[int(transition.lifespanBase)])) {
-			for (int i = 0; i < 3; i++)
+			if (!initialLifespanOnly)
 			{
-				const Transition::LifeSpanBase base = static_cast<Transition::LifeSpanBase>(i);
-				const bool selected = (base == transition.lifespanBase);
-
-				if (ImGui::Selectable(lifeSpanBaseStr[i], selected))
-					transition.lifespanBase = base;
-
-				if (selected)
-					ImGui::SetItemDefaultFocus();
+				int base = static_cast<int>(transition.lifespanBase);
+				if (EnumCombo("Lifespan base", "##lifespanbase", base, lifeSpanBaseStr, 3))
+					transition.lifespanBase = static_cast<Transition::LifeSpanBase>(base);
 			}
-			ImGui::EndCombo();
 		}
 
-		return false;
+		return remove;
 	}
 
-	void TransitionList(const char* addLabel, std::vector<Transition>& list, Game& g) {
-		for (size_t i = 0; i < list.size();) {
-			ImGui::PushID(static_cast<int>(i));
-			if (TransitionEdit(list[i], g, false))
-				list.erase(list.begin() + i);
-			else
-				++i;
+	// A weighted outcome list in a card of its own, captioned with the field it writes.
+	void TransitionList(const char* caption, std::vector<Transition>& list, Game& g,
+		bool initialLifespanOnly)
+	{
+		Card card(CardTone::Sunk, S(6.0f));
+		Caption(caption, ui::theme.TextFaint);
 
-			ImGui::Separator();
+		if (list.empty())
+			Hint("nothing happens");
+
+		for (size_t i = 0; i < list.size();)
+		{
+			ImGui::PushID(static_cast<int>(i));
+			const bool remove = TransitionEdit(list[i], static_cast<int>(i), g, initialLifespanOnly);
 			ImGui::PopID();
+			Gap();
+
+			if (remove) list.erase(list.begin() + i);
+			else        ++i;
 		}
-		if (ImGui::Button(addLabel))
+
+		FontScope f(m::FontLabel);
+		if (ChromeButton("+ OUTCOME", ImVec2(S(150.0f), S(29.0f))))
 			list.push_back(Transition());
 	}
 
-	bool ReactionEdit(EditReaction& er, Game& g) {
+	bool ReactionEdit(EditReaction& er, int index, Game& g)
+	{
 		static const char* const targetTypeStr[] = { "Material", "Tag" };
-		static const char* const sampleStr[] = { "All", "FirstToReact" };
+		static const char* const sampleStr[] = { "All neighbours", "First to react" };
 
-		if (ImGui::Button("X")) return true;
+		Card card(CardTone::Raised, S(6.0f));
+		const bool remove = CardHeader("REACTION", index);
 
 		Reaction& r = er.reaction;
 
-		ImGui::Text("Target type");
-		ImGui::SameLine();
-		if (ImGui::BeginCombo("##targettype", targetTypeStr[int(r.targetType)])) {
-			for (int i = 0; i < 2; i++) {
-				const Reaction::TargetType t = static_cast<Reaction::TargetType>(i);
-				const bool selected = (t == r.targetType);
-
-				if (ImGui::Selectable(targetTypeStr[i], selected)) {
-					r.targetType = t;
-					r.TargetID = 0;
-				}
-				if (selected)
-					ImGui::SetItemDefaultFocus();
-			}
-			ImGui::EndCombo();
+		int type = static_cast<int>(r.targetType);
+		if (EnumCombo("Target type", "##targettype", type, targetTypeStr, 2))
+		{
+			r.targetType = static_cast<Reaction::TargetType>(type);
+			r.TargetID = 0;   // the id means a different thing in each mode
 		}
 
-		if (r.targetType == Reaction::TargetType::Material) {
-			const std::string& preview = g.material_registry.GetName(r.TargetID);
-
-			ImGui::Text("Target");
-			ImGui::SameLine();
-			if (ImGui::BeginCombo("##target", preview.c_str())) {
-				for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++) {
-					const MaterialID id = static_cast<MaterialID>(i);
-					const bool selected = (id == r.TargetID);
-
-					if (ImGui::Selectable(g.material_registry.GetName(id).c_str(), selected))
-						r.TargetID = id;
-
-					if (selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-
+		if (r.targetType == Reaction::TargetType::Material)
+		{
+			MaterialCombo("Target", "##target", r.TargetID, g);
 			Uint8Edit("Chance", r.Chance, 0, 100);
 		}
-		else {
-			std::vector<std::pair<std::string, MaterialID>> tags(
-				g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
-			std::sort(tags.begin(), tags.end(),
-				[](const auto& a, const auto& b) { return a.second < b.second; });
-
-			const char* preview = "";
-			for (const auto& p : tags)
-				if (p.second == r.TargetID) preview = p.first.c_str();
-
-			ImGui::Text("Target tag");
-			ImGui::SameLine();
-			if (ImGui::BeginCombo("##targettag", preview)) {
-				for (const auto& p : tags) {
-					const bool selected = (p.second == r.TargetID);
-
-					if (ImGui::Selectable(p.first.c_str(), selected))
-						r.TargetID = p.second;
-
-					if (selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
+		else
+		{
+			TagCombo("Target tag", "##targettag", r.TargetID, g);
 		}
 
-		ImGui::Text("Sample");
-		ImGui::SameLine();
-		if (ImGui::BeginCombo("##sample", sampleStr[int(r.sample)])) {
-			for (int i = 0; i < 2; i++) {
-				const Reaction::Sample s = static_cast<Reaction::Sample>(i);
-				const bool selected = (s == r.sample);
+		int sample = static_cast<int>(r.sample);
+		if (EnumCombo("Scan sample", "##sample", sample, sampleStr, 2))
+			r.sample = static_cast<Reaction::Sample>(sample);
 
-				if (ImGui::Selectable(sampleStr[i], selected))
-					r.sample = s;
-
-				if (selected)
-					ImGui::SetItemDefaultFocus();
-			}
-			ImGui::EndCombo();
-		}
-
-		ImGui::Checkbox("Halt Update", &r.HaltUpdate);
+		FormCheck("Halt update", &r.HaltUpdate);
+		Gap();
 
 		ImGui::PushID("target");
-		ImGui::Text("Target transitions");
-		TransitionList("Add Target Transition", er.targetTransitions, g);
+		TransitionList("TARGET BECOMES", er.targetTransitions, g, false);
 		ImGui::PopID();
+		Gap();
 
 		ImGui::PushID("self");
-		ImGui::Text("Self transitions");
-		TransitionList("Add Self Transition", er.selfTransitions, g);
+		TransitionList("SELF BECOMES", er.selfTransitions, g, false);
 		ImGui::PopID();
 
-		return false;
+		return remove;
 	}
 
 
@@ -774,15 +1047,7 @@ namespace
 	// the swatch is drawn in screen ones.
 	void ThemePicker(ImVec2 org, float x, float y, float w)
 	{
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ui::theme.Button);
-		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ui::theme.ButtonHover);
-		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ui::theme.Button);
-		ImGui::PushStyleColor(ImGuiCol_Border, ui::theme.ButtonBorder);
-		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
-		ImGui::PushStyleColor(ImGuiCol_PopupBg, ui::theme.Panel);
-		ImGui::PushStyleColor(ImGuiCol_Header, ui::theme.AccentBg);
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ui::theme.RowHover);
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ui::theme.AccentBg);
+		PushComboStyle();
 
 		ImGui::SetCursorPos(ImVec2(x, y));
 		ImGui::SetNextItemWidth(w);
@@ -829,7 +1094,7 @@ namespace
 			ImVec2(org.x + x + S(23.0f), org.y + y + S(24.0f)),
 			U32(scree::ui::hex(active.r, active.g, active.b)), 2.0f);
 
-		ImGui::PopStyleColor(9);
+		PopComboStyle();
 	}
 
 	// ------------------------------------------------------------- bottom bar
@@ -1045,149 +1310,252 @@ namespace
 	}
 
 	// -------------------------------------------------------------- new material pannel
-	void NewMaterialPannel(Game& g) {
-		const ImVec2 c = ImGui::GetMainViewport()->GetCenter();
-		const ImVec2 VPsize = ImGui::GetMainViewport()->Size;
-		const ImVec2 size(VPsize.x * 0.5f, VPsize.y * 0.8f);
-		const ImVec2 pos(c.x - size.x * 0.5f, c.y - size.y * 0.5f);
-		BeginChrome("##newmat", pos, size, ui::theme.Panel, true);
 
-		ImGui::SetCursorPos(ImVec2(size.x - S(34.0f), S(8.0f)));
-		if (ChromeButton("X", ImVec2(S(26.0f), S(26.0f)))) {
-			g.new_material_pannel_open = false;
-			g.begin_new_material();
+	// The body of the editor: everything between the fixed title strip and the fixed footer,
+	// laid out inside its own scrolling child so those two never move.
+	void MaterialForm(Game& g)
+	{
+		MaterialData& material = *g.editedMaterial;
+
+		{
+			Card card(CardTone::Raised);
+			FormLabel("Name");
+			ImGui::InputText("##name", &g.newMaterialName);
 		}
 
+		if (Section("APPEARANCE", true))
+		{
+			Card card(CardTone::Sunk, S(8.0f));
 
-		ImGui::Indent(S(16.0f));
+			// The spread the particles are actually picked from, which neither of the two
+			// swatches shows on its own.
+			FormLabel("Range");
+			{
+				const ImVec2 p = ImGui::GetCursorScreenPos();
+				const float w = ImGui::CalcItemWidth();
+				const float h = ImGui::GetFrameHeight();
+				ImGui::Dummy(ImVec2(w, h));
 
-		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
-		ImGui::TextUnformatted(g.editing() ? "Edit Material" : "New Material");
-		ImGui::PopStyleColor();
+				ImDrawList* dl = ImGui::GetWindowDrawList();
+				const ImU32 lo = U32(ui::hex(material.minColor.r, material.minColor.g, material.minColor.b));
+				const ImU32 hi = U32(ui::hex(material.maxColor.r, material.maxColor.g, material.maxColor.b));
+				dl->AddRectFilledMultiColor(p, ImVec2(p.x + w, p.y + h), lo, hi, hi, lo);
+				dl->AddRect(p, ImVec2(p.x + w, p.y + h), U32(ui::theme.ButtonBorder));
+			}
 
-		ImGui::TextUnformatted("Name");
-		ImGui::SameLine();
-		ImGui::InputText("##name", &g.newMaterialName);
-
-		auto& material = *g.editedMaterial;
-
-		if (ImGui::CollapsingHeader("Appearance", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ColorEditRGB("Min Color", material.minColor);
-			ColorEditRGB("Max Color", material.maxColor);
-			ImGui::Checkbox("Interpolate color over lifespan", &material.interpolateColor);
+			ColorEditRGB("Min colour", material.minColor);
+			ColorEditRGB("Max colour", material.maxColor);
+			FormCheck("Interpolate over lifespan", &material.interpolateColor);
 			if (!material.interpolateColor)
-				Uint8Edit("Number of steps", material.numberOfSteps, 1, 10);
+				Uint8Edit("Colour steps", material.numberOfSteps, 1, 10);
 		}
 
-		if (ImGui::CollapsingHeader("Tags")) {
+		if (Section("TAGS"))
+		{
+			Card card(CardTone::Sunk, S(8.0f));
+
 			std::vector<std::pair<std::string, MaterialID>> tags(
 				g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
 			std::sort(tags.begin(), tags.end(),
 				[](const auto& a, const auto& b) { return a.second < b.second; });
 
-			for (const auto& pair : tags) {
+			if (tags.empty())
+				Hint("no tags are defined in the material file");
+
+			for (const auto& pair : tags)
+			{
 				ImGui::PushID(pair.second);
 				const std::uint8_t tagBit = 1u << pair.second;
 
-				ImGui::TextUnformatted(pair.first.c_str());
-				ImGui::SameLine();
-				ImGui::SetNextItemWidth(S(150.0f));
-				if (Uint8Edit("Intensity", material.tagIntensity[pair.second], 0, 100)) {
-					if (material.tagIntensity[pair.second])
-						material.tagBitmask |= tagBit;
-					else
-						material.tagBitmask &= ~tagBit;
+				FormLabel(pair.first.c_str());
+
+				// The anchor box is parked at the right end of the row, so the intensity
+				// slider stops short of the card edge rather than filling it.
+				const float anchorW = S(112.0f);
+				ImGui::SetNextItemWidth(-(RightMargin + anchorW));
+				int intensity = material.tagIntensity[pair.second];
+				if (ImGui::SliderInt("##intensity", &intensity, 0, 100, "%d", ImGuiSliderFlags_NoInput))
+				{
+					material.tagIntensity[pair.second] = static_cast<std::uint8_t>(intensity);
+					if (intensity) material.tagBitmask |= tagBit;
+					else           material.tagBitmask &= ~tagBit;
 				}
-				ImGui::SameLine();
-				bool anchor = material.anchorTagBitmask & tagBit;
-				if (ImGui::Checkbox("Anchor", &anchor)) {
+
+				ImGui::SameLine(0.0f, S(12.0f));
+				bool anchor = (material.anchorTagBitmask & tagBit) != 0;
+				if (ChromeCheckbox("Anchor", &anchor))
+				{
 					if (anchor) material.anchorTagBitmask |= tagBit;
-					else		material.anchorTagBitmask &= ~tagBit;
+					else        material.anchorTagBitmask &= ~tagBit;
 				}
 				ImGui::PopID();
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Lifespan")) {
-			Uint8Edit("Initial lifespan", material.lifespanData.Initial, 0, 255);
+		if (Section("LIFESPAN"))
+		{
+			Card card(CardTone::Sunk, S(8.0f));
+
+			Uint8Edit("Initial", material.lifespanData.Initial, 0, 255);
 			Uint8Edit("Tick", material.lifespanData.Tick, 0, 255);
-			if (material.lifespanData.Tick) {
-				Uint8Edit("Tick Chance", material.lifespanData.Chance, 0, 100);
-				ImGui::Text("Transitions");
-				for (size_t i = 0; i < g.newMaterialTransitions.size();) {
-					ImGui::PushID(static_cast<int>(i));
-					if (TransitionEdit(g.newMaterialTransitions[i], g, true))
-						g.newMaterialTransitions.erase(g.newMaterialTransitions.begin() + i);
-					else
-						++i;
 
-					ImGui::Separator();
-
-					ImGui::PopID();
-				}
-
-				if (ImGui::Button("Add Transition"))
-					g.newMaterialTransitions.push_back(Transition());
+			if (material.lifespanData.Tick)
+			{
+				Uint8Edit("Tick chance", material.lifespanData.Chance, 0, 100);
+				Gap();
+				TransitionList("ON DEATH", g.newMaterialTransitions, g, true);
+			}
+			else
+			{
+				Hint("tick is 0, so this material never dies");
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Reactions")) {
-			for (size_t i = 0; i < g.newMaterialReactions.size();) {
-				ImGui::PushID(static_cast<int>(i));
-				if (ReactionEdit(g.newMaterialReactions[i], g))
-					g.newMaterialReactions.erase(g.newMaterialReactions.begin() + i);
-				else
-					++i;
+		if (Section("REACTIONS"))
+		{
+			Card card(CardTone::Sunk, S(8.0f));
 
-				ImGui::Separator();
+			if (g.newMaterialReactions.empty())
+				Hint("this material reacts with nothing");
+
+			for (size_t i = 0; i < g.newMaterialReactions.size();)
+			{
+				ImGui::PushID(static_cast<int>(i));
+				const bool remove = ReactionEdit(g.newMaterialReactions[i], static_cast<int>(i), g);
 				ImGui::PopID();
+				Gap();
+
+				if (remove) g.newMaterialReactions.erase(g.newMaterialReactions.begin() + i);
+				else        ++i;
 			}
 
-			if (ImGui::Button("Add Reaction"))
+			FontScope f(m::FontLabel);
+			if (ChromeButton("+ REACTION", ImVec2(S(150.0f), S(29.0f))))
 				g.newMaterialReactions.push_back(EditReaction());
 		}
 
-		if (ImGui::CollapsingHeader("Movement")) {
+		if (Section("MOVEMENT"))
+		{
+			Card card(CardTone::Sunk, S(8.0f));
+
 			bool up = (material.movement.Y_direction < 0);
-			if (ImGui::Checkbox("Rises (gravity up)", &up))
+			if (FormCheck("Rises instead of falling", &up))
 				material.movement.Y_direction = up ? -1 : 1;
+
 			Uint8Edit("Density", material.movement.density, 0, 255);
-			Uint8Edit("Scatter Chance", material.movement.scatter_chance, 0, 255);
-			ImGui::Checkbox("Can Fall", &material.movement.can_fall);
-			ImGui::Checkbox("Can Cascade", &material.movement.can_cascade);
-			ImGui::Checkbox("Is Fluid", &material.movement.is_fluid);
-			ImGui::Checkbox("Is Liquid", &material.movement.is_liquid);
+			Uint8Edit("Scatter chance", material.movement.scatter_chance, 0, 255);
+
+			FormCheck("Can fall", &material.movement.can_fall);
+			FormCheck("Can cascade", &material.movement.can_cascade);
+			FormCheck("Is fluid", &material.movement.is_fluid);
+			FormCheck("Is liquid", &material.movement.is_liquid);
 		}
 
-		ImGui::Separator();
+		ImGui::Dummy(ImVec2(0.0f, S(6.0f)));
+	}
 
-		const bool nameTaken = !g.editing() && g.material_registry.HasMaterial(g.newMaterialName);
-		const bool canCommit = !g.newMaterialName.empty() && !nameTaken;
+	void NewMaterialPannel(Game& g)
+	{
+		const ImGuiViewport* vp = ImGui::GetMainViewport();
+		const ImVec2 c = vp->GetCenter();
+		const ImVec2 size(std::max(vp->Size.x * 0.52f, S(640.0f)), vp->Size.y * 0.84f);
+		const ImVec2 pos(c.x - size.x * 0.5f, c.y - size.y * 0.5f);
 
-		ImGui::BeginDisabled(!canCommit);
-		if (ChromeButton(g.editing() ? "APPLY CHANGES" : "ADD MATERIAL", ImVec2(S(160.0f), S(31.0f))))
-			g.commit_material();
-		ImGui::EndDisabled();
+		const float headH = S(52.0f);
+		const float footH = S(58.0f);
 
-		if (g.newMaterialName.empty()) {
-			ImGui::SameLine();
-			ImGui::TextUnformatted("a name is required");
+		BeginChrome("##newmat", pos, size, ui::theme.Panel);
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		const ImVec2 org = ImGui::GetWindowPos();
+		const ImVec2 end(org.x + size.x, org.y + size.y);
+
+		// The editor is the only thing to look at while it is up, so the rest of the window is
+		// dimmed behind it. The window's own background has already gone down by this point,
+		// which is why it is painted back over the scrim.
+		dl->PushClipRectFullScreen();
+		dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y),
+			U32(ImVec4(0.0f, 0.0f, 0.0f, 0.55f)));
+		dl->PopClipRect();
+		dl->AddRectFilled(org, end, U32(ui::theme.Panel), S(3.0f));
+		dl->AddRect(org, end, U32(ui::theme.Border), S(3.0f));
+
+		// --- title strip
+		{
+			dl->AddLine(ImVec2(org.x, org.y + headH - 0.5f), ImVec2(end.x, org.y + headH - 0.5f),
+				U32(ui::theme.Border));
+
+			const float ss = S(20.0f);
+			const float sx = std::floor(org.x + S(16.0f));
+			const float sy = std::floor(org.y + (headH - ss) * 0.5f);
+			dl->AddRectFilled(ImVec2(sx, sy), ImVec2(sx + ss, sy + ss), U32(ui::theme.ButtonBorder), S(3.0f));
+			dl->AddRectFilled(ImVec2(sx + 1.0f, sy + 1.0f), ImVec2(sx + ss - 1.0f, sy + ss - 1.0f),
+				U32(SwatchColour(*g.editedMaterial)), S(2.0f));
+
+			FontScope f(m::FontSmall);
+			const float th = ImGui::GetTextLineHeight();
+			const char* title = g.editing() ? "EDIT MATERIAL" : "NEW MATERIAL";
+			DrawTracked(dl, ImVec2(sx + ss + S(12.0f), org.y + CenterY(headH, th)), title,
+				m::TrackLabel, ui::theme.Text);
+
+			ImGui::SetCursorPos(ImVec2(size.x - S(16.0f) - S(28.0f), CenterY(headH, S(28.0f))));
+			if (ChromeButton("X", ImVec2(S(28.0f), S(28.0f))))
+			{
+				g.new_material_pannel_open = false;
+				g.begin_new_material();
+			}
 		}
-		else if (nameTaken) {
-			ImGui::SameLine();
-			ImGui::TextUnformatted("that name is taken");
-		}
 
-		if (g.editing()) {
-			ImGui::SameLine();
-			if (ChromeButton("DELETE", ImVec2(S(90.0f), S(31.0f)))) {
-				g.pending_delete_id = g.editedMaterialID;
-				g.confirm_delete_open = true;
+		// --- form
+		ImGui::SetCursorPos(ImVec2(S(16.0f), headH + S(10.0f)));
+		ImGui::BeginChild("##form", ImVec2(size.x - S(32.0f), size.y - headH - footH - S(10.0f)), 0,
+			ImGuiWindowFlags_NoSavedSettings);
+		{
+			FontScope f(m::FontSmall);
+			RightMargin = 0.0f;
+			MaterialForm(g);
+		}
+		ImGui::EndChild();
+
+		// --- footer
+		{
+			const float fy = size.y - footH;
+			dl->AddLine(ImVec2(org.x, org.y + fy + 0.5f), ImVec2(end.x, org.y + fy + 0.5f),
+				U32(ui::theme.Border));
+
+			const bool nameTaken = !g.editing() && g.material_registry.HasMaterial(g.newMaterialName);
+			const bool canCommit = !g.newMaterialName.empty() && !nameTaken;
+			const float btnH = S(34.0f);
+			const float commitW = S(176.0f);
+
+			FontScope f(m::FontLabel);
+
+			ImGui::SetCursorPos(ImVec2(S(16.0f), fy + CenterY(footH, btnH)));
+			ImGui::BeginDisabled(!canCommit);
+			if (ChromeButton(g.editing() ? "APPLY CHANGES" : "ADD MATERIAL", ImVec2(commitW, btnH)))
+				g.commit_material();
+			ImGui::EndDisabled();
+
+			if (!canCommit)
+			{
+				FontScope s(m::FontSmall);
+				const float th = ImGui::GetTextLineHeight();
+				DrawLabel(dl, ImVec2(org.x + S(16.0f) + commitW + S(14.0f), org.y + fy + CenterY(footH, th)),
+					g.newMaterialName.empty() ? "a name is required" : "that name is taken", c::Warn);
+			}
+
+			if (g.editing())
+			{
+				const float delW = S(104.0f);
+				ImGui::SetCursorPos(ImVec2(size.x - S(16.0f) - delW, fy + CenterY(footH, btnH)));
+				if (ChromeButton("DELETE", ImVec2(delW, btnH)))
+				{
+					g.pending_delete_id = g.editedMaterialID;
+					g.confirm_delete_open = true;
+				}
 			}
 		}
 
 		EndChrome();
-
 	}
 
 	// ------------------------------------------------------------ delete confirmation
