@@ -5,8 +5,8 @@
     {
       "name": "Sand",
       "interpolate_color": false,
-      "color_min": [ 150, 150, 0 ],
-      "color_max": [ 255, 255, 0 ],
+      "color_min": [ 176, 138, 74 ],
+      "color_max": [ 220, 192, 132 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -29,8 +29,8 @@
     {
       "name": "Stone",
       "interpolate_color": false,
-      "color_min": [ 104, 102, 99 ],
-      "color_max": [ 142, 139, 134 ],
+      "color_min": [ 52, 52, 60 ],
+      "color_max": [ 76, 76, 88 ],
       "steps": 4,
       "movement": {
         "y_direction": 1,
@@ -53,8 +53,8 @@
     {
       "name": "Water",
       "interpolate_color": false,
-      "color_min": [ 38, 88, 196 ],
-      "color_max": [ 58, 120, 236 ],
+      "color_min": [ 30, 90, 140 ],
+      "color_max": [ 46, 134, 200 ],
       "steps": 8,
       "movement": {
         "y_direction": 1,
@@ -185,6 +185,7 @@
       "color_min": [ 150, 0, 0 ],
       "color_max": [ 255, 255, 0 ],
       "steps": 1,
+      "emission": 255,
       "movement": {
         "y_direction": -1,
         "density": 2,
@@ -293,6 +294,7 @@
       "color_min": [ 196, 52, 8 ],
       "color_max": [ 255, 146, 32 ],
       "steps": 6,
+      "emission": 200,
       "movement": {
         "y_direction": 1,
         "density": 50,
@@ -330,6 +332,18 @@
           "target_transitions": [
             { "no_transition": false, "material": "Hot Stone", "weight": 1, "lifespan_base": "initial" }
           ]
+        },
+        {
+          "target_type": "material",
+          "target": "Air",
+          "chance": 1,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Ember", "weight": 1, "lifespan_base": "initial" },
+            { "no_transition": true, "material": "", "weight": 9, "lifespan_base": "self" }
+          ]
         }
       ]
     },
@@ -337,9 +351,10 @@
     {
       "name": "Hot Stone",
       "interpolate_color": false,
-      "color_min": [ 104, 102, 99 ],
-      "color_max": [ 142, 139, 134 ],
+      "color_min": [ 110, 64, 56 ],
+      "color_max": [ 160, 100, 90 ],
       "steps": 4,
+      "emission": 90,
       "movement": {
         "y_direction": 1,
         "density": 100,
@@ -424,9 +439,10 @@
     {
       "name": "Hot Ash",
       "interpolate_color": false,
-      "color_min": [ 62, 60, 60 ],
-      "color_max": [ 96, 92, 90 ],
+      "color_min": [ 74, 50, 48 ],
+      "color_max": [ 110, 66, 56 ],
       "steps": 8,
+      "emission": 70,
       "movement": {
         "y_direction": 1,
         "density": 80,
@@ -471,6 +487,84 @@
           ]
         }
       ]
+    },
+
+    {
+      "name": "Ember",
+      "interpolate_color": true,
+      "color_min": [ 120, 24, 4 ],
+      "color_max": [ 255, 236, 170 ],
+      "steps": 1,
+      "emission": 255,
+      "movement": {
+        "y_direction": -1,
+        "density": 2,
+        "scatter_chance": 40,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": true,
+        "is_liquid": true
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 4,
+        "chance": 35,
+        "on_death": [
+          { "no_transition": false, "material": "Smoke", "weight": 10, "lifespan_base": "initial" },
+          { "no_transition": false, "material": "Air", "weight": 90, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": {},
+      "reactions": [
+        {
+          "target_type": "tag",
+          "target": "flammable",
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Fire", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 100,
+          "scan_sample": "all",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
+          ],
+          "target_transitions": [
+            { "no_transition": false, "material": "Steam", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Glow",
+      "interpolate_color": false,
+      "color_min": [ 30, 72, 130 ],
+      "color_max": [ 96, 198, 255 ],
+      "steps": 6,
+      "emission": 190,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 5 },
+      "reactions": []
     }
   ]
 }
