@@ -49,6 +49,12 @@ namespace scree {
 
 		bool HasMaterial(const std::string& name) const { return materialMap.find(name) != materialMap.end(); }
 
+		// AIR_ID when the name is unknown, which callers treat as "dropped".
+		MaterialID GetMaterialID(const std::string& name) const {
+			const auto found = materialMap.find(name);
+			return found == materialMap.end() ? AIR_ID : found->second;
+		}
+
 		bool IsCore(MaterialID id) const { return id < coreMaterialCount; }
 		int GetCoreMaterialsCount() const { return coreMaterialCount; }
 

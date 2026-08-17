@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "UI.h"
+#include "FileDialog.h"
 
 #include <algorithm>
 #include <cmath>
@@ -887,6 +888,22 @@ namespace
 			if (ChromeButton("CHUNK OVERLAY", ImVec2(S(172.0f), btnH), g.show_active_chunks))
 				g.show_active_chunks = !g.show_active_chunks;
 
+			const float canvasW = S(126.0f);
+			r -= S(20.0f) + canvasW;
+			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
+			if (ChromeButton("LOAD CANVAS", ImVec2(canvasW, btnH))) {
+				const std::string picked = OpenFileDialog("Canvas files\0*.json\0All files\0*.*\0",
+					"Load canvas", g.canvases_path());
+				if (!picked.empty()) g.import_canvas(picked);
+			}
+
+			r -= S(8.0f) + canvasW;
+			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
+			if (ChromeButton("SAVE CANVAS", ImVec2(canvasW, btnH))) {
+				const std::string picked = SaveFileDialog("Canvas files\0*.json\0All files\0*.*\0",
+					"Save canvas", g.canvases_path(), "canvas.json");
+				if (!picked.empty()) g.export_canvas(picked);
+			}
 		}
 
 		EndChrome();

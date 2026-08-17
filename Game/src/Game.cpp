@@ -1,11 +1,17 @@
 #include "Game.h"
 #include "UI.h"
 #include "FileDialog.h"
+#include "Canvas.h"
+
+#include <filesystem>
 
 scree::Game::Game()
 	: simulation(material_registry)
 {
 	load_materials();
+
+	std::error_code ignored;
+	std::filesystem::create_directories(canvases_path(), ignored);
 
 	// The chrome is fixed but the grid is centred in whatever is left, so the layout
 	// survives a resize -- compute_layout re-runs every frame off the live window size.
@@ -318,6 +324,22 @@ void scree::Game::import_materials()
 	load_materials();
 }
 
+bool scree::Game::export_canvas(std::string path)
+{
+	const CanvasResult result = SaveCanvas(grid, material_registry, path);
+	material_load_error_message = result.message;
+	material_load_failed = !result.ok;
+	return result.ok;
+}
+
+bool scree::Game::import_canvas(std::string path)
+{
+	const CanvasResult result = LoadCanvas(grid, material_registry, path);
+	material_load_error_message = result.message;
+	material_load_failed = !result.ok;
+	return result.ok;
+}
+
 void scree::Game::export_materials()
 {
 	const std::string suggested = custom_file_path.empty() ? "custom_materials.json" : custom_file_path;
@@ -343,6 +365,11 @@ void scree::Game::clear_custom_materials()
 std::string scree::Game::assets_path() const
 {
 	return std::string(GetApplicationDirectory()) + "assets";
+}
+
+std::string scree::Game::canvases_path() const
+{
+	return assets_path() + "/canvases";
 }
 
 std::string scree::Game::materials_path() const

@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
+#include <fstream>
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -39,9 +39,12 @@ namespace scree
 		void handle_hotkeys();
 		void draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius);
 		bool load_materials();
+		bool import_canvas(std::string path);
+		bool export_canvas(std::string path);
 		// Resolved against the executable, not the working directory, so it holds wherever
 		// the exe was launched from. Shared by the loader and the top bar's link.
 		std::string assets_path() const;
+		std::string canvases_path() const;
 		std::string materials_path() const;
 		// Opens a picker and reloads with the chosen file as the custom overlay.
 		void import_materials();

@@ -12,7 +12,9 @@ FetchContent_MakeAvailable(Catch2)
 # for its own sake.
 add_executable(tests
     test_material_parsing.cpp
+    test_canvas.cpp
     ../Game/src/MaterialRegistry.cpp
+    ../Game/src/Canvas.cpp
 )
 target_include_directories(tests PRIVATE ../Game/src)
 

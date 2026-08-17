@@ -28,8 +28,10 @@ add_executable(Game
     src/MaterialRegistry.cpp
     src/UI.cpp
     src/FileDialog.cpp
+    src/Canvas.cpp
 
     src/Block.h
+    src/Canvas.h
     src/FileDialog.h
     src/Chunk.h
     src/Game.h
