@@ -103,6 +103,9 @@ namespace scree
 		// Random colour steps between min and max when not interpolating; 1 = minColor.
 		std::uint8_t numberOfSteps = 1;
 
+		// How strongly the block glows, 0 = not a light source at all.
+		std::uint8_t emission = 0;
+
 		// Bit i set = stick to neighbours carrying tag i (suppresses movement). Independent
 		// of tagIntensity -- fire anchors to flammable while being flammable 0 itself.
 		std::uint8_t anchorTagBitmask = 0;

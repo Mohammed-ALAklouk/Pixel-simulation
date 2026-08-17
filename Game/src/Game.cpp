@@ -5,6 +5,48 @@
 
 #include <filesystem>
 
+namespace
+{
+	const char* BlurShader = R"(#version 330
+
+in vec2 fragTexCoord;
+out vec4 finalColor;
+
+uniform sampler2D texture0;
+uniform vec2 direction;
+
+const float offset[3] = float[](0.0, 1.3846153846, 3.2307692308);
+const float weight[3] = float[](0.2270270270, 0.3162162162, 0.0702702703);
+
+void main()
+{
+    vec3 sum = texture(texture0, fragTexCoord).rgb*weight[0];
+
+    for (int i = 1; i < 3; i++)
+    {
+        sum += texture(texture0, fragTexCoord + direction*offset[i]).rgb*weight[i];
+        sum += texture(texture0, fragTexCoord - direction*offset[i]).rgb*weight[i];
+    }
+
+    finalColor = vec4(sum, 1.0);
+}
+)";
+
+	const char* CompositeShader = R"(#version 330
+
+in vec2 fragTexCoord;
+out vec4 finalColor;
+
+uniform sampler2D texture0;
+uniform float intensity;
+
+void main()
+{
+    finalColor = vec4(texture(texture0, fragTexCoord).rgb*intensity, 1.0);
+}
+)";
+}
+
 scree::Game::Game()
 	: simulation(material_registry)
 {
@@ -32,11 +74,27 @@ scree::Game::Game()
 	ui::ApplyTheme();
 
 	pixels.resize(GridSize * GridSize);
+	emissive_pixels.resize(GridSize * GridSize);
 
 	Image blank = GenImageColor(GridSize, GridSize, BLACK);
 	tex = LoadTextureFromImage(blank);
+	emissive_tex = LoadTextureFromImage(blank);
 	UnloadImage(blank);                      // GPU has it now; drop the CPU copy
 	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+	SetTextureFilter(emissive_tex, TEXTURE_FILTER_BILINEAR);
+	SetTextureWrap(emissive_tex, TEXTURE_WRAP_CLAMP);
+
+	bloom_target = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
+	bloom_scratch = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
+	SetTextureFilter(bloom_target.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(bloom_scratch.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureWrap(bloom_target.texture, TEXTURE_WRAP_CLAMP);
+	SetTextureWrap(bloom_scratch.texture, TEXTURE_WRAP_CLAMP);
+
+	blur_shader = LoadShaderFromMemory(nullptr, BlurShader);
+	composite_shader = LoadShaderFromMemory(nullptr, CompositeShader);
+	blur_direction_loc = GetShaderLocation(blur_shader, "direction");
+	composite_intensity_loc = GetShaderLocation(composite_shader, "intensity");
 
 	grid.Create(GridSize, GridSize,  &material_registry);
 	// `pixels` starts fully transparent, and the renderer only converts chunks marked
@@ -173,12 +231,27 @@ void scree::Game::render()
 			int x0 = chunk_x << CHUNK_SHIFT; // equivalent to chunk_x * CHUNK_SIZE, but faster
 			const Block* row = grid.Row(y);
 			Color* out = pixels.data() + y * GridSize;
+			Color* glow = emissive_pixels.data() + y * GridSize;
 			// Air is written clear rather than black so the backdrop drawn under the grid
 			// shows through it; every other material stays fully opaque.
 			for (int x = x0; x < x0 + CHUNK_SIZE; x++)
-				out[x] = (row[x].id == MaterialRegistry::AIR_ID)
-					? Color{ 0, 0, 0, 0 }
-					: row[x].color.toRaylibColor();
+			{
+				if (row[x].id == MaterialRegistry::AIR_ID)
+				{
+					out[x] = Color{ 0, 0, 0, 0 };
+					glow[x] = Color{ 0, 0, 0, 255 };
+					continue;
+				}
+
+				out[x] = row[x].color.toRaylibColor();
+
+				const std::uint8_t emission = material_registry.Get(row[x].id).emission;
+				glow[x] = emission
+					? Color{ static_cast<unsigned char>(out[x].r * emission / 255),
+							 static_cast<unsigned char>(out[x].g * emission / 255),
+							 static_cast<unsigned char>(out[x].b * emission / 255), 255 }
+					: Color{ 0, 0, 0, 255 };
+			}
 		}
 	}
 
@@ -187,7 +260,26 @@ void scree::Game::render()
 	UpdateTexture(tex, pixels.data());
 
 	Rectangle src{ 0, 0, (float)GridSize, (float)GridSize };
+
+	if (bloom_enabled)
+	{
+		UpdateTexture(emissive_tex, emissive_pixels.data());
+		render_bloom();
+	}
+
 	DrawTexturePro(tex, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
+
+	if (bloom_enabled)
+	{
+		SetShaderValue(composite_shader, composite_intensity_loc, &bloom_intensity, SHADER_UNIFORM_FLOAT);
+		BeginBlendMode(BLEND_ADDITIVE);
+		BeginShaderMode(composite_shader);
+		DrawTexturePro(bloom_target.texture, Rectangle{ 0, 0, (float)BloomSize, -(float)BloomSize },
+			frame, Vector2{ 0, 0 }, 0.0f, WHITE);
+		EndShaderMode();
+		EndBlendMode();
+	}
+
 	DrawRectangleLinesEx(frame, 1, ui::col::GridEdge);
 
 	if (show_active_chunks)
@@ -224,6 +316,36 @@ void scree::Game::render()
 		std::chrono::high_resolution_clock::now() - render_clock).count() - UI_time;
 
 	EndDrawing();
+}
+
+void scree::Game::render_bloom()
+{
+	const Rectangle bloom_src{ 0, 0, (float)BloomSize, -(float)BloomSize };
+	const Rectangle bloom_dest{ 0, 0, (float)BloomSize, (float)BloomSize };
+
+	BeginTextureMode(bloom_target);
+	ClearBackground(BLACK);
+	DrawTexturePro(emissive_tex, Rectangle{ 0, 0, (float)GridSize, (float)GridSize },
+		bloom_dest, Vector2{ 0, 0 }, 0.0f, WHITE);
+	EndTextureMode();
+
+	auto blur_pass = [&](RenderTexture2D& to, RenderTexture2D& from, Vector2 direction)
+	{
+		SetShaderValue(blur_shader, blur_direction_loc, &direction, SHADER_UNIFORM_VEC2);
+		BeginTextureMode(to);
+		ClearBackground(BLACK);
+		BeginShaderMode(blur_shader);
+		DrawTexturePro(from.texture, bloom_src, bloom_dest, Vector2{ 0, 0 }, 0.0f, WHITE);
+		EndShaderMode();
+		EndTextureMode();
+	};
+
+	for (int pass = 0; pass < bloom_passes; pass++)
+	{
+		const float step = bloom_radius * (pass + 1) / (float)BloomSize;
+		blur_pass(bloom_scratch, bloom_target, Vector2{ step, 0.0f });
+		blur_pass(bloom_target, bloom_scratch, Vector2{ 0.0f, step });
+	}
 }
 
 void scree::Game::processInputs()

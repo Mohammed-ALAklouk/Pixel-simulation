@@ -1153,6 +1153,11 @@ namespace
 			if (ChromeButton("CHUNK OVERLAY", ImVec2(S(172.0f), btnH), g.show_active_chunks))
 				g.show_active_chunks = !g.show_active_chunks;
 
+			r -= S(8.0f) + S(92.0f);
+			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
+			if (ChromeButton("BLOOM", ImVec2(S(92.0f), btnH), g.bloom_enabled))
+				g.bloom_enabled = !g.bloom_enabled;
+
 			const float canvasW = S(126.0f);
 			r -= S(20.0f) + canvasW;
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
@@ -1348,6 +1353,8 @@ namespace
 			FormCheck("Interpolate over lifespan", &material.interpolateColor);
 			if (!material.interpolateColor)
 				Uint8Edit("Colour steps", material.numberOfSteps, 1, 10);
+
+			Uint8Edit("Emission", material.emission, 0, 255);
 		}
 
 		if (Section("TAGS"))

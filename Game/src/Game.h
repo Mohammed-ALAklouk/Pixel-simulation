@@ -30,6 +30,7 @@ namespace scree
 		
 		void update();
 		void render();
+		void render_bloom();
 		void processInputs();
 		void UI();
 		void run();
@@ -58,6 +59,7 @@ namespace scree
 		std::vector<Vector2> GetLine(Vector2 start, Vector2 end);
 
 		static constexpr uint32_t GridSize = 640;
+		static constexpr uint32_t BloomSize = GridSize / 2;
 		// Sized so the 640x640 grid still lands at 1:1 once the chrome has taken its share,
 		// including when the loader banner is up.
 		Vec2i Window_size = Vec2i{ 1400, 900 };
@@ -72,8 +74,21 @@ namespace scree
 		MaterialID SelectedMaterial = 0;
 
 		std::vector<Color> pixels;
+		std::vector<Color> emissive_pixels;
 		// tex
 		Texture2D tex;
+		Texture2D emissive_tex;
+		RenderTexture2D bloom_target;
+		RenderTexture2D bloom_scratch;
+		Shader blur_shader;
+		Shader composite_shader;
+		int blur_direction_loc = 0;
+		int composite_intensity_loc = 0;
+
+		bool bloom_enabled = true;
+		float bloom_intensity = 1.4f;
+		float bloom_radius = 2.0f;
+		int bloom_passes = 3;
 		// Static dither drawn behind the grid, so empty space reads as textured rather
 		// than as a black hole. Built once in the constructor.
 		Rectangle frame;

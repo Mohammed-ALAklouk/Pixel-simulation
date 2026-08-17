@@ -423,6 +423,9 @@ nlohmann::json scree::MaterialRegistry::MaterialToJSON(MaterialID id) const
 	if (!data.interpolateColor && data.numberOfSteps != 1)
 		out["steps"] = data.numberOfSteps;
 
+	if (data.emission != 0)
+		out["emission"] = data.emission;
+
 	nlohmann::json movement = nlohmann::json::object();
 	if (data.movement.Y_direction != 1) movement["y_direction"] = int(data.movement.Y_direction);
 	if (data.movement.density != 0) movement["density"] = data.movement.density;
@@ -664,6 +667,7 @@ void scree::MaterialRegistry::ParseIntrinsics(const nlohmann::json& material, Ma
 
 		// Feeds fast_rand() % numberOfSteps, so 0 would divide by zero.
 		out.numberOfSteps = ReadField(material, "steps", 1, 1, 255, "steps", id);
+		out.emission = ReadField(material, "emission", 0, 0, 255, "emission", id);
 	}
 	catch (const nlohmann::json::exception& e) {
 		logs.push_back(Log::CreateWrongType(id, GetName(id), "an intrinsic field", e.what()));
