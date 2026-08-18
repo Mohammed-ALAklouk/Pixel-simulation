@@ -5,7 +5,9 @@
 A falling-sand simulator written in C++20 with [raylib](https://github.com/raysan5/raylib).
 Every pixel on the grid is an independent particle: sand piles up, water finds its
 level, oil floats on top of it and burns, acid eats through stone, and lava that
-touches water cools into fresh rock.
+touches water cools into fresh rock — or runs over sand and sets into glass. Salt
+dissolves into brine that sinks under fresh water, plants creep through a pool until
+it is all vine, and a spring fills the map on its own.
 
 Materials are not hardcoded — they are defined in a JSON file that can be edited
 and reloaded while the program is running, or built from scratch in the in-app
@@ -70,9 +72,12 @@ editor and saved back out as a file of your own.
   neighbours, acid corroding into dirty water, and lava quenching into hot stone are
   all just JSON, not special cases in code.
 - **Tags and anchoring.** Materials carry named tags with an intensity —
-  `flammable`, `corrodible` — so one reaction can target a whole class of materials
-  while each material sets its own susceptibility. A tag can also anchor: fire
-  clings to flammable neighbours instead of drifting off before it has burnt them.
+  `flammable`, `corrodible`, `wet`, `hot`, `matter` — so one reaction can target a
+  whole class of materials while each material sets its own susceptibility. Nothing
+  names water to put out a fire: fire, embers, hot ash and lava all react against
+  `wet`, so brine, dirty water and mud quench just as well, and a new liquid gets it
+  by tagging itself. A tag can also anchor: fire clings to flammable neighbours
+  instead of drifting off before it has burnt them.
 - **Lifespans.** A material can count down and transform when it expires, picking
   from a weighted list of outcomes — fire burning out into smoke or air, hot stone
   cooling back to stone. Colour can interpolate across the countdown, so fire fades
@@ -102,18 +107,34 @@ editor and saved back out as a file of your own.
 | Stone | Static. The default wall material. |
 | Wood | Static and flammable. Burns away, and corrodes fast in acid. |
 | Water | Levels out, puts out fire, and quenches lava into hot stone. |
-| Dirty Water | What acid leaves behind once it has eaten something. Lighter than water. |
+| Dirty Water | What acid leaves behind once it has eaten something. Lighter than water, and quenches like it. |
 | Oil | Floats on water and catches fire on contact. |
 | Acid | Sinks through water, corrodes its neighbours, and turns to dirty water as it does. |
-| Lava | Dense liquid. Ignites what it touches and crusts into hot stone in water. |
-| Fire | Rises, spreads to flammable neighbours, and dies in water. |
+| Lava | Dense liquid. Ignites what it touches, melts sand into glass, and crusts into hot stone — occasionally obsidian — in water. |
+| Fire | Rises, spreads to flammable neighbours, and dies against anything wet. |
 | Smoke | Rises and fades out. Left behind by fire. |
 | Steam | Rises and fades much faster. Boiled off water by hot stone. |
 | Hot Stone | Freshly quenched lava. Cools into stone, boiling the water around it. |
-| Ash | Falls like sand. What burnt wood leaves behind. |
+| Ash | Falls like sand. What burnt wood leaves behind. Slowly soaks into dirt in water. |
 | Hot Ash | Glowing ash from a fresh burn. Cools into ash. |
 | Ember | Rises and drifts like fire but ages erratically, setting flammable things alight on the way up and dying in water. |
 | Glow | Static and inert, and the brightest thing on the grid. A light source to build with. |
+| Dirt | Falls like sand. Soaks up the water it touches and turns to mud. |
+| Mud | Sluggish, heavy liquid. Dries back into dirt if it is left alone, and quenches fire while it is wet. |
+| Plant | Static and flammable. Grows into any water it touches, so a sprig on a pool eventually fills it. Burns back off in one pass. |
+| Seed | Falls like sand and sprouts into a plant where it lands in water or mud. |
+| Salt | Falls like sand and dissolves into brine in water. Melts ice on contact. |
+| Salt Water | Denser than fresh water, so it pools underneath instead of mixing. |
+| Ice | Static. Melts into water next to anything hot, and to salt. |
+| Snow | Piles like a light powder, and melts on anything hot or wet. |
+| Gunpowder | Falls like sand and takes fire instantly, so a trail of it flashes end to end. |
+| Molten Glass | Glowing liquid from lava running over sand. Sets into glass on its own, or the moment it hits water. |
+| Glass | Static, pale and barely corrodible. What molten glass sets into. |
+| Obsidian | Static, near-black, and the one material acid cannot touch. Thrown off where lava quenches. |
+| Void | Static. Deletes whatever touches it and never fills up. A drain to build into the floor of a tank. |
+| Water Source | Static. Emits water into the empty space around it, forever. |
+| Sand Source | Static. Emits sand into the empty space around it, forever. |
+| Lava Source | Static. Emits lava into the empty space around it, forever. |
 
 ## Controls
 
@@ -192,7 +213,7 @@ tags they use are declared once at the top of the file. A minimal entry:
 
 ```json
 {
-  "tags": [ "flammable", "corrodible" ],
+  "tags": [ "flammable", "corrodible", "wet", "hot", "matter" ],
   "materials": [
     {
       "name": "Sand",
@@ -252,10 +273,27 @@ that material is dropped, but the rest of the file still loads.
 | `chance` | Percent chance the tick happens at all this update (default 100). Below 100 the countdown becomes uneven, so a patch ages apart instead of together |
 | `on_death` | Weighted transitions applied when the counter reaches 0 (required once `tick` > 0) |
 
+A lifespan also decides whether a material stays awake. A chunk with nothing moving
+in it goes to sleep, and a static material that never ticks stops running its
+reactions once its surroundings settle — a plant beside a pool that has already
+levelled out would never grow, because nothing wakes it. Ticking marks the chunk
+active every update, so a static material that has to keep reacting gives itself a
+slow lifespan whose only `on_death` outcome is itself. `Plant` and the three sources
+do exactly that: `tick` 1 at `chance` 10, cycling roughly every 2500 updates, which
+costs one colour re-roll and keeps the material running. It is not free — those
+chunks never sleep — so give it only to materials that need to act on their own.
+
 **`tags`** is an object mapping tag name → intensity (0–100). Intensity is the
 percent chance that a reaction targeting this tag fires against the material. An
 optional `"anchor": "<tag>"` makes the material stick to neighbours carrying that
 tag instead of moving — this is what keeps fire on the wood it is burning.
+
+The five shipped tags are a convention, not a language feature. `flammable` and
+`corrodible` are what fire and acid look for, `wet` is what puts a fire out and what
+lava quenches against, `hot` is what ice and snow melt next to, and `matter` is
+carried by every material that is not air so that `Void` has something to target —
+there is no wildcard, so "react with anything" has to be spelled out as a tag
+everything opts into.
 
 **`reactions`** is an array; each reaction fires against the four orthogonal
 neighbours:
@@ -444,8 +482,14 @@ unlike a real symlink never needs admin rights or Developer Mode), and
 
 ## Future features
 
-- A per-pixel heat field to replace the hot-stone / hot-ash lifespan hacks, with
-  ice, glass and obsidian falling out of it
+- A per-pixel heat field to replace the hot-stone / hot-ash lifespan hacks and the
+  `hot` tag, so ice, glass and obsidian melt and set against a real temperature
+  instead of a per-pair reaction
+- A `spread_rate` on `movement`, replacing the fixed ten-cell surface skim every
+  liquid shares — lava and mud currently level out exactly as fast as water, and
+  honey, tar and slime are not expressible at all
+- A per-material cascade chance, so powders can hold different slopes instead of all
+  sliding at the same hardcoded 50%
 - Multithreading
 - Brush shapes, line and rectangle tools
 - Image import onto the canvas
