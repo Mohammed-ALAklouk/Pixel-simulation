@@ -1,5 +1,5 @@
 {
-  "tags": [ "flammable", "corrodible" ],
+  "tags": [ "flammable", "corrodible", "wet", "hot", "matter" ],
 
   "materials": [
     {
@@ -22,7 +22,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "corrodible": 5 },
+      "tags": { "corrodible": 5, "matter": 100 },
       "reactions": []
     },
 
@@ -46,7 +46,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "corrodible": 5 },
+      "tags": { "corrodible": 5, "matter": 100 },
       "reactions": []
     },
 
@@ -70,7 +70,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": {},
+      "tags": { "wet": 100, "matter": 100 },
       "reactions": []
     },
 
@@ -94,7 +94,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "flammable": 100 },
+      "tags": { "flammable": 100, "matter": 100 },
       "reactions": []
     },
 
@@ -121,7 +121,7 @@
           { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
         ]
       },
-      "tags": {},
+      "tags": { "matter": 100 },
       "reactions": []
     },
 
@@ -145,7 +145,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": {},
+      "tags": { "matter": 100 },
       "reactions": [
         {
           "target_type": "material",
@@ -204,7 +204,7 @@
           { "no_transition": false, "material": "Air", "weight": 75, "lifespan_base": "initial" }
         ]
       },
-      "tags": {},
+      "tags": { "hot": 60, "matter": 100 },
       "anchor": "flammable",
       "reactions": [
         {
@@ -222,9 +222,8 @@
           ]
         },
         {
-          "target_type": "material",
-          "target": "Water",
-          "chance": 100,
+          "target_type": "tag",
+          "target": "wet",
           "scan_sample": "all",
           "halt_update": true,
           "self_transitions": [
@@ -260,7 +259,7 @@
           { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
         ]
       },
-      "tags": {},
+      "tags": { "matter": 100 },
       "reactions": []
     },
 
@@ -284,7 +283,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "flammable": 10, "corrodible": 50 },
+      "tags": { "flammable": 10, "corrodible": 50, "matter": 100 },
       "reactions": []
     },
 
@@ -309,7 +308,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "corrodible": 1 },
+      "tags": { "corrodible": 1, "hot": 100, "matter": 100 },
       "reactions": [
         {
           "target_type": "tag",
@@ -323,14 +322,25 @@
           ]
         },
         {
-          "target_type": "material",
-          "target": "Water",
-          "chance": 100,
+          "target_type": "tag",
+          "target": "wet",
           "scan_sample": "first_to_react",
           "halt_update": false,
           "self_transitions": [],
           "target_transitions": [
-            { "no_transition": false, "material": "Hot Stone", "weight": 1, "lifespan_base": "initial" }
+            { "no_transition": false, "material": "Hot Stone", "weight": 85, "lifespan_base": "initial" },
+            { "no_transition": false, "material": "Obsidian", "weight": 15, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Sand",
+          "chance": 8,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Molten Glass", "weight": 1, "lifespan_base": "initial" }
           ]
         },
         {
@@ -371,12 +381,11 @@
           { "no_transition": false, "material": "Stone", "weight": 1, "lifespan_base": "initial" }
         ]
       },
-      "tags": { "corrodible": 5 },
+      "tags": { "corrodible": 5, "hot": 40, "matter": 100 },
       "reactions": [
         {
-          "target_type": "material",
-          "target": "Water",
-          "chance": 100,
+          "target_type": "tag",
+          "target": "wet",
           "scan_sample": "all",
           "halt_update": false,
           "self_transitions": [],
@@ -408,7 +417,7 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": {},
+      "tags": { "wet": 100, "matter": 100 },
       "reactions": []
     },
 
@@ -432,16 +441,26 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "corrodible": 5 },
-      "reactions": []
+      "tags": { "corrodible": 5, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 3,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Dirt", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
     },
 
     {
       "name": "Hot Ash",
-      "interpolate_color": false,
-      "color_min": [ 74, 50, 48 ],
+      "interpolate_color": true,
+      "color_min": [ 84, 78, 74 ],
       "color_max": [ 110, 66, 56 ],
-      "steps": 8,
       "emission": 70,
       "movement": {
         "y_direction": 1,
@@ -453,13 +472,13 @@
         "is_liquid": false
       },
       "lifespan": {
-        "initial": 255,
+        "initial": 10,
         "tick": 1,
         "on_death": [
           { "no_transition": false, "material": "Ash", "weight": 1, "lifespan_base": "initial" }
         ]
       },
-      "tags": { "corrodible": 5 },
+      "tags": { "corrodible": 5, "hot": 30, "matter": 100 },
       "anchor": "flammable",
       "reactions": [
         {
@@ -474,9 +493,8 @@
           ]
         },
         {
-          "target_type": "material",
-          "target": "Water",
-          "chance": 100,
+          "target_type": "tag",
+          "target": "wet",
           "scan_sample": "all",
           "halt_update": true,
           "self_transitions": [
@@ -514,7 +532,7 @@
           { "no_transition": false, "material": "Air", "weight": 90, "lifespan_base": "initial" }
         ]
       },
-      "tags": {},
+      "tags": { "hot": 50, "matter": 100 },
       "reactions": [
         {
           "target_type": "tag",
@@ -527,9 +545,8 @@
           ]
         },
         {
-          "target_type": "material",
-          "target": "Water",
-          "chance": 100,
+          "target_type": "tag",
+          "target": "wet",
           "scan_sample": "all",
           "halt_update": true,
           "self_transitions": [
@@ -563,8 +580,579 @@
         "tick": 0,
         "on_death": []
       },
-      "tags": { "corrodible": 5 },
+      "tags": { "corrodible": 5, "matter": 100 },
       "reactions": []
+    },
+
+    {
+      "name": "Dirt",
+      "interpolate_color": false,
+      "color_min": [ 78, 58, 40 ],
+      "color_max": [ 110, 84, 58 ],
+      "steps": 8,
+      "movement": {
+        "y_direction": 1,
+        "density": 80,
+        "scatter_chance": 30,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 30, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 25,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Mud", "weight": 1, "lifespan_base": "initial" }
+          ],
+          "target_transitions": [
+            { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Mud",
+      "interpolate_color": false,
+      "color_min": [ 54, 40, 28 ],
+      "color_max": [ 82, 64, 46 ],
+      "steps": 5,
+      "movement": {
+        "y_direction": 1,
+        "density": 60,
+        "scatter_chance": 5,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": true,
+        "is_liquid": true
+      },
+      "lifespan": {
+        "initial": 200,
+        "tick": 1,
+        "chance": 5,
+        "on_death": [
+          { "no_transition": false, "material": "Dirt", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "corrodible": 30, "wet": 40, "matter": 100 },
+      "reactions": []
+    },
+
+    {
+      "name": "Plant",
+      "interpolate_color": false,
+      "color_min": [ 42, 92, 40 ],
+      "color_max": [ 86, 150, 62 ],
+      "steps": 6,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 1,
+        "chance": 10,
+        "on_death": [
+          { "no_transition": false, "material": "Plant", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "flammable": 40, "corrodible": 60, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 3,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "target_transitions": [
+            { "no_transition": false, "material": "Plant", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Seed",
+      "interpolate_color": false,
+      "color_min": [ 96, 78, 40 ],
+      "color_max": [ 132, 108, 60 ],
+      "steps": 4,
+      "movement": {
+        "y_direction": 1,
+        "density": 80,
+        "scatter_chance": 20,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "flammable": 60, "corrodible": 60, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 15,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Plant", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Mud",
+          "chance": 10,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Plant", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Salt",
+      "interpolate_color": false,
+      "color_min": [ 196, 196, 200 ],
+      "color_max": [ 238, 238, 244 ],
+      "steps": 4,
+      "movement": {
+        "y_direction": 1,
+        "density": 80,
+        "scatter_chance": 40,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 20, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Water",
+          "chance": 25,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Salt Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Ice",
+          "chance": 60,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Salt Water", "weight": 1, "lifespan_base": "initial" },
+            { "no_transition": true, "material": "", "weight": 2, "lifespan_base": "self" }
+          ],
+          "target_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Salt Water",
+      "interpolate_color": false,
+      "color_min": [ 40, 96, 118 ],
+      "color_max": [ 64, 138, 160 ],
+      "steps": 6,
+      "movement": {
+        "y_direction": 1,
+        "density": 35,
+        "scatter_chance": 10,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": true,
+        "is_liquid": true
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "wet": 100, "matter": 100 },
+      "reactions": []
+    },
+
+    {
+      "name": "Ice",
+      "interpolate_color": false,
+      "color_min": [ 150, 190, 214 ],
+      "color_max": [ 196, 226, 244 ],
+      "steps": 5,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 20, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "tag",
+          "target": "hot",
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Snow",
+      "interpolate_color": false,
+      "color_min": [ 206, 214, 226 ],
+      "color_max": [ 242, 246, 252 ],
+      "steps": 4,
+      "movement": {
+        "y_direction": 1,
+        "density": 70,
+        "scatter_chance": 60,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 20, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "tag",
+          "target": "hot",
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "tag",
+          "target": "wet",
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" },
+            { "no_transition": true, "material": "", "weight": 3, "lifespan_base": "self" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Gunpowder",
+      "interpolate_color": false,
+      "color_min": [ 40, 38, 48 ],
+      "color_max": [ 64, 60, 76 ],
+      "steps": 5,
+      "movement": {
+        "y_direction": 1,
+        "density": 80,
+        "scatter_chance": 30,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "flammable": 100, "corrodible": 40, "matter": 100 },
+      "reactions": []
+    },
+
+    {
+      "name": "Molten Glass",
+      "interpolate_color": true,
+      "color_min": [ 120, 70, 30 ],
+      "color_max": [ 255, 226, 170 ],
+      "steps": 1,
+      "emission": 160,
+      "movement": {
+        "y_direction": 1,
+        "density": 45,
+        "scatter_chance": 5,
+        "can_fall": true,
+        "can_cascade": true,
+        "is_fluid": true,
+        "is_liquid": true
+      },
+      "lifespan": {
+        "initial": 90,
+        "tick": 1,
+        "chance": 40,
+        "on_death": [
+          { "no_transition": false, "material": "Glass", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "corrodible": 5, "hot": 80, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "tag",
+          "target": "flammable",
+          "scan_sample": "all",
+          "halt_update": false,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Fire", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "tag",
+          "target": "wet",
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [
+            { "no_transition": false, "material": "Glass", "weight": 1, "lifespan_base": "initial" }
+          ],
+          "target_transitions": [
+            { "no_transition": false, "material": "Steam", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Glass",
+      "interpolate_color": false,
+      "color_min": [ 138, 176, 184 ],
+      "color_max": [ 176, 212, 220 ],
+      "steps": 3,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "corrodible": 10, "matter": 100 },
+      "reactions": []
+    },
+
+    {
+      "name": "Obsidian",
+      "interpolate_color": false,
+      "color_min": [ 24, 20, 32 ],
+      "color_max": [ 42, 36, 54 ],
+      "steps": 3,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": { "matter": 100 },
+      "reactions": []
+    },
+
+    {
+      "name": "Void",
+      "interpolate_color": false,
+      "color_min": [ 10, 6, 16 ],
+      "color_max": [ 26, 16, 36 ],
+      "steps": 2,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 0,
+        "on_death": []
+      },
+      "tags": {},
+      "reactions": [
+        {
+          "target_type": "tag",
+          "target": "matter",
+          "scan_sample": "all",
+          "halt_update": false,
+          "target_transitions": [
+            { "no_transition": false, "material": "Air", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Water Source",
+      "interpolate_color": false,
+      "color_min": [ 24, 70, 116 ],
+      "color_max": [ 70, 160, 226 ],
+      "steps": 3,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 1,
+        "chance": 10,
+        "on_death": [
+          { "no_transition": false, "material": "Water Source", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "corrodible": 20, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Air",
+          "chance": 6,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "target_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Sand Source",
+      "interpolate_color": false,
+      "color_min": [ 140, 108, 56 ],
+      "color_max": [ 232, 202, 140 ],
+      "steps": 3,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 1,
+        "chance": 10,
+        "on_death": [
+          { "no_transition": false, "material": "Sand Source", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "corrodible": 20, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Air",
+          "chance": 6,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "target_transitions": [
+            { "no_transition": false, "material": "Sand", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Lava Source",
+      "interpolate_color": false,
+      "color_min": [ 150, 40, 8 ],
+      "color_max": [ 255, 160, 40 ],
+      "steps": 3,
+      "emission": 120,
+      "movement": {
+        "y_direction": 1,
+        "density": 100,
+        "scatter_chance": 0,
+        "can_fall": false,
+        "can_cascade": false,
+        "is_fluid": false,
+        "is_liquid": false
+      },
+      "lifespan": {
+        "initial": 255,
+        "tick": 1,
+        "chance": 10,
+        "on_death": [
+          { "no_transition": false, "material": "Lava Source", "weight": 1, "lifespan_base": "initial" }
+        ]
+      },
+      "tags": { "corrodible": 20, "hot": 100, "matter": 100 },
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Air",
+          "chance": 6,
+          "scan_sample": "first_to_react",
+          "halt_update": false,
+          "target_transitions": [
+            { "no_transition": false, "material": "Lava", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
     }
   ]
 }
