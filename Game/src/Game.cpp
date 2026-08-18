@@ -59,6 +59,26 @@ scree::Game::Game()
 	// survives a resize -- compute_layout re-runs every frame off the live window size.
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	InitWindow(Window_size.x, Window_size.y, "scree");
+	// Window/taskbar icon: the pixel-S mark at several sizes so the OS picks a crisp
+	// native one for the title bar and taskbar rather than downscaling a single large
+	// PNG. Loaded from assets/ so it tracks the same folder as materials.json; any
+	// missing size is skipped and a fully missing set just leaves the default icon.
+	{
+		const int icon_sizes[] = { 16, 32, 48, 64, 256 };
+		Image icons[5];
+		int icon_count = 0;
+		for (int px : icon_sizes)
+		{
+			Image img = LoadImage(
+				(assets_path() + "/window-icon-" + std::to_string(px) + ".png").c_str());
+			if (img.data != nullptr) icons[icon_count++] = img;
+		}
+		if (icon_count > 0)
+		{
+			SetWindowIcons(icons, icon_count);
+			for (int i = 0; i < icon_count; ++i) UnloadImage(icons[i]);
+		}
+	}
 	// Maximised after the window exists, not via FLAG_WINDOW_MAXIMIZED: the flag makes GLFW
 	// open it maximised without raising the resize callback, so raylib keeps reporting the
 	// requested size and the whole interface renders into the top-left corner of a much

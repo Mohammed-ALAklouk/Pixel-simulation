@@ -1,4 +1,7 @@
-# Scree
+<p align="center">
+  <img src="docs/logo-wordmark.svg" width="620"
+       alt="Scree — a falling-sand simulator. Pixel-grid S monogram built from sand, water and lava grains.">
+</p>
 
 *Scree — the sheet of loose rock fragments that mantles a slope.*
 
