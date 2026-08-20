@@ -1199,7 +1199,12 @@ namespace
 		// before ImGui started, but stays under the panels and under any popup. On the
 		// foreground list the hint chip painted straight over the open theme dropdown.
 		ImDrawList* dl = ImGui::GetBackgroundDrawList();
-		const Rectangle& f = g.frame;
+		// Anchored to the region between the panels rather than to the grid, so these sit in
+		// the letterboxing around it instead of over the corners of the simulation. The grid
+		// is only ever as large as the shorter side of the region allows, so whichever axis
+		// is not the constraining one leaves a wide band free -- and both are wide at the
+		// default window size.
+		const Rectangle& f = g.canvas_region;
 
 		FontScope fs(m::FontSmall);
 

@@ -101,8 +101,11 @@ namespace scree::ui
 		// Deliberately wider than the real advance at FontSmall, so the estimated line
 		// count errs high and the banner is never shorter than its text.
 		constexpr float BannerGlyphW = 12.0f;
-		// Breathing room between the grid and the chrome around it.
-		constexpr float CanvasPad = 18.0f;
+		// Breathing room between the grid and the chrome around it. Wide enough to seat a
+		// row of canvas chips, since those are drawn in this margin -- below roughly 800px
+		// of window height it is this, not the 1:1 clamp, that sets the grid's size, and a
+		// thinner band would put the chips back over the corners of the simulation.
+		constexpr float CanvasPad = 44.0f;
 
 		constexpr float FontLabel = 13.0f * TextScale;   // section headers
 		constexpr float FontSmall = 15.0f * TextScale;   // readouts, chips, buttons

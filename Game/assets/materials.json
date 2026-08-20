@@ -472,8 +472,9 @@
         "is_liquid": false
       },
       "lifespan": {
-        "initial": 10,
+        "initial": 40,
         "tick": 1,
+        "chance": 75,
         "on_death": [
           { "no_transition": false, "material": "Ash", "weight": 1, "lifespan_base": "initial" }
         ]
