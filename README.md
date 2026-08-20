@@ -17,6 +17,10 @@ and reloaded while the program is running, or built from scratch in the in-app
 editor and saved back out as a file of your own.
 
 <p align="center">
+  <b><a href="https://mohammed-alaklouk.github.io/Scree/">▶ Play it in your browser</a></b>
+</p>
+
+<p align="center">
   <img src="docs/lava-quench.gif" width="480"
        alt="Lava pouring from a spout over a stone wedge and into the water below, throwing off steam and crusting into hot stone along the waterline">
 </p>
