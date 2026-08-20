@@ -17,15 +17,19 @@ and reloaded while the program is running, or built from scratch in the in-app
 editor and saved back out as a file of your own.
 
 <p align="center">
-  <img src="docs/lava-water.gif" width="480"
-       alt="Lava pouring off two shelves into water, boiling off steam and crusting over into hot stone">
+  <img src="docs/lava-quench.gif" width="480"
+       alt="Lava pouring from a spout over a stone wedge and into the water below, throwing off steam and crusting into hot stone along the waterline">
 </p>
 
 ## Demo
 
-| Fire spreading through wood | Acid eating through stone |
+| Fire bringing down a tower | Acid pouring through the shelves |
 |:---:|:---:|
-| ![Fire spreading across a wooden figure, leaving ash and smoke behind](docs/fire-wood.gif) | ![Acid eating down through a stone slab and a wood layer, pooling on the sand below](docs/acid-stone.gif) |
+| ![A four-storey wooden tower burning from the roof down, dropping embers and ash until only the base is left](docs/tower-burn.gif) | ![Acid poured from a funnel eating through two wooden shelves in turn and pooling into the water below](docs/acid-pour.gif) |
+| **A fuse burning through a maze** | **Sand cascading down the shelves** |
+| ![A gunpowder fuse burning along a serpentine channel cut into stone, running towards a wooden house](docs/fuse-maze.gif) | ![Sand dropped through staggered glass shelves, building a pile on each one before spilling into the lava at the bottom](docs/sand-cascade.gif) |
+| **A stack sorting itself by density** | **Five sources running at once** |
+| ![A tank of layered oil, sand and water sorting itself out until the sand is at the bottom and the oil on top](docs/density-sort.gif) | ![Five sources in a row emitting lava, water and sand into parallel shafts until every shaft is full](docs/emitter-array.gif) |
 
 ## Features
 
@@ -378,6 +382,11 @@ sinks the load while a stack of warnings does not.
 *SAVE CANVAS* and *LOAD CANVAS* in the bottom bar write and read the whole grid.
 The picker starts in `assets/canvases/`, which is created next to the executable on
 first run, but the files can live anywhere.
+
+<p align="center">
+  <img src="docs/hourglass.gif" width="420"
+       alt="An hourglass canvas draining banded sand and salt through its neck into a cone on the floor of the lower chamber">
+</p>
 
 The format is JSON: a version, the grid dimensions, a palette of material *names*,
 and the grid itself as run-length pairs of palette index and lifespan. Runs make it
