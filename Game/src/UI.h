@@ -58,10 +58,8 @@ namespace scree::ui
 		// The area behind the grid, re-tinted into Theme::CanvasBg like every other surface.
 		inline const ImVec4 CanvasBase = hex(0x07, 0x06, 0x06);
 
-		// Deliberately outside the theme. The hairline around the grid stays neutral so the
-		// frame does not read as part of the simulation, and the chunk overlay keeps a fixed
-		// hue so it is legible whatever material is selected -- an overlay drawn in the
-		// current accent would vanish against the material it is drawn over.
+		// Deliberately outside the theme: the grid hairline stays neutral so the frame doesn't
+		// read as part of the sim, and the chunk overlay keeps a fixed hue so it stays legible over any material.
 		inline const Color GridEdge = hex_rl(0x2b, 0x27, 0x23);
 
 		// The grid's own backdrop. In the prototype empty space is not flat black: Air is a
@@ -73,25 +71,20 @@ namespace scree::ui
 
 	namespace metrics
 	{
-		// Multiplies the geometric literals in UI.cpp through its S() helper -- paddings,
-		// margins, control sizes. Left at 1.0: the fonts below are what needed to grow, and
-		// scaling this too would inflate the spacing along with them. It exists as the knob
-		// for a genuine whole-interface resize.
+		// Multiplies the geometric literals (paddings, margins, control sizes) via S(). Left at
+		// 1.0: only the fonts needed to grow. The knob for a genuine whole-interface resize.
 		constexpr float Scale = 1.0f;
 
-		// Multiplies the type and nothing else. Above 1.0 because raylib hands the window
-		// raw pixels with no notion of the desktop's scale factor, so the base sizes render
-		// physically small on a scaled display. This is the knob for text size.
-		// The browser already applies device scaling, so web stays at 1.0.
+		// Multiplies the type only. Above 1.0 because raylib gives raw pixels with no desktop
+		// scale factor, so base sizes render small on a scaled display. The browser scales itself, so web is 1.0.
 #if defined(PLATFORM_WEB)
 		constexpr float TextScale = 1.0f;
 #else
 		constexpr float TextScale = 1.5f;
 #endif
 
-		// Runtime device-pixel ratio. On web the canvas renders at device pixels for
-		// crispness, so both geometry (S) and type multiply by this to hold physical size;
-		// Game sets it from devicePixelRatio. Desktop leaves it 1.0.
+		// Runtime device-pixel ratio. On web both geometry (S) and type multiply by this to hold
+		// physical size; Game sets it from devicePixelRatio. Desktop leaves it 1.0.
 		inline float UiScale = 1.0f;
 
 		// Bars and rows are sized off the type they have to hold, so these are the few
@@ -103,18 +96,15 @@ namespace scree::ui
 		constexpr float BannerLineH = 29.0f;
 		constexpr float BannerPad = 24.0f;
 		constexpr int   BannerMaxLines = 4;
-		// Where the message starts, clearing the tier label to its left, and how much room
-		// the DISMISS button needs on the right. compute_layout sizes the banner off the
-		// same two numbers the drawing uses, so its line count matches what gets rendered.
+		// Where the message starts (clearing the tier label) and the room the DISMISS button needs.
+		// compute_layout sizes the banner off these same numbers, so its line count matches the drawing.
 		constexpr float BannerTextInset = 205.0f;
 		constexpr float BannerTextRight = 125.0f;
 		// Deliberately wider than the real advance at FontSmall, so the estimated line
 		// count errs high and the banner is never shorter than its text.
 		constexpr float BannerGlyphW = 12.0f;
-		// Breathing room between the grid and the chrome around it. Wide enough to seat a
-		// row of canvas chips, since those are drawn in this margin -- below roughly 800px
-		// of window height it is this, not the 1:1 clamp, that sets the grid's size, and a
-		// thinner band would put the chips back over the corners of the simulation.
+		// Breathing room between the grid and the chrome. Wide enough to seat the canvas chips
+		// drawn in this margin; below ~800px window height it, not the 1:1 clamp, sets the grid's size.
 		constexpr float CanvasPad = 44.0f;
 
 		constexpr float FontLabel = 13.0f * TextScale;   // section headers
@@ -133,11 +123,9 @@ namespace scree::ui
 	// render less crisply.
 	extern ImFont* Font;
 
-	// The whole chrome is themed off one chosen colour, not just an accent: every surface,
-	// border and label below is the corresponding col:: neutral re-tinted to that hue at
-	// its own lightness. col:: is the untinted base those derive from. Status colours
-	// (Good/Warn/Bad) are deliberately not in here -- a red that means "failed" must not
-	// drift with the theme.
+	// The whole chrome is themed off one chosen colour: every surface, border and label is the
+	// matching col:: neutral re-tinted to that hue at its own lightness. Status colours
+	// (Good/Warn/Bad) stay out -- a red that means "failed" must not drift with the theme.
 	struct Theme
 	{
 		ImVec4 Panel, PanelSunk, Border, BorderSoft;
@@ -150,10 +138,8 @@ namespace scree::ui
 
 	extern Theme theme;
 
-	// The picker's contents. Seeds are only ever read for their hue and saturation, so
-	// their brightness does not matter -- Retint takes lightness from the neutral it is
-	// recolouring. Bone is under the saturation floor on purpose and comes out as the
-	// original warm grey scheme.
+	// The picker's contents. Seeds are read only for hue and saturation (Retint takes lightness
+	// from the neutral). Bone is under the saturation floor on purpose and comes out warm grey.
 	struct ThemeOption
 	{
 		const char* name;
@@ -178,9 +164,8 @@ namespace scree::ui
 	void ApplyTheme();
 	void LoadFonts();
 
-	// Persist the handful of choices that should outlive a run -- currently just the theme
-	// -- in a small text file next to the executable. LoadSettings runs at startup before
-	// the first theme is applied; SaveSettings runs whenever a setting changes.
+	// Persist the choices that outlive a run (currently just the theme) in a text file next to
+	// the executable. LoadSettings runs at startup before the first theme; SaveSettings on each change.
 	void LoadSettings();
 	void SaveSettings();
 }

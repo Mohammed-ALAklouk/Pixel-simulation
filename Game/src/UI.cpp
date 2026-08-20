@@ -18,10 +18,9 @@ namespace m = scree::ui::metrics;
 ImFont* scree::ui::Font = nullptr;
 
 #if defined(_WIN32)
-// Declared by hand rather than including <windows.h>, which collides with raylib over
-// Rectangle, CloseWindow and ShowCursor among others. raylib's own OpenURL is not usable
-// here: it runs system("explorer ...") -- that spawns a console this exe deliberately does
-// not have, and explorer rejects the forward slashes GetApplicationDirectory returns.
+// Declared by hand rather than including <windows.h>, which collides with raylib. raylib's
+// OpenURL is unusable here: it runs system("explorer ..."), which spawns a console this exe
+// lacks and rejects the forward slashes GetApplicationDirectory returns.
 extern "C" __declspec(dllimport) void* __stdcall ShellExecuteA(
 	void* hwnd, const char* op, const char* file, const char* params,
 	const char* dir, int showCmd);
@@ -36,13 +35,11 @@ namespace
 
 	ImU32 U32(const ImVec4& v) { return ImGui::GetColorU32(v); }
 
-	// Design units to pixels. Every offset, padding and control size below is written at
-	// 1.0 and passed through here, so metrics::Scale resizes the whole interface.
+	// Design units to pixels: everything below is written at 1.0 and passed through here.
 	inline float S(float v) { return v * m::Scale * m::UiScale; }
 
-	// PushFont(nullptr, size) keeps the current face and changes only the size, which is
-	// what happens when no system font was found. Size tracks UiScale so text rasterises
-	// at device resolution on a high-DPI canvas.
+	// PushFont keeps the current face and changes only the size. Size tracks UiScale so text
+	// rasterises at device resolution on a high-DPI canvas.
 	struct FontScope
 	{
 		explicit FontScope(float size) { ImGui::PushFont(scree::ui::Font, size * m::UiScale); }
@@ -142,17 +139,15 @@ namespace
 	// sits in. Names sit to the left of it and widgets to the right, at any nesting depth.
 	constexpr float FormLabelW = 168.0f;
 
-	// How far the current nesting level is held off the body's right edge. Cards stack, so
-	// each one adds its own inset and padding and puts the previous value back at the end.
-	// Widths are measured off this because ImGui resolves a negative item width against the
-	// window's content edge and knows nothing about the card drawn inside it.
+	// How far the current nesting level is held off the body's right edge. Cards stack, each
+	// adding its inset and padding and restoring the previous value. Widths measure off this
+	// because ImGui resolves a negative item width against the window edge, not the card.
 	float RightMargin = 0.0f;
 
 	// Width from the cursor to the right edge of the card the cursor is in.
 	float AvailW() { return ImGui::GetContentRegionAvail().x - RightMargin; }
 
-	// Depth is carried by the fill: each level alternates between recessed and raised, which
-	// is what makes a transition list inside a reaction inside a section readable at a glance.
+	// Depth is carried by the fill: levels alternate recessed/raised, so nested cards read at a glance.
 	enum class CardTone { Sunk, Raised };
 
 	// A filled, bordered box behind a run of widgets. Its height is only known once they have
@@ -627,10 +622,8 @@ namespace
 	{
 #if defined(_WIN32)
 		for (char& ch : path) if (ch == '/') ch = '\\';
-		// A return of 32 or less is a failure code, not a handle. The usual one here is
-		// SE_ERR_NOASSOC: plenty of machines have nothing registered for .json, and "open"
-		// then does nothing at all. "openas" puts up the Open With picker instead, so the
-		// click always leads somewhere.
+		// A return of 32 or less is a failure, not a handle -- usually SE_ERR_NOASSOC when nothing
+		// is registered for .json. "openas" then shows the Open With picker, so the click always leads somewhere.
 		const auto rc = reinterpret_cast<std::intptr_t>(
 			ShellExecuteA(nullptr, "open", path.c_str(), nullptr, nullptr, 1 /* SW_SHOWNORMAL */));
 		if (rc <= 32)
@@ -953,11 +946,9 @@ namespace
 					ldl->AddRectFilled(p, ImVec2(p.x + rowW, p.y + rowH), U32(ui::theme.RowHover), 2.0f);
 				}
 
-				// Snapped to whole pixels: the swatch's centred Y was landing on a half pixel,
-				// so the fill's anti-aliased corners spilled past the 1px stroke at the bottom.
-				// The border is a slightly larger filled rect drawn behind the fill rather than
-				// a stroke over it, so the fill can never bleed past it whatever the corner
-				// rounding does.
+				// Snapped to whole pixels: a half-pixel centred Y let the fill's AA corners spill
+				// past the stroke. The border is a larger filled rect behind the fill, not a
+				// stroke, so it can't bleed.
 				const float ss = S(17.0f);
 				const float sx = std::floor(p.x + S(9.0f));
 				const float sy = std::floor(p.y + (rowH - ss) * 0.5f);
@@ -1057,12 +1048,10 @@ namespace
 		ImGui::SetCursorPos(ImVec2(x, y));
 		ImGui::SetNextItemWidth(w);
 
-		// Swatch and name are drawn manually below, so the preview is blank -- a spacer
-		// string would clear the swatch by the font's space width, which Inter renders narrow.
-		// The global window padding is zero so the docked bars can sit flush; the popup is
-		// the one window that needs its own breathing room back.
-		// The box rect, captured before BeginCombo: once the popup opens, GetItemRect*
-		// reports the popup window instead of the button, which drags the preview down.
+		// Preview is blank -- swatch and name are drawn manually below; a spacer string would
+		// clear the swatch by the font's space width. Window padding is zero so the bars sit
+		// flush, but the popup needs its own back. Box rect captured before BeginCombo, which
+		// otherwise reports the popup window instead of the button.
 		const ImVec2 boxMin = ImGui::GetCursorScreenPos();
 		const float boxCenterY = boxMin.y + ImGui::GetFrameHeight() * 0.5f;
 
@@ -1219,15 +1208,12 @@ namespace
 
 	void CanvasOverlays(Game& g)
 	{
-		// Background, not foreground: this still lands on top of the grid, which raylib drew
-		// before ImGui started, but stays under the panels and under any popup. On the
-		// foreground list the hint chip painted straight over the open theme dropdown.
+		// Background, not foreground: still lands on top of the grid but stays under the panels
+		// and popups. On the foreground list the hint chip painted over the open theme dropdown.
 		ImDrawList* dl = ImGui::GetBackgroundDrawList();
-		// Anchored to the region between the panels rather than to the grid, so these sit in
-		// the letterboxing around it instead of over the corners of the simulation. The grid
-		// is only ever as large as the shorter side of the region allows, so whichever axis
-		// is not the constraining one leaves a wide band free -- and both are wide at the
-		// default window size.
+		// Anchored to the region between the panels, not the grid, so these sit in the
+		// letterboxing rather than over the simulation's corners. The grid fits the shorter
+		// side, so the other axis leaves a wide band free.
 		const Rectangle& f = g.canvas_region;
 
 		FontScope fs(m::FontSmall);
@@ -1656,14 +1642,11 @@ scree::RGB scree::ui::SwatchRGB(const MaterialData& data)
 
 namespace
 {
-	// Re-hues a neutral: the base contributes its lightness, the material its hue and
-	// saturation. Mixing towards the material colour instead would drag every dark surface
-	// up towards the material's brightness and wash the panels out.
+	// Re-hues a neutral: the base gives lightness, the material hue and saturation. Mixing
+	// towards the material colour instead would wash the dark panels out.
 	//
-	// `lift` exists because the base panels sit at a value of about 0.06, and a colour that
-	// close to black has almost no room to carry a hue -- tinting alone moved them by only
-	// a few points per channel. Raising the value of the large flat surfaces gives the hue
-	// somewhere to show without making them stop reading as dark chrome.
+	// `lift` raises the value of near-black surfaces (~0.06), which otherwise have no room to
+	// carry a hue, so the tint shows without them ceasing to read as dark chrome.
 	ImVec4 Retint(const ImVec4& base, float hue, float sat, float lift = 1.0f)
 	{
 		float h = 0.0f, s = 0.0f, v = 0.0f;

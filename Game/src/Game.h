@@ -47,8 +47,7 @@ namespace scree
 		bool load_materials();
 		bool import_canvas(std::string path);
 		bool export_canvas(std::string path);
-		// Resolved against the executable, not the working directory, so it holds wherever
-		// the exe was launched from. Shared by the loader and the top bar's link.
+		// Resolved against the executable, not the working directory. Shared by the loader and the top bar's link.
 		std::string assets_path() const;
 		std::string canvases_path() const;
 		std::string materials_path() const;
@@ -80,7 +79,6 @@ namespace scree
 
 		std::vector<Color> pixels;
 		std::vector<Color> emissive_pixels;
-		// tex
 		Texture2D tex;
 		Texture2D emissive_tex;
 		RenderTexture2D bloom_target;
@@ -125,12 +123,10 @@ namespace scree
 		bool step_once = false;
 
 		std::string material_load_error_message;
-		// Whether the message above is a failed load or only warnings, which is all the
-		// banner needs to colour itself.
+		// Failed load vs. only warnings -- all the banner needs to colour itself.
 		bool material_load_failed = false;
 
-		// 0 when there is nothing to report, which is what keeps the banner from taking
-		// up any space at all in the common case.
+		// 0 when there's nothing to report, so the banner takes up no space in the common case.
 		float layout_banner_h = 0.0f;
 		// The region the grid is centred inside, once the chrome has taken its share.
 		Rectangle canvas_region{};

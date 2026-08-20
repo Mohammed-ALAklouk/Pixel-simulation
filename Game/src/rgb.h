@@ -4,10 +4,7 @@
 #include <cstdint>
 #include <algorithm>
 
-/*
-	This is a wrapper to represent RGB colors
-	I did this so the simulation logic is decupled from the graphics library and can be easily replaced in the future if needed
-*/
+// RGB wrapper that keeps the simulation logic decoupled from the graphics library.
 
 namespace scree {
 	struct RGB {
@@ -42,10 +39,8 @@ namespace scree {
 				static_cast<std::uint8_t>(b * scalar));
 		}
 
-		// The sign of (max - min) carries the direction, so a channel where min > max
-		// descends. RGB's own operators can't be used here -- they saturate at 0 and would
-		// flatten such a channel instead. The result is clamped rather than left to RGB's
-		// uint8_t constructor, which wraps modularly: a t above 1 would turn 310 into 54.
+		// Done in signed int and clamped, not via RGB's operators: those saturate at 0
+		// (flattening a descending channel where min > max) and wrap on overflow.
 		static RGB lerp(const RGB& min, const RGB& max, float t)
 		{
 			t = std::clamp(t, 0.0f, 1.0f);

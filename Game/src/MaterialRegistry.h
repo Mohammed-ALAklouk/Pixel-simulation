@@ -93,10 +93,8 @@ namespace scree {
 		}
 
 
-		// Unchecked on purpose: this is the innermost call in the update, hit several
-		// times per pixel per pass. Every id reaching it comes out of a Block, and a
-		// Block only ever holds an id the registry handed out -- Grid::Remap rewrites
-		// the whole grid when materials reload, so no stale id survives.
+		// Unchecked on purpose -- the innermost call in the update. Every id comes from a Block,
+		// which only ever holds an id the registry handed out (Grid::Remap rewrites the grid on reload).
 		const MaterialData& Get(MaterialID id) const {
 			return materials[id];
 		}

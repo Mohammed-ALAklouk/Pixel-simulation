@@ -14,15 +14,13 @@ namespace scree
 	static constexpr int MAX_MATERIALS = 256;	// the whole MaterialID range; extras are dropped at load
 	using MaterialID = std::uint8_t;
 
-	// Index range into the reaction arena. Transition spans need a weight total too, so
-	// they use TransitionsSpan; reactionSpan is all that's left on this one.
+	// Index range into the reaction arena. Transition spans carry a weight total too (TransitionsSpan).
 	struct Span {
 		std::uint16_t start = 0;
 		std::uint16_t count = 0;
 	};
 
-	// Index range into the transition arena, plus its weights summed at load. A total of 0
-	// (empty, or all weights 0) tells PickTransition there is nothing to pick.
+	// Index range into the transition arena, plus weights summed at load. Total 0 means nothing to pick.
 	struct TransitionsSpan {
 		std::uint16_t start = 0;
 		std::uint16_t count = 0;
@@ -40,14 +38,12 @@ namespace scree
 		bool is_liquid = false;
 	};
 
-	// One weighted outcome in a span. "Nothing happens" is not an absent entry but one
-	// with noTransition set, and it needs a weight like any other.
+	// One weighted outcome. "Nothing happens" is an entry with noTransition set, weighted like any other.
 	struct Transition {
 		// on_death allows Initial only; ParseTransitionSpan warns on the other two.
 		enum class LifeSpanBase : std::uint8_t {
 			Self,		// old lifespan of the tile being rewritten
-			// Lifespan of the other participant, read AFTER it ticks this frame -- so the
-			// lifespan tick must stay ordered before reactions in Update_pixel.
+			// Other participant's lifespan, read AFTER it ticks -- so the tick must run before reactions in Update_pixel.
 			Reactor,
 			Initial,    // use the default lifespan of the new material it turns into
 		};
@@ -115,9 +111,8 @@ namespace scree
 		// Tag-target reaction rolls against.
 		std::array<std::uint8_t, MAX_TAGS> tagIntensity;
 
-		// Bit i set = tagIntensity[i] is non-zero. Derived from the array above at load,
-		// so that "does this neighbour carry any tag I anchor to" is one AND against
-		// anchorTagBitmask rather than a walk over all MAX_TAGS slots per neighbour.
+		// Bit i set = tagIntensity[i] is non-zero. Derived at load so anchor tests are one AND
+		// against anchorTagBitmask instead of a walk over all MAX_TAGS slots per neighbour.
 		std::uint8_t tagBitmask = 0;
 	};
 

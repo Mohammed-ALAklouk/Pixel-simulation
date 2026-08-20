@@ -5,8 +5,7 @@
 
 namespace scree {
     struct Log {
-        // Ordered by how much gets thrown away -- the file's verdict is the max over
-        // all logs, so do not reorder.
+        // Ordered by severity; Worst() takes the max, so do not reorder.
         enum class Severity : std::uint8_t {
             Warning,          // value was clamped or ignored, load continues
             RejectMaterial,   // this entry becomes an inert placeholder
@@ -30,8 +29,7 @@ namespace scree {
         int material = -1;     // which entry this came from; -1 when it is file-level
 
 
-        // From skips the logs already there when the caller started, so a caller can ask
-		// what only its own work produced. Leave it at 0 for the verdict on the whole load.
+        // from skips logs already present when the caller started; 0 gives the verdict on the whole load.
 		static Severity Worst(const std::vector<Log>& logs, std::size_t from = 0) {
 			Severity worst = Severity::Warning;
 			for (std::size_t i = from; i < logs.size(); ++i) {
@@ -97,9 +95,8 @@ namespace scree {
             };
         }
 
-        // A tag that is not a string leaves a hole in the tag ids, and every material
-        // referencing a tag past that hole resolves to the wrong one, so this takes
-        // the whole file down rather than one entry.
+        // A non-string tag leaves a hole in the tag ids, misaligning every later reference,
+        // so the whole file is taken down rather than one entry.
         static Log CreateBadTagName(const std::string& dump) {
             return Log{
                 .message  = "Tag must be a string, got " + dump + ".",
@@ -137,8 +134,7 @@ namespace scree {
 
         // ---- per material -----------------------------------------------------
 
-        // Detail describes why the field is unusable when it is present;
-        // leave it off when the field is simply absent.
+        // detail says why the field is unusable when present; omit it when simply absent.
         static Log CreateMissingField(int materialID, const std::string& materialName,
                                       const std::string& field, const std::string& detail = "") {
             return Log{
@@ -150,8 +146,7 @@ namespace scree {
             };
         }
 
-        // What is either the exception text from nlohmann or a plain description of
-        // the shape that was expected.
+        // what is nlohmann's exception text or a description of the expected shape.
         static Log CreateWrongType(int materialID, const std::string& materialName,
                                    const std::string& field, const std::string& what) {
             return Log{
@@ -173,8 +168,7 @@ namespace scree {
             };
         }
 
-        // nlohmann converts a float to int without throwing, so the value is already
-        // truncated by the time anything else sees it.
+        // nlohmann truncates a float to int without throwing, so the value arrives already truncated.
         static Log CreateNotIntegral(int materialID, const std::string& materialName,
                                      const std::string& field, const std::string& value, int truncated) {
             return Log{
@@ -198,8 +192,7 @@ namespace scree {
             };
         }
 
-        // A value that is spelled correctly but meaningless where it appears. The
-        // field parses, so the material still loads with the value ignored.
+        // A valid value that is meaningless here; it parses, so the material loads with the value ignored.
         static Log CreateNotAllowed(int materialID, const std::string& materialName,
                                     const std::string& field, const std::string& value,
                                     const std::string& reason) {

@@ -11,12 +11,9 @@
 
 namespace scree
 {
-	// Blocks are stored row-major in one array, not tiled per chunk. The update
-	// sweeps a row at a time, so a row and the row under it -- the only two a tile
-	// ever reaches for -- are contiguous, and the vertical neighbour a falling tile
-	// wants is a fixed +m_width_px away rather than a fresh chunk lookup. m_processed
-	// is indexed the same way, so a pixel's block and its processed flag share an
-	// index.
+	// Blocks are stored row-major in one array, not tiled per chunk: the update sweeps a row
+	// and the row under it, which are contiguous, so a falling tile's vertical neighbour is a
+	// fixed +m_width_px away. m_processed is indexed the same way as the blocks.
 	class Grid
 	{
 	public:
@@ -37,16 +34,13 @@ namespace scree
 		inline bool Is_in_bounds(int x, int y)			const	{	return (x >= 0 && y >= 0 && x < m_width_px && y < m_height_px);	}
 		inline bool Should_render_chunk(int chunk_x, int chunk_y) const { return m_chunks_to_render[get_chunk_index(chunk_x, chunk_y)] != 0; }
 
-		// Which chunks hold a tile that moves against gravity. Rebuilt from scratch on
-		// every downward pass -- see Simulation::Update_pixel -- so that the upward pass
-		// can skip the chunks with nothing in them to lift, which in a grid of sand and
-		// water is all of them.
+		// Which chunks hold a tile that moves against gravity. Rebuilt each downward pass (see
+		// Simulation::Update_pixel) so the upward pass can skip chunks with nothing to lift.
 		inline bool Chunk_has_rising(int chunk_x, int chunk_y) const { return m_chunk_rising[get_chunk_index(chunk_x, chunk_y)] != 0; }
 		inline void Clear_rising() { std::fill(m_chunk_rising.begin(), m_chunk_rising.end(), std::uint8_t{ 0 }); }
 		inline void mark_rising_at_pixel(int x, int y);
 
-		// Raw row-major access to the block array, for callers that already walk whole
-		// rows and do not want to pay for per-pixel index arithmetic (the renderer).
+		// Raw row-major access for callers that walk whole rows (the renderer).
 		inline const Block* Row(int y) const { return m_blocks.data() + static_cast<std::size_t>(y) * m_width_px; }
 
 		inline void Set_at(std::uint16_t x, std::uint16_t y, Block block);
@@ -64,15 +58,10 @@ namespace scree
 			std::fill(m_chunk_active_next.begin(), m_chunk_active_next.end(), std::uint8_t{ 0 });
 		}
 
-		// Both arrays, not just the swept one. m_chunk_active_next is the true write
-		// set -- every write goes through set_chunk_active_at_pixel -- and it catches
-		// three things the swept set misses: a write with no update behind it (the
-		// brush and Remap, which is all that happens while paused), and a liquid
-		// skimming up to 10 cells into a chunk the one-pixel edge halo never woke,
-		// which would otherwise render a frame late.
-		//
-		// Called at the end of an update and again before the render reads the mask,
-		// so a write that lands between the two is still picked up in the same frame.
+		// Both arrays: m_chunk_active_next is the true write set and catches what the swept set
+		// misses -- a write with no update behind it (brush, Remap, everything while paused) and
+		// a liquid skimming into a chunk the edge halo never woke. Called at the end of an update
+		// and again before the render reads the mask, so a write between the two still lands.
 		inline void Mark_chunks_for_render()
 		{
 			for (std::size_t i = 0; i < m_chunk_active.size(); i++) {
@@ -88,9 +77,8 @@ namespace scree
 			std::fill(m_chunk_active_next.begin(), m_chunk_active_next.end(), std::uint8_t{ 0 });
 			std::fill(m_processed.begin(), m_processed.end(), std::uint8_t{ 0 });
 			Clear_rising();
-			// Every pixel just became air, and both activity arrays were zeroed, so
-			// nothing else will mark these. Without this the render mask stays empty
-			// and the screen keeps showing the grid from before the clear.
+			// Both activity arrays were just zeroed, so nothing else marks these dirty; without
+			// this the render mask stays empty and the screen keeps showing the pre-clear grid.
 			std::fill(m_chunks_to_render.begin(), m_chunks_to_render.end(), std::uint8_t{ 1 });
 		}
 
@@ -100,29 +88,24 @@ namespace scree
 		}
 	private:
 		const MaterialRegistry* m_material_registry = nullptr;
-		// Helper functions
 		int get_chunk_index(int x, int y)	const	{	return y * m_width_ch + x;	}
 		int get_chunk_index_from_pixel(int x, int y)	const { return get_chunk_index(x >> CHUNK_SHIFT, y >> CHUNK_SHIFT); }
 		int get_global_index(int x, int y)	const	{	return y * m_width_px + x;	}
 
 		std::vector<Block> m_blocks;
 
-		// One byte per chunk rather than a bool inside each chunk: the whole activity
-		// map is a few hundred bytes and stays resident, so waking a chunk never evicts
-		// block data. Kept as two arrays swapped each update instead of two flags read
-		// and written in the same pass.
+		// One byte per chunk, not a flag inside each: the whole map stays cache-resident, so
+		// waking a chunk never evicts block data. Two arrays swapped each update, not read+write flags.
 		std::vector<std::uint8_t> m_chunk_active;
 		std::vector<std::uint8_t> m_chunk_active_next;
 		std::vector<std::uint8_t> m_chunk_rising;
 		std::vector<std::uint8_t> m_chunks_to_render;
 
-		// Dimensions in chunks
 		int	m_width_ch = 0;
 		int	m_height_ch = 0;
 
 		std::vector<uint8_t> m_processed;
 
-		// Dimensions in pixels
 		int m_width_px = 0;
 		int m_height_px = 0;
 	};
@@ -145,10 +128,8 @@ namespace scree
 		m_processed.assign(static_cast<std::size_t>(m_width_px) * m_height_px, 0);
 	}
 
-	// Only the rows covered by an active chunk can have been touched, so the rest of
-	// the array is already clear and clearing it again is wasted bandwidth. On a
-	// mostly-settled grid this is the difference between a full-array memset every
-	// update and a few kilobytes.
+	// Only rows under an active chunk were touched, so clearing the rest is wasted bandwidth --
+	// on a mostly-settled grid, a few kilobytes instead of a full-array memset each update.
 	inline void Grid::Reset_processed()
 	{
 		for (int chunk_y = 0; chunk_y < m_height_ch; chunk_y++)
@@ -157,8 +138,7 @@ namespace scree
 			{
 				if (!m_chunk_active[get_chunk_index(chunk_x, chunk_y)]) continue;
 
-				// Widen to the whole run of consecutive active chunks in this row before
-				// clearing, so one memset covers them all.
+				// Widen to the whole run of active chunks in this row so one memset covers them.
 				int run_end = chunk_x + 1;
 				while (run_end < m_width_ch && m_chunk_active[get_chunk_index(run_end, chunk_y)]) run_end++;
 
@@ -176,9 +156,8 @@ namespace scree
 		}
 	}
 
-	// Swapping through Get_at/Set_at resolved each end's index five times over; the
-	// two references below resolve them once each. This is the most-run write in the
-	// simulation -- in a busy grid nearly every tile takes it every update.
+	// The most-run write in the sim. Going through Get_at/Set_at resolved each index five
+	// times; here each end's index is computed once.
 	inline void Grid::swap_pixels(std::pair<int,int> pos1, std::pair<int,int> pos2)
 	{
 		int index1 = get_global_index(pos1.first, pos1.second);
@@ -191,9 +170,8 @@ namespace scree
 		set_chunk_active_at_pixel(pos2.first, pos2.second);
 	}
 
-	// The edge halo is the same idea as set_chunk_active_at_pixel's: a tile moves at
-	// most one pixel per update, so a rising tile sitting on a chunk edge can end up in
-	// the neighbouring chunk before the upward pass reaches it.
+	// Edge halo, same idea as set_chunk_active_at_pixel: a tile moves at most one pixel per
+	// update, so a rising tile on a chunk edge can cross into the neighbour before the upward pass.
 	inline void Grid::mark_rising_at_pixel(int x, int y)
 	{
 		int local_x = x & CHUNK_MASK;
@@ -264,9 +242,8 @@ namespace scree
 		}
 	}
 
-	// Both writes re-mark the rising set themselves. The downward pass rebuilds it from
-	// what it sees, but a reaction can turn a tile into fire or smoke behind the sweep,
-	// and the brush writes between updates -- neither would be seen in time otherwise.
+	// Re-marks the rising set: the downward pass rebuilds it, but a reaction behind the sweep
+	// or the brush writing between updates would otherwise be missed.
 	inline void Grid::Set_at(std::uint16_t x, std::uint16_t y, Block block)
 	{
 		m_blocks[get_global_index(x, y)] = block;

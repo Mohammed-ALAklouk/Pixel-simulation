@@ -2,15 +2,12 @@
 
 void scree::Simulation::Update_grid(Grid& grid)
 {
-	// Order matters: the clear only covers the chunks that are active, so the active
-	// set has to be the one this update will actually sweep. Clearing against the
-	// previous set would leave a stale flag on any tile that was swapped across a
-	// chunk boundary into a chunk that had been asleep, and that tile would then sit
-	// out an update.
+	// Order matters: Reset_processed only clears active chunks, so the active set must be the
+	// one this update sweeps. Against the previous set, a tile swapped into a newly-woken chunk
+	// would keep a stale processed flag and sit out an update.
 	grid.Mark_chunks_for_next_update();
 	grid.Reset_processed();
-	// The downward pass rebuilds the rising set as it goes, so it has to run first and
-	// start from empty.
+	// The downward pass rebuilds the rising set, so it runs first and starts empty.
 	grid.Clear_rising();
 	Update_grid_directional(grid, 1);
 	Update_grid_directional(grid, -1);
@@ -33,9 +30,8 @@ void scree::Simulation::Update_grid_directional(Grid& grid, int gravityDirection
 		int chunk_end = x_increment == 1 ? chunk_count_x : -1;
 		int chunk_y = y >> CHUNK_SHIFT;
 
-		// Stepping chunk by chunk rather than pixel by pixel: a sleeping chunk used to
-		// cost a chunk lookup on its first pixel before the loop jumped over the other
-		// 31, and an awake one cost that lookup on all 32.
+		// Stepping chunk by chunk, not pixel by pixel: a per-pixel loop cost a chunk
+		// lookup on every pixel even to skip a sleeping chunk.
 		for (int chunk_x = chunk_start; chunk_x != chunk_end; chunk_x += x_increment)
 		{
 			if (!grid.Is_chunk_active(chunk_x, chunk_y)) continue;
@@ -52,26 +48,22 @@ void scree::Simulation::Update_grid_directional(Grid& grid, int gravityDirection
 
 void scree::Simulation::Update_pixel(Grid& grid, int x, int y, int gravityDirection)
 {
-	// Air first: it is most of a typical grid, and testing it here skips the load from
-	// the processed array entirely. The three checks are all plain early-outs, so the
-	// order between them only changes what gets loaded, not what runs.
+	// Air first: it's most of the grid, and testing it here skips loading the processed array.
+	// The three checks are all early-outs, so their order only changes what gets loaded.
 	auto& tile = grid.Get_at(x, y);
 	if (tile.id == MaterialRegistry::AIR_ID) return;
 
 	auto&& tile_material = m_registry.Get(tile.id);
 	if (tile_material.movement.Y_direction != gravityDirection)
 	{
-		// Seen on the downward pass, so this is a tile the upward pass will want. Its
-		// chunk goes into the rising set that pass reads.
+		// Seen on the downward pass; its chunk goes into the rising set the upward pass reads.
 		if (gravityDirection == 1) grid.mark_rising_at_pixel(x, y);
 		return;
 	}
 
 	if (grid.Is_processed(x, y)) return;
 
-	// tile_material is threaded through the three steps rather than looked up again in
-	// each: none of them can change this tile's material without also ending its
-	// update, so the one fetched above stays good for as long as it is used.
+	// tile_material threaded through the three steps: none changes this tile's material without ending its update.
 	if (tile_material.lifespanData.Tick)
 	{
 		if (update_pixel_lifespan(grid, tile, tile_material, x, y))
@@ -124,8 +116,7 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, const Mat
 			if (fast_rand() % 100 >= chance)	continue;
 
 			hasReacted = true;
-			// Snapshot: the target transition below rewrites checked_tile in place, so the
-			// self transition would otherwise read the lifespan of what it just became.
+			// Snapshot: the target transition rewrites checked_tile in place, so self would otherwise read the new lifespan.
 			const std::uint8_t checked_lifespan = checked_tile.lifespan;
 			const Transition* targetTransition = m_registry.PickTransition(reaction->TargetTransitionsSpan);
 			const Transition* selfTransition = m_registry.PickTransition(reaction->SelfTransitionsSpan);
@@ -166,12 +157,8 @@ bool scree::Simulation::update_pixel_reaction(Grid& grid, Block& tile, const Mat
 void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, const MaterialData& tile_material, int x, int y) {
 	std::int8_t gravityDirection = tile_material.movement.Y_direction;
 
-	// Anchor tiles
-	//
-	// This used to walk all MAX_TAGS slots, and for every anchor tag it found, rebuild
-	// a direction array and re-read the same four neighbours -- so a material anchored
-	// to two tags read eight neighbours to look at four tiles. Each neighbour is now
-	// read once and matched against every anchor tag at once.
+	// Anchor tiles: each neighbour is read once and matched against every anchor tag at once.
+	// The old code re-read the four neighbours per anchor tag.
 	if (tile_material.anchorTagBitmask) {
 		const std::array<Vec2i, 4> directions = { {{0, -gravityDirection}, {1, 0}, {-1, 0}, {0, gravityDirection}} };
 
@@ -218,7 +205,7 @@ void scree::Simulation::update_pixel_movement(Grid& grid, Block& tile, const Mat
 		}
 	}
 
-	// Cacading tiles
+	// Cascading tiles
 	if (tile_material.movement.can_cascade)
 	{
 		if (fast_rand() & 1)

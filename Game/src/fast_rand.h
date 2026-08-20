@@ -6,10 +6,8 @@ namespace scree
 {
 	namespace detail { inline std::uint32_t& rand_state() { static std::uint32_t state = 123456789; return state; } }
 
-	// Resetting the state makes a run reproducible: the simulation takes every one of
-	// its coin flips from here, so the same seed over the same starting grid replays
-	// the same frames. The benchmark reseeds before each timed run so that repeats
-	// measure the same work rather than drifting apart.
+	// Same seed over the same starting grid replays the same frames; the benchmark
+	// reseeds before each timed run so repeats measure the same work.
 	inline void fast_rand_seed(std::uint32_t seed)
 	{
 		detail::rand_state() = seed ? seed : 123456789;	// zero is a fixed point of xorshift

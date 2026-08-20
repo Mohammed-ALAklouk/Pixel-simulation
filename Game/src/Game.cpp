@@ -59,8 +59,8 @@ scree::Game::Game()
 	std::error_code ignored;
 	std::filesystem::create_directories(canvases_path(), ignored);
 
-	// The chrome is fixed but the grid is centred in whatever is left, so the layout
-	// survives a resize -- compute_layout re-runs every frame off the live window size.
+	// The chrome is fixed; the grid centres in what's left, so the layout survives a resize
+	// (compute_layout re-runs each frame off the live window size).
 #if !defined(PLATFORM_WEB)
 	// Web sizes the canvas itself (web_sync_viewport); raylib's own resize handler would
 	// fight it back to CSS pixels, so the flag stays off there.
@@ -71,10 +71,8 @@ scree::Game::Game()
 	// Before LoadFonts so the atlas rasterises at the device-pixel size.
 	web_sync_viewport();
 #endif
-	// Window/taskbar icon: the pixel-S mark at several sizes so the OS picks a crisp
-	// native one for the title bar and taskbar rather than downscaling a single large
-	// PNG. Loaded from assets/ so it tracks the same folder as materials.json; any
-	// missing size is skipped and a fully missing set just leaves the default icon.
+	// Window/taskbar icon at several sizes so the OS picks a crisp one rather than downscaling.
+	// Loaded from assets/; missing sizes are skipped, a fully missing set leaves the default icon.
 	{
 		const int icon_sizes[] = { 16, 32, 48, 64, 256 };
 		Image icons[5];
@@ -91,10 +89,9 @@ scree::Game::Game()
 			for (int i = 0; i < icon_count; ++i) UnloadImage(icons[i]);
 		}
 	}
-	// Maximised after the window exists, not via FLAG_WINDOW_MAXIMIZED: the flag makes GLFW
-	// open it maximised without raising the resize callback, so raylib keeps reporting the
-	// requested size and the whole interface renders into the top-left corner of a much
-	// larger window. Window_size stays the size it restores down to.
+	// Maximised after the window exists, not via FLAG_WINDOW_MAXIMIZED: that flag skips the
+	// resize callback, so raylib keeps reporting the requested size and everything renders into
+	// the top-left corner. Window_size stays the size it restores down to.
 #if defined(PLATFORM_WEB)
 	// The canvas tracks window.innerWidth/Height, clamped to this min; a desktop-sized
 	// floor would force the canvas past a small viewport, so keep it low and let it reflow.
@@ -106,8 +103,7 @@ scree::Game::Game()
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
 	ui::LoadFonts();
-	// Before ApplyTheme, whose initial UpdateTheme snaps the chrome to ActiveTheme -- so the
-	// first frame is already on the saved theme rather than easing over from the default.
+	// Before ApplyTheme, so the first frame is already on the saved theme rather than easing from the default.
 	ui::LoadSettings();
 	ui::ApplyTheme();
 
@@ -135,9 +131,8 @@ scree::Game::Game()
 	composite_intensity_loc = GetShaderLocation(composite_shader, "intensity");
 
 	grid.Create(GridSize, GridSize,  &material_registry);
-	// `pixels` starts fully transparent, and the renderer only converts chunks marked
-	// dirty -- so a chunk untouched since startup would never be written and the canvas
-	// behind would show through it. Clear marks every chunk, so frame one fills the lot.
+	// The renderer only converts dirty chunks, so a chunk untouched since startup would never
+	// be written. Clear marks every chunk, so frame one fills the whole buffer.
 	grid.Clear();
 	compute_layout();
 	srand(static_cast<unsigned int>(time(NULL)));
@@ -240,25 +235,21 @@ void scree::Game::render()
 	auto render_clock = std::chrono::high_resolution_clock::now();
 
 	compute_layout();
-	// Re-tints the whole chrome off the theme chosen in the bottom bar. Done before drawing
-	// so the backgrounds below agree with the panels rlImGui puts on top of them; the ease
-	// inside means switching theme sweeps across rather than snapping.
+	// Re-tints the chrome off the chosen theme. Done before drawing so the backgrounds agree
+	// with the panels rlImGui draws on top; the ease inside makes a theme switch sweep, not snap.
 	ui::UpdateTheme(ui::ThemeOptions[ui::ActiveTheme].seed, delta);
 
 	BeginDrawing();
 	ClearBackground(ui::theme.WindowBg);
 	DrawRectangleRec(canvas_region, ui::theme.CanvasBg);
 
-	// Update_grid marks the mask itself, but it is not the only thing that writes to
-	// the grid: the brush and a material reload both land between updates, and while
-	// paused they are the only writes there are. Marking again here picks those up.
+	// Update_grid marks the mask, but the brush and material reloads also write between updates
+	// (and are the only writes while paused). Marking again here picks those up.
 	grid.Mark_chunks_for_render();
 
-	// Only the chunks that changed are converted -- the rest of `pixels` still holds
-	// what they looked like last frame, which is still what they look like now. The
-	// upload below is unchanged and still covers the whole buffer: one UpdateTexture
-	// costs ~0.2ms, while a per-chunk UpdateTextureRec pays driver overhead per call
-	// and overtakes it once a scene gets busy.
+	// Only changed chunks are converted; the rest of `pixels` still holds last frame's values.
+	// The upload still covers the whole buffer: one UpdateTexture (~0.2ms) beats per-chunk
+	// UpdateTextureRec, which pays driver overhead per call.
 	for (int y = 0; y != GridSize; y++)
 	{
 		int chunk_y = y >> CHUNK_SHIFT; // equivalent to y / CHUNK_SIZE, but faster
@@ -348,8 +339,7 @@ void scree::Game::render()
 	rlImGuiEnd();
 	UI_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - ui_clock).count();
 
-	// Everything above is the actual work of building the frame. EndDrawing below blocks on
-	// the 60 FPS frame limiter -- pure idle, not rendering -- so it is left out of the span.
+	// EndDrawing below blocks on the 60 FPS limiter (pure idle), so it's left out of the render span.
 	render_time = std::chrono::duration<float>(
 		std::chrono::high_resolution_clock::now() - render_clock).count() - UI_time;
 
