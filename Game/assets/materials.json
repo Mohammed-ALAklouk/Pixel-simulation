@@ -71,7 +71,30 @@
         "on_death": []
       },
       "tags": { "wet": 100, "matter": 100 },
-      "reactions": []
+      "reactions": [
+        {
+          "target_type": "material",
+          "target": "Snow",
+          "chance": 3,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Ice",
+          "chance": 1,
+          "scan_sample": "first_to_react",
+          "halt_update": true,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
+          ]
+        }
+      ]
     },
 
     {
@@ -870,16 +893,6 @@
           "self_transitions": [
             { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" }
           ]
-        },
-        {
-          "target_type": "tag",
-          "target": "wet",
-          "scan_sample": "first_to_react",
-          "halt_update": true,
-          "self_transitions": [
-            { "no_transition": false, "material": "Water", "weight": 1, "lifespan_base": "initial" },
-            { "no_transition": true, "material": "", "weight": 3, "lifespan_base": "self" }
-          ]
         }
       ]
     },
@@ -917,7 +930,7 @@
       "emission": 160,
       "movement": {
         "y_direction": 1,
-        "density": 45,
+        "density": 51,
         "scatter_chance": 5,
         "can_fall": true,
         "can_cascade": true,
@@ -954,6 +967,17 @@
           ],
           "target_transitions": [
             { "no_transition": false, "material": "Steam", "weight": 1, "lifespan_base": "initial" }
+          ]
+        },
+        {
+          "target_type": "material",
+          "target": "Sand",
+          "scan_sample": "first_to_react",
+          "chance": 5,
+          "halt_update": false,
+          "self_transitions": [],
+          "target_transitions": [
+            { "no_transition": false, "material": "Molten Glass", "weight": 1, "lifespan_base": "reactor" }
           ]
         }
       ]
