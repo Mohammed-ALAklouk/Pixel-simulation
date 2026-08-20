@@ -34,6 +34,11 @@ namespace scree
 		void processInputs();
 		void UI();
 		void run();
+		void tick();
+#if defined(PLATFORM_WEB)
+		void web_sync_viewport();
+		int web_last_w = 0, web_last_h = 0;
+#endif
 		// Chrome sizes are fixed, so this only has to place the grid in what is left over.
 		void compute_layout();
 		void update_stats();
@@ -109,6 +114,7 @@ namespace scree
 		float update_time = 0;
 		float render_time = 0;
 		float delta = 0;
+		std::chrono::high_resolution_clock::time_point delta_clock;
 
 		bool show_active_chunks = false;
 		bool show_bench_marks = false;

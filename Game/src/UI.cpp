@@ -38,13 +38,14 @@ namespace
 
 	// Design units to pixels. Every offset, padding and control size below is written at
 	// 1.0 and passed through here, so metrics::Scale resizes the whole interface.
-	constexpr float S(float v) { return v * m::Scale; }
+	inline float S(float v) { return v * m::Scale * m::UiScale; }
 
 	// PushFont(nullptr, size) keeps the current face and changes only the size, which is
-	// what happens when no system font was found.
+	// what happens when no system font was found. Size tracks UiScale so text rasterises
+	// at device resolution on a high-DPI canvas.
 	struct FontScope
 	{
-		explicit FontScope(float size) { ImGui::PushFont(scree::ui::Font, size); }
+		explicit FontScope(float size) { ImGui::PushFont(scree::ui::Font, size * m::UiScale); }
 		~FontScope() { ImGui::PopFont(); }
 	};
 
@@ -697,6 +698,9 @@ namespace
 				g.fps_display >= 55.0f ? c::Good : c::Warn);
 			r -= S(14.0f);
 
+#if !defined(PLATFORM_WEB)
+			// The materials file chip is desktop-only: on web the file is baked into the
+			// build and its reload/import/save/open-in-editor actions do not apply.
 			const char* name = "materials.json";
 			const std::string customName = FileName(g.custom_file_path);
 			const bool hasCustom = !customName.empty();
@@ -777,6 +781,7 @@ namespace
 				if (ChromeButton("X", ImVec2(clearW, S(31.0f))))
 					g.clear_custom_materials();
 			}
+#endif
 		}
 		const float rightStart = r;
 
@@ -1052,15 +1057,17 @@ namespace
 		ImGui::SetCursorPos(ImVec2(x, y));
 		ImGui::SetNextItemWidth(w);
 
-		// Leading spaces reserve room for the swatch drawn over the box below; a combo's
-		// preview takes a string and nothing else.
-		char preview[32];
-		std::snprintf(preview, sizeof(preview), "    %s", ui::ThemeOptions[ui::ActiveTheme].name);
-
+		// Swatch and name are drawn manually below, so the preview is blank -- a spacer
+		// string would clear the swatch by the font's space width, which Inter renders narrow.
 		// The global window padding is zero so the docked bars can sit flush; the popup is
 		// the one window that needs its own breathing room back.
+		// The box rect, captured before BeginCombo: once the popup opens, GetItemRect*
+		// reports the popup window instead of the button, which drags the preview down.
+		const ImVec2 boxMin = ImGui::GetCursorScreenPos();
+		const float boxCenterY = boxMin.y + ImGui::GetFrameHeight() * 0.5f;
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, S(4.0f)));
-		const bool open = ImGui::BeginCombo("##theme", preview, ImGuiComboFlags_HeightLargest);
+		const bool open = ImGui::BeginCombo("##theme", "", ImGuiComboFlags_HeightLargest);
 		ImGui::PopStyleVar();
 
 		if (open)
@@ -1075,12 +1082,18 @@ namespace
 					ui::SaveSettings();   // persist the pick so it survives the next launch
 				}
 
-				const ImVec2 p = ImGui::GetItemRectMin();
+				// Swatch and name centred in the row's real rect, matching the closed box,
+				// so they hold at any UI scale instead of drifting from fixed offsets.
+				const ImVec2 rmin = ImGui::GetItemRectMin();
+				const ImVec2 rmax = ImGui::GetItemRectMax();
 				ImDrawList* pdl = ImGui::GetWindowDrawList();
 				const RGB& seed = ui::ThemeOptions[i].seed;
-				pdl->AddRectFilled(ImVec2(p.x + S(7.0f), p.y + S(7.0f)), ImVec2(p.x + S(22.0f), p.y + S(22.0f)),
+				const float sw = S(15.0f);
+				const float sTop = (rmin.y + rmax.y) * 0.5f - sw * 0.5f;
+				pdl->AddRectFilled(ImVec2(rmin.x + S(8.0f), sTop), ImVec2(rmin.x + S(8.0f) + sw, sTop + sw),
 					U32(scree::ui::hex(seed.r, seed.g, seed.b)), 2.0f);
-				pdl->AddText(ImVec2(p.x + S(29.0f), p.y + S(2.0f)),
+				const float rowFh = ImGui::GetFontSize();
+				pdl->AddText(ImVec2(rmin.x + S(29.0f), (rmin.y + rmax.y) * 0.5f - rowFh * 0.5f),
 					U32(selected ? ui::theme.AccentText : ui::theme.TextDim), ui::ThemeOptions[i].name);
 				ImGui::PopID();
 			}
@@ -1088,11 +1101,20 @@ namespace
 		}
 
 		// Back in the owning window now, so this lands on the box rather than the popup.
+		// Centred in the combo's real rect so it holds at any UI scale.
 		const RGB& active = ui::ThemeOptions[ui::ActiveTheme].seed;
-		ImDrawList* dl = ImGui::GetWindowDrawList();
-		dl->AddRectFilled(ImVec2(org.x + x + S(8.0f), org.y + y + S(9.0f)),
-			ImVec2(org.x + x + S(23.0f), org.y + y + S(24.0f)),
+		const float swatch = S(15.0f);
+		const float swatchTop = boxCenterY - swatch * 0.5f;
+		ImGui::GetWindowDrawList()->AddRectFilled(
+			ImVec2(boxMin.x + S(8.0f), swatchTop),
+			ImVec2(boxMin.x + S(8.0f) + swatch, swatchTop + swatch),
 			U32(scree::ui::hex(active.r, active.g, active.b)), 2.0f);
+
+		// The name, past the swatch and centred in the box like the popup rows.
+		const float fh = ImGui::GetFontSize();
+		ImGui::GetWindowDrawList()->AddText(
+			ImVec2(boxMin.x + S(29.0f), boxCenterY - fh * 0.5f),
+			U32(ui::theme.TextDim), ui::ThemeOptions[ui::ActiveTheme].name);
 
 		PopComboStyle();
 	}
@@ -1158,6 +1180,7 @@ namespace
 			if (ChromeButton("BLOOM", ImVec2(S(92.0f), btnH), g.bloom_enabled))
 				g.bloom_enabled = !g.bloom_enabled;
 
+#if !defined(PLATFORM_WEB)
 			const float canvasW = S(126.0f);
 			r -= S(20.0f) + canvasW;
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
@@ -1174,6 +1197,7 @@ namespace
 					"Save canvas", g.canvases_path(), "canvas.json");
 				if (!picked.empty()) g.export_canvas(picked);
 			}
+#endif
 		}
 
 		EndChrome();
@@ -1767,6 +1791,10 @@ void scree::ui::ApplyTheme()
 	s.PopupRounding = 2.0f;
 	s.DisabledAlpha = 0.38f;
 
+	// The sizes above are written at 1.0; scale them to match the S()-geometry and fonts,
+	// so control padding tracks the device-pixel canvas instead of drifting from it.
+	s.ScaleAllSizes(metrics::UiScale);
+
 	ImVec4* co = s.Colors;
 	co[ImGuiCol_WindowBg] = col::Panel;
 	co[ImGuiCol_ChildBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1808,14 +1836,23 @@ void scree::ui::LoadFonts()
 	};
 
 	ImGuiIO& io = ImGui::GetIO();
+#if defined(PLATFORM_WEB)
+	// No host fonts exist in the browser filesystem, so ship one; without it ImGui's
+	// bitmap font stands in and looks soft at any size.
+	{
+		const std::string inter = std::string(GetApplicationDirectory()) + "assets/Inter-Regular.ttf";
+		if (FileExists(inter.c_str()))
+			Font = io.Fonts->AddFontFromFileTTF(inter.c_str(), metrics::FontBody * metrics::UiScale);
+	}
+#endif
 	for (const char* path : candidates)
 	{
-		if (!FileExists(path)) continue;
-		Font = io.Fonts->AddFontFromFileTTF(path, metrics::FontBody);
 		if (Font) break;
+		if (!FileExists(path)) continue;
+		Font = io.Fonts->AddFontFromFileTTF(path, metrics::FontBody * metrics::UiScale);
 	}
 
-	ImGui::GetStyle().FontSizeBase = metrics::FontBody;
+	ImGui::GetStyle().FontSizeBase = metrics::FontBody * metrics::UiScale;
 }
 
 // ----------------------------------------------------------------- settings

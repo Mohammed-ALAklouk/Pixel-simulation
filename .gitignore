@@ -13,6 +13,7 @@ obj/
 build/
 out/
 .deps/
+.deps-web/
 CMakeUserPresets.json
 CMakeSettings.json
 

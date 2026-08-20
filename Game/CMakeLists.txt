@@ -87,7 +87,18 @@ endif()
 # switch. So a forward-slash path under a space-free directory came out bare and
 # cmd rejected it: `D:/a/repo/...` failed with `Invalid switch - "a"`.
 # SHELL_PATH converts to backslashes, VERBATIM adds quotes when they're needed.
-if (WIN32)
+# Web bakes assets into the binary via --preload-file, so it skips the dev
+# symlink; the else() branch would also run cmake -E create_symlink on the
+# Windows host, which needs Developer Mode.
+if (EMSCRIPTEN)
+    target_link_options(Game PRIVATE
+        -fwasm-exceptions
+        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@assets"
+        "SHELL:--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html")
+    set_target_properties(Game PROPERTIES SUFFIX ".html")
+    set_property(TARGET Game APPEND PROPERTY LINK_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/shell.html")
+elseif (WIN32)
     set(game_assets_link "$<SHELL_PATH:$<TARGET_FILE_DIR:Game>/assets>")
     add_custom_command(TARGET Game POST_BUILD
         COMMAND cmd /c if exist ${game_assets_link} rmdir ${game_assets_link}

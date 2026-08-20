@@ -82,7 +82,17 @@ namespace scree::ui
 		// Multiplies the type and nothing else. Above 1.0 because raylib hands the window
 		// raw pixels with no notion of the desktop's scale factor, so the base sizes render
 		// physically small on a scaled display. This is the knob for text size.
+		// The browser already applies device scaling, so web stays at 1.0.
+#if defined(PLATFORM_WEB)
+		constexpr float TextScale = 1.0f;
+#else
 		constexpr float TextScale = 1.5f;
+#endif
+
+		// Runtime device-pixel ratio. On web the canvas renders at device pixels for
+		// crispness, so both geometry (S) and type multiply by this to hold physical size;
+		// Game sets it from devicePixelRatio. Desktop leaves it 1.0.
+		inline float UiScale = 1.0f;
 
 		// Bars and rows are sized off the type they have to hold, so these are the few
 		// measurements that track TextScale rather than Scale.

@@ -5,10 +5,15 @@
 
 #include <filesystem>
 
+#if defined(PLATFORM_WEB)
+#define GLSL_HEADER "#version 300 es\nprecision highp float;\n"
+#else
+#define GLSL_HEADER "#version 330\n"
+#endif
+
 namespace
 {
-	const char* BlurShader = R"(#version 330
-
+	const char* BlurShader = GLSL_HEADER R"(
 in vec2 fragTexCoord;
 out vec4 finalColor;
 
@@ -32,8 +37,7 @@ void main()
 }
 )";
 
-	const char* CompositeShader = R"(#version 330
-
+	const char* CompositeShader = GLSL_HEADER R"(
 in vec2 fragTexCoord;
 out vec4 finalColor;
 
@@ -57,8 +61,16 @@ scree::Game::Game()
 
 	// The chrome is fixed but the grid is centred in whatever is left, so the layout
 	// survives a resize -- compute_layout re-runs every frame off the live window size.
+#if !defined(PLATFORM_WEB)
+	// Web sizes the canvas itself (web_sync_viewport); raylib's own resize handler would
+	// fight it back to CSS pixels, so the flag stays off there.
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+#endif
 	InitWindow(Window_size.x, Window_size.y, "scree");
+#if defined(PLATFORM_WEB)
+	// Before LoadFonts so the atlas rasterises at the device-pixel size.
+	web_sync_viewport();
+#endif
 	// Window/taskbar icon: the pixel-S mark at several sizes so the OS picks a crisp
 	// native one for the title bar and taskbar rather than downscaling a single large
 	// PNG. Loaded from assets/ so it tracks the same folder as materials.json; any
@@ -83,8 +95,14 @@ scree::Game::Game()
 	// open it maximised without raising the resize callback, so raylib keeps reporting the
 	// requested size and the whole interface renders into the top-left corner of a much
 	// larger window. Window_size stays the size it restores down to.
+#if defined(PLATFORM_WEB)
+	// The canvas tracks window.innerWidth/Height, clamped to this min; a desktop-sized
+	// floor would force the canvas past a small viewport, so keep it low and let it reflow.
+	SetWindowMinSize(640, 480);
+#else
 	MaximizeWindow();
 	SetWindowMinSize(1300, 820);
+#endif
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
 	ui::LoadFonts();
@@ -537,32 +555,77 @@ void scree::Game::handle_hotkeys()
 	}
 }
 
-void scree::Game::run()
+void scree::Game::tick()
 {
+#if defined(PLATFORM_WEB)
+	web_sync_viewport();
+#endif
 	using clock = std::chrono::high_resolution_clock;
 	auto since = [](clock::time_point from) {
 		return std::chrono::duration<float>(clock::now() - from).count();
 	};
 
-	auto delta_clock = clock::now();
-	while (!WindowShouldClose())
+	delta = since(delta_clock);
+	delta_clock = clock::now();
+
+	auto bench_clock = clock::now();
+	processInputs();
+	input_time = since(bench_clock);
+
+	bench_clock = clock::now();
+	update();
+	update_time = since(bench_clock);
+
+	// render() sets render_time itself, measured to exclude the frame-limiter wait.
+	render();
+
+	update_stats();
+}
+
+#if defined(PLATFORM_WEB)
+#include <emscripten.h>
+
+// Render at device pixels for crispness: size the canvas backing store to
+// innerWidth*dpr and drive the UI scale by dpr so physical sizes hold. CSS keeps the
+// canvas filling the window, so the browser maps device pixels 1:1.
+void scree::Game::web_sync_viewport()
+{
+	const double dpr = EM_ASM_DOUBLE({ return window.devicePixelRatio || 1; });
+	const int dw = (int)(EM_ASM_INT({ return window.innerWidth; }) * dpr + 0.5);
+	const int dh = (int)(EM_ASM_INT({ return window.innerHeight; }) * dpr + 0.5);
+
+	if (dw != web_last_w || dh != web_last_h)
 	{
-		delta = since(delta_clock);
-		delta_clock = clock::now();
-
-		auto bench_clock = clock::now();
-		processInputs();
-		input_time = since(bench_clock);
-
-		bench_clock = clock::now();
-		update();
-		update_time = since(bench_clock);
-
-		// render() sets render_time itself, measured to exclude the frame-limiter wait.
-		render();
-
-		update_stats();
+		web_last_w = dw;
+		web_last_h = dh;
+		SetWindowSize(dw, dh);
+		// glfwSetWindowSize also writes the canvas CSS size; put it back to fill the window.
+		EM_ASM({
+			var c = document.getElementById('canvas');
+			if (c) { c.style.width = '100vw'; c.style.height = '100vh'; }
+		});
 	}
+	ui::metrics::UiScale = (float)dpr;
+}
+#endif
+
+void scree::Game::run()
+{
+	delta_clock = std::chrono::high_resolution_clock::now();
+#if defined(PLATFORM_WEB)
+	// Browsers own the frame loop; a blocking while() would hang the tab. main()'s
+	// try/catch cannot cover a tick that runs in a later callback, so it guards here.
+	// simulate_infinite_loop=0: return instead of unwinding by throw, which under
+	// -fwasm-exceptions would run ~Game() while the callback still holds this.
+	emscripten_set_main_loop_arg(
+		[](void* self) {
+			try { static_cast<Game*>(self)->tick(); }
+			catch (const std::exception& e) { TraceLog(LOG_ERROR, "tick: %s", e.what()); }
+		}, this, 0, 0);
+#else
+	while (!WindowShouldClose())
+		tick();
+#endif
 }
 
 void scree::Game::draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius)

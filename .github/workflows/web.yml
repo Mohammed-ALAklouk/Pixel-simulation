@@ -1,0 +1,69 @@
+name: Deploy Web
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Pages deploy needs these; the build job itself only reads the repo.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deploy at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      # Pinned to the version built against locally; raylib 6.0's ES3 web path
+      # tracks the Emscripten release, so this moves deliberately, not by "latest".
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.7
+
+      # Web build uses its own FetchContent tree (FETCHCONTENT_BASE_DIR in the
+      # web preset), so it caches separately from the Windows .deps.
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: .deps-web
+          key: deps-web-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Configure
+        run: cmake --preset web
+
+      - name: Build
+        run: cmake --build build/web
+
+      # Pages serves index.html at the root; the emitted shell is scree.html and
+      # still loads scree.js by name, so only the HTML is renamed.
+      - name: Assemble site
+        run: |
+          mkdir -p public
+          cp build/web/Game/scree.js build/web/Game/scree.wasm build/web/Game/scree.data public/
+          cp build/web/Game/scree.html public/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
