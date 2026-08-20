@@ -378,14 +378,6 @@ void scree::Game::RenderBloom()
 
 void scree::Game::ProcessInputs()
 {
-	float mouse_wheel = GetMouseWheelMove();
-	cursorRadius += mouse_wheel;
-	if (cursorRadius < 1)
-		cursorRadius = 1;
-	if (cursorRadius > 100)
-		cursorRadius = 100;
-
-
 	HandleHotkeys();
 
 	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
