@@ -52,12 +52,12 @@ void main()
 }
 
 scree::Game::Game()
-	: simulation(material_registry)
+	: simulation(materialRegistry)
 {
-	load_materials();
+	LoadMaterials();
 
 	std::error_code ignored;
-	std::filesystem::create_directories(canvases_path(), ignored);
+	std::filesystem::create_directories(CanvasesPath(), ignored);
 
 	// The chrome is fixed; the grid centres in what's left, so the layout survives a resize
 	// (compute_layout re-runs each frame off the live window size).
@@ -66,10 +66,10 @@ scree::Game::Game()
 	// fight it back to CSS pixels, so the flag stays off there.
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 #endif
-	InitWindow(Window_size.x, Window_size.y, "scree");
+	InitWindow(windowSize.x, windowSize.y, "scree");
 #if defined(PLATFORM_WEB)
 	// Before LoadFonts so the atlas rasterises at the device-pixel size.
-	web_sync_viewport();
+	WebSyncViewport();
 #endif
 	// Window/taskbar icon at several sizes so the OS picks a crisp one rather than downscaling.
 	// Loaded from assets/; missing sizes are skipped, a fully missing set leaves the default icon.
@@ -80,7 +80,7 @@ scree::Game::Game()
 		for (int px : icon_sizes)
 		{
 			Image img = LoadImage(
-				(assets_path() + "/window-icon-" + std::to_string(px) + ".png").c_str());
+				(AssetsPath() + "/window-icon-" + std::to_string(px) + ".png").c_str());
 			if (img.data != nullptr) icons[icon_count++] = img;
 		}
 		if (icon_count > 0)
@@ -91,7 +91,7 @@ scree::Game::Game()
 	}
 	// Maximised after the window exists, not via FLAG_WINDOW_MAXIMIZED: that flag skips the
 	// resize callback, so raylib keeps reporting the requested size and everything renders into
-	// the top-left corner. Window_size stays the size it restores down to.
+	// the top-left corner. windowSize stays the size it restores down to.
 #if defined(PLATFORM_WEB)
 	// The canvas tracks window.innerWidth/Height, clamped to this min; a desktop-sized
 	// floor would force the canvas past a small viewport, so keep it low and let it reflow.
@@ -108,58 +108,58 @@ scree::Game::Game()
 	ui::ApplyTheme();
 
 	pixels.resize(GridSize * GridSize);
-	emissive_pixels.resize(GridSize * GridSize);
+	emissivePixels.resize(GridSize * GridSize);
 
 	Image blank = GenImageColor(GridSize, GridSize, BLACK);
 	tex = LoadTextureFromImage(blank);
-	emissive_tex = LoadTextureFromImage(blank);
+	emissiveTex = LoadTextureFromImage(blank);
 	UnloadImage(blank);                      // GPU has it now; drop the CPU copy
 	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
-	SetTextureFilter(emissive_tex, TEXTURE_FILTER_BILINEAR);
-	SetTextureWrap(emissive_tex, TEXTURE_WRAP_CLAMP);
+	SetTextureFilter(emissiveTex, TEXTURE_FILTER_BILINEAR);
+	SetTextureWrap(emissiveTex, TEXTURE_WRAP_CLAMP);
 
-	bloom_target = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
-	bloom_scratch = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
-	SetTextureFilter(bloom_target.texture, TEXTURE_FILTER_BILINEAR);
-	SetTextureFilter(bloom_scratch.texture, TEXTURE_FILTER_BILINEAR);
-	SetTextureWrap(bloom_target.texture, TEXTURE_WRAP_CLAMP);
-	SetTextureWrap(bloom_scratch.texture, TEXTURE_WRAP_CLAMP);
+	bloomTarget = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
+	bloomScratch = LoadRenderTexture(static_cast<int>(BloomSize), static_cast<int>(BloomSize));
+	SetTextureFilter(bloomTarget.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(bloomScratch.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureWrap(bloomTarget.texture, TEXTURE_WRAP_CLAMP);
+	SetTextureWrap(bloomScratch.texture, TEXTURE_WRAP_CLAMP);
 
-	blur_shader = LoadShaderFromMemory(nullptr, BlurShader);
-	composite_shader = LoadShaderFromMemory(nullptr, CompositeShader);
-	blur_direction_loc = GetShaderLocation(blur_shader, "direction");
-	composite_intensity_loc = GetShaderLocation(composite_shader, "intensity");
+	blurShader = LoadShaderFromMemory(nullptr, BlurShader);
+	compositeShader = LoadShaderFromMemory(nullptr, CompositeShader);
+	blurDirectionLoc = GetShaderLocation(blurShader, "direction");
+	compositeIntensityLoc = GetShaderLocation(compositeShader, "intensity");
 
-	grid.Create(GridSize, GridSize,  &material_registry);
+	grid.Create(GridSize, GridSize,  &materialRegistry);
 	// The renderer only converts dirty chunks, so a chunk untouched since startup would never
 	// be written. Clear marks every chunk, so frame one fills the whole buffer.
 	grid.Clear();
-	compute_layout();
+	ComputeLayout();
 	srand(static_cast<unsigned int>(time(NULL)));
 }
 
-void scree::Game::compute_layout()
+void scree::Game::ComputeLayout()
 {
-	Window_size.x = GetScreenWidth();
-	Window_size.y = GetScreenHeight();
+	windowSize.x = GetScreenWidth();
+	windowSize.y = GetScreenHeight();
 
-	if (material_load_error_message.empty())
+	if (materialLoadErrorMessage.empty())
 	{
-		layout_banner_h = 0.0f;
+		layoutBannerH = 0.0f;
 	}
 	else
 	{
 		// A single log line is often long enough to wrap, so count the rows it will
 		// actually occupy rather than the newlines it contains.
-		const float text_width = static_cast<float>(Window_size.x)
+		const float text_width = static_cast<float>(windowSize.x)
 			- ui::metrics::BannerTextInset - ui::metrics::BannerTextRight;
 		const int per_line = std::max(20, static_cast<int>(text_width / ui::metrics::BannerGlyphW));
 
 		int lines = 0;
-		for (std::size_t start = 0; start < material_load_error_message.size(); )
+		for (std::size_t start = 0; start < materialLoadErrorMessage.size(); )
 		{
-			std::size_t end = material_load_error_message.find('\n', start);
-			if (end == std::string::npos) end = material_load_error_message.size();
+			std::size_t end = materialLoadErrorMessage.find('\n', start);
+			if (end == std::string::npos) end = materialLoadErrorMessage.size();
 
 			const int length = static_cast<int>(end - start);
 			lines += std::max(1, (length + per_line - 1) / per_line);
@@ -167,85 +167,85 @@ void scree::Game::compute_layout()
 		}
 
 		lines = std::clamp(lines, 1, ui::metrics::BannerMaxLines);
-		layout_banner_h = lines * ui::metrics::BannerLineH + ui::metrics::BannerPad;
+		layoutBannerH = lines * ui::metrics::BannerLineH + ui::metrics::BannerPad;
 	}
 
-	const float top = ui::metrics::TopBarH + layout_banner_h;
-	canvas_region = Rectangle{
+	const float top = ui::metrics::TopBarH + layoutBannerH;
+	canvasRegion = Rectangle{
 		ui::metrics::LeftRailW,
 		top,
-		static_cast<float>(Window_size.x) - ui::metrics::LeftRailW,
-		static_cast<float>(Window_size.y) - top - ui::metrics::BottomBarH
+		static_cast<float>(windowSize.x) - ui::metrics::LeftRailW,
+		static_cast<float>(windowSize.y) - top - ui::metrics::BottomBarH
 	};
 
 	// Never magnified past 1:1 -- a fractional tile size larger than a pixel would make
 	// some grid cells a pixel wider than their neighbours under point filtering.
 	const float room = ui::metrics::CanvasPad * 2.0f;
-	const float fit = std::min(canvas_region.width - room, canvas_region.height - room) / GridSize;
-	TileSize = std::clamp(fit, 0.1f, 1.0f);
+	const float fit = std::min(canvasRegion.width - room, canvasRegion.height - room) / GridSize;
+	tileSize = std::clamp(fit, 0.1f, 1.0f);
 
-	const float side = GridSize * TileSize;
-	Grid_offset.x = canvas_region.x + (canvas_region.width - side) * 0.5f;
-	Grid_offset.y = canvas_region.y + (canvas_region.height - side) * 0.5f;
-	frame = Rectangle{ Grid_offset.x, Grid_offset.y, side, side };
+	const float side = GridSize * tileSize;
+	gridOffset.x = canvasRegion.x + (canvasRegion.width - side) * 0.5f;
+	gridOffset.y = canvasRegion.y + (canvasRegion.height - side) * 0.5f;
+	frame = Rectangle{ gridOffset.x, gridOffset.y, side, side };
 }
 
-void scree::Game::update_stats()
+void scree::Game::UpdateStats()
 {
-	stats_delta_accum += delta;
-	if (++stats_counter < StatsInterval) return;
+	statsDeltaAccum += delta;
+	if (++statsCounter < StatsInterval) return;
 
-	if (stats_delta_accum > 0.0f)
-		fps_display = stats_counter / stats_delta_accum;
-	stats_counter = 0;
-	stats_delta_accum = 0.0f;
+	if (statsDeltaAccum > 0.0f)
+		fpsDisplay = statsCounter / statsDeltaAccum;
+	statsCounter = 0;
+	statsDeltaAccum = 0.0f;
 
-	awake_chunk_count = 0;
-	for (int chunk_y = 0; chunk_y < grid.Get_height_chunks(); chunk_y++)
-		for (int chunk_x = 0; chunk_x < grid.Get_width_chunks(); chunk_x++)
-			if (grid.Is_chunk_active(chunk_x, chunk_y)) awake_chunk_count++;
+	awakeChunkCount = 0;
+	for (int chunk_y = 0; chunk_y < grid.GetHeightChunks(); chunk_y++)
+		for (int chunk_x = 0; chunk_x < grid.GetWidthChunks(); chunk_x++)
+			if (grid.IsChunkActive(chunk_x, chunk_y)) awakeChunkCount++;
 
 	int particles = 0;
-	for (int y = 0; y < grid.Get_height_px(); y++)
+	for (int y = 0; y < grid.GetHeightPx(); y++)
 	{
 		const Block* row = grid.Row(y);
-		for (int x = 0; x < grid.Get_width_px(); x++)
+		for (int x = 0; x < grid.GetWidthPx(); x++)
 			if (row[x].id != MaterialRegistry::AIR_ID) particles++;
 	}
-	particle_count = particles;
+	particleCount = particles;
 }
 
-void scree::Game::update()
+void scree::Game::Update()
 {
 	if (!paused)
 	{
-		for (int i = 0; i < updates_per_frame; i++)
-			simulation.Update_grid(grid);
+		for (int i = 0; i < updatesPerFrame; i++)
+			simulation.UpdateGrid(grid);
 	}
-	else if (step_once)
+	else if (stepOnce)
 	{
-		simulation.Update_grid(grid);
+		simulation.UpdateGrid(grid);
 	}
 
-	step_once = false;
+	stepOnce = false;
 }
 
-void scree::Game::render()
+void scree::Game::Render()
 {
 	auto render_clock = std::chrono::high_resolution_clock::now();
 
-	compute_layout();
+	ComputeLayout();
 	// Re-tints the chrome off the chosen theme. Done before drawing so the backgrounds agree
 	// with the panels rlImGui draws on top; the ease inside makes a theme switch sweep, not snap.
 	ui::UpdateTheme(ui::ThemeOptions[ui::ActiveTheme].seed, delta);
 
 	BeginDrawing();
 	ClearBackground(ui::theme.WindowBg);
-	DrawRectangleRec(canvas_region, ui::theme.CanvasBg);
+	DrawRectangleRec(canvasRegion, ui::theme.CanvasBg);
 
-	// Update_grid marks the mask, but the brush and material reloads also write between updates
+	// UpdateGrid marks the mask, but the brush and material reloads also write between updates
 	// (and are the only writes while paused). Marking again here picks those up.
-	grid.Mark_chunks_for_render();
+	grid.MarkChunksForRender();
 
 	// Only changed chunks are converted; the rest of `pixels` still holds last frame's values.
 	// The upload still covers the whole buffer: one UpdateTexture (~0.2ms) beats per-chunk
@@ -253,14 +253,14 @@ void scree::Game::render()
 	for (int y = 0; y != GridSize; y++)
 	{
 		int chunk_y = y >> CHUNK_SHIFT; // equivalent to y / CHUNK_SIZE, but faster
-		for (int chunk_x = 0; chunk_x != grid.Get_width_chunks(); chunk_x++)
+		for (int chunk_x = 0; chunk_x != grid.GetWidthChunks(); chunk_x++)
 		{
-			if (!grid.Should_render_chunk(chunk_x, chunk_y)) continue;
+			if (!grid.ShouldRenderChunk(chunk_x, chunk_y)) continue;
 			
 			int x0 = chunk_x << CHUNK_SHIFT; // equivalent to chunk_x * CHUNK_SIZE, but faster
 			const Block* row = grid.Row(y);
 			Color* out = pixels.data() + y * GridSize;
-			Color* glow = emissive_pixels.data() + y * GridSize;
+			Color* glow = emissivePixels.data() + y * GridSize;
 			// Air is written clear rather than black so the backdrop drawn under the grid
 			// shows through it; every other material stays fully opaque.
 			for (int x = x0; x < x0 + CHUNK_SIZE; x++)
@@ -272,9 +272,9 @@ void scree::Game::render()
 					continue;
 				}
 
-				out[x] = row[x].color.toRaylibColor();
+				out[x] = row[x].color.ToRaylibColor();
 
-				const std::uint8_t emission = material_registry.Get(row[x].id).emission;
+				const std::uint8_t emission = materialRegistry.Get(row[x].id).emission;
 				glow[x] = emission
 					? Color{ static_cast<unsigned char>(out[x].r * emission / 255),
 							 static_cast<unsigned char>(out[x].g * emission / 255),
@@ -284,26 +284,26 @@ void scree::Game::render()
 		}
 	}
 
-	grid.Clear_chunks_to_render();
+	grid.ClearChunksToRender();
 
 	UpdateTexture(tex, pixels.data());
 
 	Rectangle src{ 0, 0, (float)GridSize, (float)GridSize };
 
-	if (bloom_enabled)
+	if (bloomEnabled)
 	{
-		UpdateTexture(emissive_tex, emissive_pixels.data());
-		render_bloom();
+		UpdateTexture(emissiveTex, emissivePixels.data());
+		RenderBloom();
 	}
 
 	DrawTexturePro(tex, src, frame, Vector2{ 0, 0 }, 0.0f, WHITE);
 
-	if (bloom_enabled)
+	if (bloomEnabled)
 	{
-		SetShaderValue(composite_shader, composite_intensity_loc, &bloom_intensity, SHADER_UNIFORM_FLOAT);
+		SetShaderValue(compositeShader, compositeIntensityLoc, &bloomIntensity, SHADER_UNIFORM_FLOAT);
 		BeginBlendMode(BLEND_ADDITIVE);
-		BeginShaderMode(composite_shader);
-		DrawTexturePro(bloom_target.texture, Rectangle{ 0, 0, (float)BloomSize, -(float)BloomSize },
+		BeginShaderMode(compositeShader);
+		DrawTexturePro(bloomTarget.texture, Rectangle{ 0, 0, (float)BloomSize, -(float)BloomSize },
 			frame, Vector2{ 0, 0 }, 0.0f, WHITE);
 		EndShaderMode();
 		EndBlendMode();
@@ -311,15 +311,15 @@ void scree::Game::render()
 
 	DrawRectangleLinesEx(frame, 1, ui::col::GridEdge);
 
-	if (show_active_chunks)
+	if (showActiveChunks)
 	{
-		active_chunks.clear();
-		grid.Get_active_chunks(active_chunks);
-		for (auto chunk: active_chunks)
+		activeChunks.clear();
+		grid.GetActiveChunks(activeChunks);
+		for (auto chunk: activeChunks)
 		{
-			DrawRectangleLines(static_cast<int>(chunk.first * CHUNK_SIZE * TileSize + Grid_offset.x),
-				static_cast<int>(chunk.second * CHUNK_SIZE * TileSize + Grid_offset.y),
-				static_cast<int>(CHUNK_SIZE * TileSize), static_cast<int>(CHUNK_SIZE * TileSize),
+			DrawRectangleLines(static_cast<int>(chunk.first * CHUNK_SIZE * tileSize + gridOffset.x),
+				static_cast<int>(chunk.second * CHUNK_SIZE * tileSize + gridOffset.y),
+				static_cast<int>(CHUNK_SIZE * tileSize), static_cast<int>(CHUNK_SIZE * tileSize),
 				ui::col::ChunkEdge);
 		}
 	}
@@ -330,96 +330,96 @@ void scree::Game::render()
 	{
 		auto mouse_pos = GetMousePosition();
 		DrawCircleLines(static_cast<int>(mouse_pos.x), static_cast<int>(mouse_pos.y),
-			cursor_radius * TileSize, ui::theme.Ring);
+			cursorRadius * tileSize, ui::theme.Ring);
 	}
 
 	auto ui_clock = std::chrono::high_resolution_clock::now();
 	rlImGuiBegin();
 	UI();
 	rlImGuiEnd();
-	UI_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - ui_clock).count();
+	uiTime = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - ui_clock).count();
 
 	// EndDrawing below blocks on the 60 FPS limiter (pure idle), so it's left out of the render span.
-	render_time = std::chrono::duration<float>(
-		std::chrono::high_resolution_clock::now() - render_clock).count() - UI_time;
+	renderTime = std::chrono::duration<float>(
+		std::chrono::high_resolution_clock::now() - render_clock).count() - uiTime;
 
 	EndDrawing();
 }
 
-void scree::Game::render_bloom()
+void scree::Game::RenderBloom()
 {
 	const Rectangle bloom_src{ 0, 0, (float)BloomSize, -(float)BloomSize };
 	const Rectangle bloom_dest{ 0, 0, (float)BloomSize, (float)BloomSize };
 
-	BeginTextureMode(bloom_target);
+	BeginTextureMode(bloomTarget);
 	ClearBackground(BLACK);
-	DrawTexturePro(emissive_tex, Rectangle{ 0, 0, (float)GridSize, (float)GridSize },
+	DrawTexturePro(emissiveTex, Rectangle{ 0, 0, (float)GridSize, (float)GridSize },
 		bloom_dest, Vector2{ 0, 0 }, 0.0f, WHITE);
 	EndTextureMode();
 
 	auto blur_pass = [&](RenderTexture2D& to, RenderTexture2D& from, Vector2 direction)
 	{
-		SetShaderValue(blur_shader, blur_direction_loc, &direction, SHADER_UNIFORM_VEC2);
+		SetShaderValue(blurShader, blurDirectionLoc, &direction, SHADER_UNIFORM_VEC2);
 		BeginTextureMode(to);
 		ClearBackground(BLACK);
-		BeginShaderMode(blur_shader);
+		BeginShaderMode(blurShader);
 		DrawTexturePro(from.texture, bloom_src, bloom_dest, Vector2{ 0, 0 }, 0.0f, WHITE);
 		EndShaderMode();
 		EndTextureMode();
 	};
 
-	for (int pass = 0; pass < bloom_passes; pass++)
+	for (int pass = 0; pass < bloomPasses; pass++)
 	{
-		const float step = bloom_radius * (pass + 1) / (float)BloomSize;
-		blur_pass(bloom_scratch, bloom_target, Vector2{ step, 0.0f });
-		blur_pass(bloom_target, bloom_scratch, Vector2{ 0.0f, step });
+		const float step = bloomRadius * (pass + 1) / (float)BloomSize;
+		blur_pass(bloomScratch, bloomTarget, Vector2{ step, 0.0f });
+		blur_pass(bloomTarget, bloomScratch, Vector2{ 0.0f, step });
 	}
 }
 
-void scree::Game::processInputs()
+void scree::Game::ProcessInputs()
 {
 	float mouse_wheel = GetMouseWheelMove();
-	cursor_radius += mouse_wheel;
-	if (cursor_radius < 1)
-		cursor_radius = 1;
-	if (cursor_radius > 100)
-		cursor_radius = 100;
+	cursorRadius += mouse_wheel;
+	if (cursorRadius < 1)
+		cursorRadius = 1;
+	if (cursorRadius > 100)
+		cursorRadius = 100;
 
 
-	handle_hotkeys();
+	HandleHotkeys();
 
 	bool mouse_left_down = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 	bool mouse_right_down = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
 
 	Vector2 mouse_pos = GetMousePosition();
-	mouse_pos.x -= Grid_offset.x;
-	mouse_pos.y -= Grid_offset.y;
+	mouse_pos.x -= gridOffset.x;
+	mouse_pos.y -= gridOffset.y;
 
-	int mouse_x = static_cast<int>(mouse_pos.x / TileSize), mouse_y = static_cast<int>(mouse_pos.y / TileSize);
+	int mouse_x = static_cast<int>(mouse_pos.x / tileSize), mouse_y = static_cast<int>(mouse_pos.y / tileSize);
 	
 	
 	if ((!mouse_left_down && !mouse_right_down) || ImGui::GetIO().WantCaptureMouse) {
-		is_drawing_cursor = false;
+		isDrawingCursor = false;
 	}
-	else if ((mouse_left_down || mouse_right_down) && !is_drawing_cursor) {
-		cursor_start = mouse_pos;
-		is_drawing_cursor = true;
+	else if ((mouse_left_down || mouse_right_down) && !isDrawingCursor) {
+		cursorStart = mouse_pos;
+		isDrawingCursor = true;
 	}
 
 	
 
-	if (is_drawing_cursor)
+	if (isDrawingCursor)
 	{
 		Vector2 cursor_end = mouse_pos;
-		auto line = GetLine(cursor_start, cursor_end);
-		MaterialID material = static_cast<MaterialID>(mouse_left_down ? SelectedMaterial : MaterialRegistry::AIR_ID);
-		draw_stroke(line, material, cursor_radius);
-		cursor_start = cursor_end;
+		auto line = GetLine(cursorStart, cursor_end);
+		MaterialID material = static_cast<MaterialID>(mouse_left_down ? selectedMaterial : MaterialRegistry::AIR_ID);
+		DrawStroke(line, material, cursorRadius);
+		cursorStart = cursor_end;
 	}
 	
 }
 
-void scree::Game::begin_new_material()
+void scree::Game::BeginNewMaterial()
 {
 	newMaterial = MaterialData();
 	newMaterialName.clear();
@@ -429,147 +429,147 @@ void scree::Game::begin_new_material()
 	editedMaterialID = 0;
 }
 
-void scree::Game::begin_edit_material(MaterialID id)
+void scree::Game::BeginEditMaterial(MaterialID id)
 {
-	begin_new_material();
+	BeginNewMaterial();
 	editedMaterialID = id;
-	editedMaterial = &material_registry.GetMutable(id);
-	newMaterialName = material_registry.GetName(id);
-	newMaterialTransitions = material_registry.ReadTransitions(editedMaterial->lifespanData.OnDeathTransitionSpan);
-	newMaterialReactions = material_registry.ReadReactions(editedMaterial->reactionSpan);
+	editedMaterial = &materialRegistry.GetMutable(id);
+	newMaterialName = materialRegistry.GetName(id);
+	newMaterialTransitions = materialRegistry.ReadTransitions(editedMaterial->lifespanData.onDeathTransitionSpan);
+	newMaterialReactions = materialRegistry.ReadReactions(editedMaterial->reactionSpan);
 }
 
-void scree::Game::commit_material()
+void scree::Game::CommitMaterial()
 {
-	if (editing()) {
-		material_registry.RenameMaterial(editedMaterialID, newMaterialName);
-		material_registry.ReplaceMaterial(editedMaterialID, *editedMaterial,
+	if (Editing()) {
+		materialRegistry.RenameMaterial(editedMaterialID, newMaterialName);
+		materialRegistry.ReplaceMaterial(editedMaterialID, *editedMaterial,
 			newMaterialTransitions, newMaterialReactions);
 	}
 	else {
-		material_registry.AddMaterial(newMaterialName, newMaterial,
+		materialRegistry.AddMaterial(newMaterialName, newMaterial,
 			newMaterialTransitions, newMaterialReactions);
 	}
 
-	begin_new_material();
+	BeginNewMaterial();
 }
 
-void scree::Game::delete_material(MaterialID id)
+void scree::Game::DeleteMaterial(MaterialID id)
 {
-	auto remap = material_registry.DeleteMaterial(id);
+	auto remap = materialRegistry.DeleteMaterial(id);
 	if (remap.empty()) return;
 
 	grid.Remap(remap);
-	SelectedMaterial = remap[SelectedMaterial];
+	selectedMaterial = remap[selectedMaterial];
 	// The erase shifted the materials vector, so editedMaterial cannot be trusted.
-	begin_new_material();
+	BeginNewMaterial();
 }
 
-void scree::Game::import_materials()
+void scree::Game::ImportMaterials()
 {
-	std::string picked = OpenFileDialog("JSON files\0*.json\0All files\0*.*\0", "Import materials", assets_path());
+	std::string picked = OpenFileDialog("JSON files\0*.json\0All files\0*.*\0", "Import materials", AssetsPath());
 	if (picked.empty()) return;
 
-	custom_file_path = picked;
-	load_materials();
+	customFilePath = picked;
+	LoadMaterials();
 }
 
-bool scree::Game::export_canvas(std::string path)
+bool scree::Game::ExportCanvas(std::string path)
 {
-	const CanvasResult result = SaveCanvas(grid, material_registry, path);
-	material_load_error_message = result.message;
-	material_load_failed = !result.ok;
+	const CanvasResult result = SaveCanvas(grid, materialRegistry, path);
+	materialLoadErrorMessage = result.message;
+	materialLoadFailed = !result.ok;
 	return result.ok;
 }
 
-bool scree::Game::import_canvas(std::string path)
+bool scree::Game::ImportCanvas(std::string path)
 {
-	const CanvasResult result = LoadCanvas(grid, material_registry, path);
-	material_load_error_message = result.message;
-	material_load_failed = !result.ok;
+	const CanvasResult result = LoadCanvas(grid, materialRegistry, path);
+	materialLoadErrorMessage = result.message;
+	materialLoadFailed = !result.ok;
 	return result.ok;
 }
 
-void scree::Game::export_materials()
+void scree::Game::ExportMaterials()
 {
-	const std::string suggested = custom_file_path.empty() ? "custom_materials.json" : custom_file_path;
+	const std::string suggested = customFilePath.empty() ? "custom_materials.json" : customFilePath;
 	std::string picked = SaveFileDialog("JSON files\0*.json\0All files\0*.*\0", "Save materials",
-		assets_path(), suggested);
+		AssetsPath(), suggested);
 	if (picked.empty()) return;
 
-	if (!material_registry.SaveCustomMaterials(picked)) {
-		material_load_error_message = "Failed to write " + picked + ".";
-		material_load_failed = true;
+	if (!materialRegistry.SaveCustomMaterials(picked)) {
+		materialLoadErrorMessage = "Failed to write " + picked + ".";
+		materialLoadFailed = true;
 		return;
 	}
 
-	custom_file_path = picked;
+	customFilePath = picked;
 }
 
-void scree::Game::clear_custom_materials()
+void scree::Game::ClearCustomMaterials()
 {
-	custom_file_path.clear();
-	load_materials();
+	customFilePath.clear();
+	LoadMaterials();
 }
 
-std::string scree::Game::assets_path() const
+std::string scree::Game::AssetsPath() const
 {
 	return std::string(GetApplicationDirectory()) + "assets";
 }
 
-std::string scree::Game::canvases_path() const
+std::string scree::Game::CanvasesPath() const
 {
-	return assets_path() + "/canvases";
+	return AssetsPath() + "/canvases";
 }
 
-std::string scree::Game::materials_path() const
+std::string scree::Game::MaterialsPath() const
 {
-	return assets_path() + "/materials.json";
+	return AssetsPath() + "/materials.json";
 }
 
-void scree::Game::handle_hotkeys()
+void scree::Game::HandleHotkeys()
 {
 	if (ImGui::GetIO().WantCaptureKeyboard) return;
 
 	if (IsKeyPressed(KEY_SPACE)) paused = !paused;
 	if (IsKeyPressed(KEY_C)) grid.Clear();
-	if (IsKeyPressed(KEY_R)) load_materials();
+	if (IsKeyPressed(KEY_R)) LoadMaterials();
 
 	// 1-9 map onto the first nine file materials, which is what the rail's "1-9" says.
 	for (int key = KEY_ONE; key <= KEY_NINE; key++)
 	{
 		if (!IsKeyPressed(key)) continue;
 		const int id = key - KEY_ONE + 1;
-		if (id < material_registry.GetMaterialsCount())
-			SelectedMaterial = static_cast<MaterialID>(id);
+		if (id < materialRegistry.GetMaterialsCount())
+			selectedMaterial = static_cast<MaterialID>(id);
 	}
 }
 
-void scree::Game::tick()
+void scree::Game::Tick()
 {
 #if defined(PLATFORM_WEB)
-	web_sync_viewport();
+	WebSyncViewport();
 #endif
 	using clock = std::chrono::high_resolution_clock;
 	auto since = [](clock::time_point from) {
 		return std::chrono::duration<float>(clock::now() - from).count();
 	};
 
-	delta = since(delta_clock);
-	delta_clock = clock::now();
+	delta = since(deltaClock);
+	deltaClock = clock::now();
 
 	auto bench_clock = clock::now();
-	processInputs();
-	input_time = since(bench_clock);
+	ProcessInputs();
+	inputTime = since(bench_clock);
 
 	bench_clock = clock::now();
-	update();
-	update_time = since(bench_clock);
+	Update();
+	updateTime = since(bench_clock);
 
-	// render() sets render_time itself, measured to exclude the frame-limiter wait.
-	render();
+	// Render() sets renderTime itself, measured to exclude the frame-limiter wait.
+	Render();
 
-	update_stats();
+	UpdateStats();
 }
 
 #if defined(PLATFORM_WEB)
@@ -578,16 +578,16 @@ void scree::Game::tick()
 // Render at device pixels for crispness: size the canvas backing store to
 // innerWidth*dpr and drive the UI scale by dpr so physical sizes hold. CSS keeps the
 // canvas filling the window, so the browser maps device pixels 1:1.
-void scree::Game::web_sync_viewport()
+void scree::Game::WebSyncViewport()
 {
 	const double dpr = EM_ASM_DOUBLE({ return window.devicePixelRatio || 1; });
 	const int dw = (int)(EM_ASM_INT({ return window.innerWidth; }) * dpr + 0.5);
 	const int dh = (int)(EM_ASM_INT({ return window.innerHeight; }) * dpr + 0.5);
 
-	if (dw != web_last_w || dh != web_last_h)
+	if (dw != webLastW || dh != webLastH)
 	{
-		web_last_w = dw;
-		web_last_h = dh;
+		webLastW = dw;
+		webLastH = dh;
 		SetWindowSize(dw, dh);
 		// glfwSetWindowSize also writes the canvas CSS size; put it back to fill the window.
 		EM_ASM({
@@ -599,9 +599,9 @@ void scree::Game::web_sync_viewport()
 }
 #endif
 
-void scree::Game::run()
+void scree::Game::Run()
 {
-	delta_clock = std::chrono::high_resolution_clock::now();
+	deltaClock = std::chrono::high_resolution_clock::now();
 #if defined(PLATFORM_WEB)
 	// Browsers own the frame loop; a blocking while() would hang the tab. main()'s
 	// try/catch cannot cover a tick that runs in a later callback, so it guards here.
@@ -609,16 +609,16 @@ void scree::Game::run()
 	// -fwasm-exceptions would run ~Game() while the callback still holds this.
 	emscripten_set_main_loop_arg(
 		[](void* self) {
-			try { static_cast<Game*>(self)->tick(); }
+			try { static_cast<Game*>(self)->Tick(); }
 			catch (const std::exception& e) { TraceLog(LOG_ERROR, "tick: %s", e.what()); }
 		}, this, 0, 0);
 #else
 	while (!WindowShouldClose())
-		tick();
+		Tick();
 #endif
 }
 
-void scree::Game::draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius)
+void scree::Game::DrawStroke(const std::vector<Vector2>& points, const MaterialID material, const float radius)
 {
 	int min_y = std::numeric_limits<int>::max();
 	int max_y = std::numeric_limits<int>::min();
@@ -650,43 +650,43 @@ void scree::Game::draw_stroke(const std::vector<Vector2>& points, const Material
 		for (int x = min_x; x <= max_x; x++)
 		{
 			if (material == MaterialRegistry::AIR_ID ||
-				grid.Get_at(x, y).id == MaterialRegistry::AIR_ID)
+				grid.GetAt(x, y).id == MaterialRegistry::AIR_ID)
 			{
-				grid.Set_at(x, y, material_registry.CreateBlock(material));
+				grid.SetAt(x, y, materialRegistry.CreateBlock(material));
 			}
 		}
 	}
 }
 
-bool scree::Game::load_materials()
+bool scree::Game::LoadMaterials()
 {
 	MaterialRegistry new_registry;
-	bool success = new_registry.LoadMaterials(materials_path(), custom_file_path);
-	material_load_error_message = Log::FormatLogs(new_registry.GetLogs());
+	bool success = new_registry.LoadMaterials(MaterialsPath(), customFilePath);
+	materialLoadErrorMessage = Log::FormatLogs(new_registry.GetLogs());
 	// A rejected material still counts as failure for the banner even though the load
 	// itself succeeded -- something in the file is unusable either way.
-	material_load_failed = !new_registry.GetLogs().empty() &&
+	materialLoadFailed = !new_registry.GetLogs().empty() &&
 		Log::Worst(new_registry.GetLogs()) != Log::Severity::Warning;
 	if (success) {
-		auto remap = get_registry_changes(new_registry);
-		material_registry = std::move(new_registry);
+		auto remap = GetRegistryChanges(new_registry);
+		materialRegistry = std::move(new_registry);
 		grid.Remap(remap);
-		SelectedMaterial = MaterialRegistry::AIR_ID;
+		selectedMaterial = MaterialRegistry::AIR_ID;
 		// editedMaterial would dangle into the registry that was just replaced.
-		begin_new_material();
+		BeginNewMaterial();
 	}
 	
 	return success;
 }
 
-std::vector<scree::MaterialID> scree::Game::get_registry_changes(const MaterialRegistry& new_registry)
+std::vector<scree::MaterialID> scree::Game::GetRegistryChanges(const MaterialRegistry& new_registry)
 {
-	std::vector<MaterialID> remap(material_registry.GetMaterialsCount(), MaterialRegistry::AIR_ID);
+	std::vector<MaterialID> remap(materialRegistry.GetMaterialsCount(), MaterialRegistry::AIR_ID);
 
-	for (int i = 0; i < material_registry.GetMaterialsCount(); i++)
+	for (int i = 0; i < materialRegistry.GetMaterialsCount(); i++)
 	{
 		MaterialID id = static_cast<MaterialID>(i);
-		auto name = material_registry.GetName(id);
+		auto name = materialRegistry.GetName(id);
 		for (int j = 0; j < new_registry.GetMaterialsCount(); j++)
 		{
 			MaterialID new_id = static_cast<MaterialID>(j);

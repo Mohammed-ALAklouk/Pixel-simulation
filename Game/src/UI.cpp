@@ -377,14 +377,14 @@ namespace
 		// Leading spaces reserve the room the swatch is drawn into; a combo preview is a
 		// string and nothing else.
 		char preview[80];
-		std::snprintf(preview, sizeof(preview), "     %s", g.material_registry.GetName(value).c_str());
+		std::snprintf(preview, sizeof(preview), "     %s", g.materialRegistry.GetName(value).c_str());
 
 		bool changed = false;
 		PushComboStyle();
 		if (ImGui::BeginCombo(id, preview))
 		{
 			ImDrawList* pdl = ImGui::GetWindowDrawList();
-			for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++)
+			for (int i = 0; i < g.materialRegistry.GetMaterialsCount(); i++)
 			{
 				const MaterialID rowID = static_cast<MaterialID>(i);
 				const bool selected = (rowID == value);
@@ -401,10 +401,10 @@ namespace
 				const float rowH = ImGui::GetItemRectSize().y;
 				const float sy = std::floor(p.y + (rowH - sw) * 0.5f);
 				pdl->AddRectFilled(ImVec2(p.x + S(7.0f), sy), ImVec2(p.x + S(7.0f) + sw, sy + sw),
-					U32(SwatchColour(g.material_registry.Get(rowID))), S(2.0f));
+					U32(SwatchColour(g.materialRegistry.Get(rowID))), S(2.0f));
 				pdl->AddText(ImVec2(p.x + S(29.0f), p.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f),
 					U32(selected ? ui::theme.AccentText : ui::theme.TextDim),
-					g.material_registry.GetName(rowID).c_str());
+					g.materialRegistry.GetName(rowID).c_str());
 				ImGui::PopID();
 			}
 			ImGui::EndCombo();
@@ -413,14 +413,14 @@ namespace
 
 		dl->AddRectFilled(ImVec2(box.x + S(9.0f), box.y + (boxH - sw) * 0.5f),
 			ImVec2(box.x + S(9.0f) + sw, box.y + (boxH + sw) * 0.5f),
-			U32(SwatchColour(g.material_registry.Get(value))), S(2.0f));
+			U32(SwatchColour(g.materialRegistry.Get(value))), S(2.0f));
 		return changed;
 	}
 
 	bool TagCombo(const char* label, const char* id, MaterialID& value, Game& g)
 	{
 		std::vector<std::pair<std::string, MaterialID>> tags(
-			g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
+			g.materialRegistry.GetTags().begin(), g.materialRegistry.GetTags().end());
 		std::sort(tags.begin(), tags.end(),
 			[](const auto& a, const auto& b) { return a.second < b.second; });
 
@@ -562,24 +562,24 @@ namespace
 		if (EnumCombo("Target type", "##targettype", type, targetTypeStr, 2))
 		{
 			r.targetType = static_cast<Reaction::TargetType>(type);
-			r.TargetID = 0;   // the id means a different thing in each mode
+			r.targetID = 0;   // the id means a different thing in each mode
 		}
 
 		if (r.targetType == Reaction::TargetType::Material)
 		{
-			MaterialCombo("Target", "##target", r.TargetID, g);
-			Uint8Edit("Chance", r.Chance, 0, 100);
+			MaterialCombo("Target", "##target", r.targetID, g);
+			Uint8Edit("Chance", r.chance, 0, 100);
 		}
 		else
 		{
-			TagCombo("Target tag", "##targettag", r.TargetID, g);
+			TagCombo("Target tag", "##targettag", r.targetID, g);
 		}
 
 		int sample = static_cast<int>(r.sample);
 		if (EnumCombo("Scan sample", "##sample", sample, sampleStr, 2))
 			r.sample = static_cast<Reaction::Sample>(sample);
 
-		FormCheck("Halt update", &r.HaltUpdate);
+		FormCheck("Halt update", &r.haltUpdate);
 		Gap();
 
 		ImGui::PushID("target");
@@ -598,10 +598,10 @@ namespace
 	const char* MaterialClass(const MaterialData& data, MaterialID id)
 	{
 		if (id == MaterialRegistry::AIR_ID)      return "void";
-		if (data.movement.Y_direction < 0)       return "gas";
-		if (data.movement.is_liquid)             return "liquid";
-		if (data.movement.can_cascade)           return "powder";
-		if (data.movement.can_fall)              return "grain";
+		if (data.movement.yDirection < 0)       return "gas";
+		if (data.movement.isLiquid)             return "liquid";
+		if (data.movement.canCascade)           return "powder";
+		if (data.movement.canFall)              return "grain";
 		return "solid";
 	}
 
@@ -647,7 +647,7 @@ namespace
 
 	void TopBar(Game& g)
 	{
-		const float W = static_cast<float>(g.Window_size.x);
+		const float W = static_cast<float>(g.windowSize.x);
 		const float H = m::TopBarH;
 
 		BeginChrome("##topbar", ImVec2(0, 0), ImVec2(W, H), ui::theme.Panel);
@@ -684,18 +684,18 @@ namespace
 			const float th = ImGui::GetTextLineHeight();
 
 			char fps[32];
-			std::snprintf(fps, sizeof(fps), "%.0f fps", g.fps_display);
+			std::snprintf(fps, sizeof(fps), "%.0f fps", g.fpsDisplay);
 			const float fpsW = S(82.0f);
 			r -= fpsW;
 			DrawLabel(dl, ImVec2(org.x + r + fpsW - TextW(fps), org.y + CenterY(H, th)), fps,
-				g.fps_display >= 55.0f ? c::Good : c::Warn);
+				g.fpsDisplay >= 55.0f ? c::Good : c::Warn);
 			r -= S(14.0f);
 
 #if !defined(PLATFORM_WEB)
 			// The materials file chip is desktop-only: on web the file is baked into the
 			// build and its reload/import/save/open-in-editor actions do not apply.
 			const char* name = "materials.json";
-			const std::string customName = FileName(g.custom_file_path);
+			const std::string customName = FileName(g.customFilePath);
 			const bool hasCustom = !customName.empty();
 
 			const float reloadW = S(94.0f);
@@ -723,7 +723,7 @@ namespace
 			// The file name opens the file in whatever the desktop has registered for it.
 			ImGui::SetCursorPos(ImVec2(cx, ty - org.y));
 			if (ImGui::InvisibleButton("##openjson", ImVec2(nameW, th)))
-				OpenInEditor(g.materials_path());
+				OpenInEditor(g.MaterialsPath());
 
 			bool hot = ImGui::IsItemHovered();
 			if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -736,19 +736,19 @@ namespace
 			ImGui::SetCursorPos(ImVec2(cx, buttonY));
 			ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.AccentLight);
 			if (ChromeButton("RELOAD", ImVec2(reloadW, S(31.0f))))
-				g.load_materials();
+				g.LoadMaterials();
 			ImGui::PopStyleColor();
 			cx += reloadW + S(6.0f);
 
 			ImGui::SetCursorPos(ImVec2(cx, buttonY));
 			if (ChromeButton("IMPORT", ImVec2(importW, S(31.0f)), hasCustom))
-				g.import_materials();
+				g.ImportMaterials();
 			cx += importW + S(6.0f);
 
 			ImGui::SetCursorPos(ImVec2(cx, buttonY));
-			ImGui::BeginDisabled(g.material_registry.GetMaterialsCount() <= g.material_registry.GetCoreMaterialsCount());
+			ImGui::BeginDisabled(g.materialRegistry.GetMaterialsCount() <= g.materialRegistry.GetCoreMaterialsCount());
 			if (ChromeButton("SAVE", ImVec2(saveW, S(31.0f))))
-				g.export_materials();
+				g.ExportMaterials();
 			ImGui::EndDisabled();
 			cx += saveW;
 
@@ -756,12 +756,12 @@ namespace
 				cx += S(10.0f);
 				ImGui::SetCursorPos(ImVec2(cx, ty - org.y));
 				if (ImGui::InvisibleButton("##opencustom", ImVec2(customW, th)))
-					OpenInEditor(g.custom_file_path);
+					OpenInEditor(g.customFilePath);
 
 				hot = ImGui::IsItemHovered();
 				if (hot) {
 					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-					ImGui::SetTooltip("%s", g.custom_file_path.c_str());
+					ImGui::SetTooltip("%s", g.customFilePath.c_str());
 				}
 				DrawLabel(dl, ImVec2(org.x + cx, ty), customName.c_str(),
 					hot ? ui::theme.AccentLight : ui::theme.TextDim);
@@ -772,7 +772,7 @@ namespace
 
 				ImGui::SetCursorPos(ImVec2(cx, buttonY));
 				if (ChromeButton("X", ImVec2(clearW, S(31.0f))))
-					g.clear_custom_materials();
+					g.ClearCustomMaterials();
 			}
 #endif
 		}
@@ -810,7 +810,7 @@ namespace
 			ImGui::SetCursorPos(ImVec2(cx, CenterY(H, btnH)));
 			ImGui::BeginDisabled(!g.paused);
 			if (ChromeButton("STEP", ImVec2(stepW, btnH)))
-				g.step_once = true;
+				g.stepOnce = true;
 			ImGui::EndDisabled();
 			cx += stepW + gap;
 
@@ -832,18 +832,18 @@ namespace
 			cx += labelW + S(10.0f);
 
 			ImGui::SetCursorPos(ImVec2(cx, CenterY(H, stepBtn)));
-			if (ChromeButton("-##stepsdown", ImVec2(stepBtn, stepBtn)) && g.updates_per_frame > 1)
-				g.updates_per_frame--;
+			if (ChromeButton("-##stepsdown", ImVec2(stepBtn, stepBtn)) && g.updatesPerFrame > 1)
+				g.updatesPerFrame--;
 
 			char steps[16];
-			std::snprintf(steps, sizeof(steps), "%d", g.updates_per_frame);
+			std::snprintf(steps, sizeof(steps), "%d", g.updatesPerFrame);
 			const float th = ImGui::GetTextLineHeight();
 			DrawLabel(dl, ImVec2(org.x + cx + stepBtn + (stepVal - TextW(steps)) * 0.5f,
 				org.y + CenterY(H, th)), steps, ui::theme.Text);
 
 			ImGui::SetCursorPos(ImVec2(cx + stepBtn + stepVal, CenterY(H, stepBtn)));
-			if (ChromeButton("+##stepsup", ImVec2(stepBtn, stepBtn)) && g.updates_per_frame < 10)
-				g.updates_per_frame++;
+			if (ChromeButton("+##stepsup", ImVec2(stepBtn, stepBtn)) && g.updatesPerFrame < 10)
+				g.updatesPerFrame++;
 		}
 
 		EndChrome();
@@ -853,11 +853,11 @@ namespace
 
 	void Banner(Game& g)
 	{
-		if (g.layout_banner_h <= 0.0f) return;
+		if (g.layoutBannerH <= 0.0f) return;
 
-		const float W = static_cast<float>(g.Window_size.x);
-		const float H = g.layout_banner_h;
-		const ImVec4& edge = g.material_load_failed ? c::Bad : c::Warn;
+		const float W = static_cast<float>(g.windowSize.x);
+		const float H = g.layoutBannerH;
+		const ImVec4& edge = g.materialLoadFailed ? c::Bad : c::Warn;
 
 		BeginChrome("##banner", ImVec2(0, m::TopBarH), ImVec2(W, H), ui::theme.PanelSunk, true);
 		ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -867,7 +867,7 @@ namespace
 
 		{
 			FontScope f(m::FontLabel);
-			const char* tier = g.material_load_failed ? "LOAD FAILED" : "LOADER";
+			const char* tier = g.materialLoadFailed ? "LOAD FAILED" : "LOADER";
 			DrawTracked(dl, ImVec2(org.x + S(16.0f), org.y + S(10.0f)), tier, m::TrackLabel, edge);
 		}
 
@@ -876,7 +876,7 @@ namespace
 			ImGui::SetCursorPos(ImVec2(m::BannerTextInset, S(8.0f)));
 			ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
 			ImGui::PushTextWrapPos(W - m::BannerTextRight);
-			ImGui::TextUnformatted(g.material_load_error_message.c_str());
+			ImGui::TextUnformatted(g.materialLoadErrorMessage.c_str());
 			ImGui::PopTextWrapPos();
 			ImGui::PopStyleColor();
 		}
@@ -885,7 +885,7 @@ namespace
 			FontScope f(m::FontLabel);
 			ImGui::SetCursorPos(ImVec2(W - S(103.0f), S(11.0f)));
 			if (ChromeButton("DISMISS", ImVec2(S(87.0f), S(31.0f))))
-				g.material_load_error_message.clear();
+				g.materialLoadErrorMessage.clear();
 		}
 
 		EndChrome();
@@ -895,8 +895,8 @@ namespace
 
 	void LeftRail(Game& g)
 	{
-		const float top = m::TopBarH + g.layout_banner_h;
-		const float H = static_cast<float>(g.Window_size.y) - top;
+		const float top = m::TopBarH + g.layoutBannerH;
+		const float H = static_cast<float>(g.windowSize.y) - top;
 		const float W = m::LeftRailW;
 		const float footerH = S(88.0f);
 
@@ -923,17 +923,17 @@ namespace
 			// second gap on top of it and leave the list looking sparse.
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 2.0f));
 
-			for (int i = 0; i < g.material_registry.GetMaterialsCount(); i++)
+			for (int i = 0; i < g.materialRegistry.GetMaterialsCount(); i++)
 			{
 				const MaterialID id = static_cast<MaterialID>(i);
-				const MaterialData& data = g.material_registry.Get(id);
-				const bool selected = (id == g.SelectedMaterial);
+				const MaterialData& data = g.materialRegistry.Get(id);
+				const bool selected = (id == g.selectedMaterial);
 
 				ImGui::PushID(i);
 				const ImVec2 p = ImGui::GetCursorScreenPos();
 				const float rowW = ImGui::GetContentRegionAvail().x;
 				if (ImGui::InvisibleButton("row", ImVec2(rowW, rowH)))
-					g.SelectedMaterial = id;
+					g.selectedMaterial = id;
 				const bool hovered = ImGui::IsItemHovered();
 
 				if (selected)
@@ -960,7 +960,7 @@ namespace
 					FontScope f(m::FontBody);
 					const float th = ImGui::GetTextLineHeight();
 					DrawLabel(ldl, ImVec2(p.x + S(36.0f), p.y + (rowH - th) * 0.5f),
-						g.material_registry.GetName(id).c_str(), selected ? ui::theme.AccentText : ui::theme.TextDim);
+						g.materialRegistry.GetName(id).c_str(), selected ? ui::theme.AccentText : ui::theme.TextDim);
 				}
 				{
 					FontScope f(m::FontLabel);
@@ -984,21 +984,21 @@ namespace
 			ImGui::SetCursorPosX(S(6.0f));
 			const float rowW = ImGui::GetContentRegionAvail().x;
 			if (ChromeButton("+ NEW MATERIAL", ImVec2(rowW, m::RowH))) {
-				g.begin_new_material();
-				g.new_material_pannel_open = true;
+				g.BeginNewMaterial();
+				g.newMaterialPanelOpen = true;
 			}
 
 			ImGui::SetCursorPosX(S(6.0f));
-			ImGui::BeginDisabled(g.SelectedMaterial == MaterialRegistry::AIR_ID);
+			ImGui::BeginDisabled(g.selectedMaterial == MaterialRegistry::AIR_ID);
 			if (ChromeButton("EDIT SELECTED", ImVec2(rowW, m::RowH))) {
-				g.begin_edit_material(g.SelectedMaterial);
-				g.new_material_pannel_open = true;
+				g.BeginEditMaterial(g.selectedMaterial);
+				g.newMaterialPanelOpen = true;
 			}
 
 			ImGui::SetCursorPosX(S(6.0f));
 			if (ChromeButton("DELETE SELECTED", ImVec2(rowW, m::RowH))) {
-				g.pending_delete_id = g.SelectedMaterial;
-				g.confirm_delete_open = true;
+				g.pendingDeleteId = g.selectedMaterial;
+				g.confirmDeleteOpen = true;
 			}
 			ImGui::EndDisabled();
 
@@ -1017,12 +1017,12 @@ namespace
 
 			char loaded[48];
 			std::snprintf(loaded, sizeof(loaded), "%d mats / %d tags",
-				g.material_registry.GetMaterialsCount() - 1, g.material_registry.GetTagsCount());
+				g.materialRegistry.GetMaterialsCount() - 1, g.materialRegistry.GetTagsCount());
 			char particles[32];
-			std::snprintf(particles, sizeof(particles), "%d", g.particle_count);
+			std::snprintf(particles, sizeof(particles), "%d", g.particleCount);
 			char chunks[32];
-			std::snprintf(chunks, sizeof(chunks), "%d/%d", g.awake_chunk_count,
-				g.grid.Get_width_chunks() * g.grid.Get_height_chunks());
+			std::snprintf(chunks, sizeof(chunks), "%d/%d", g.awakeChunkCount,
+				g.grid.GetWidthChunks() * g.grid.GetHeightChunks());
 
 			const float r1 = org.y + fy + S(7.0f);
 			const float r2 = r1 + th + S(3.0f);
@@ -1112,9 +1112,9 @@ namespace
 
 	void BottomBar(Game& g)
 	{
-		const float W = static_cast<float>(g.Window_size.x) - m::LeftRailW;
+		const float W = static_cast<float>(g.windowSize.x) - m::LeftRailW;
 		const float H = m::BottomBarH;
-		const float y = static_cast<float>(g.Window_size.y) - H;
+		const float y = static_cast<float>(g.windowSize.y) - H;
 
 		BeginChrome("##bottombar", ImVec2(m::LeftRailW, y), ImVec2(W, H), ui::theme.Panel);
 		ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -1138,13 +1138,13 @@ namespace
 			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ui::theme.Button);
 			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ui::theme.Accent);
 			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ui::theme.AccentLight);
-			ImGui::SliderFloat("##brush", &g.cursor_radius, 1.0f, 100.0f, "");
+			ImGui::SliderFloat("##brush", &g.cursorRadius, 1.0f, 100.0f, "");
 			ImGui::PopStyleColor(5);
 			ImGui::PopStyleVar();
 			x += S(190.0f) + S(12.0f);
 
 			char radius[16];
-			std::snprintf(radius, sizeof(radius), "%d", static_cast<int>(g.cursor_radius));
+			std::snprintf(radius, sizeof(radius), "%d", static_cast<int>(g.cursorRadius));
 			const float th = ImGui::GetTextLineHeight();
 			DrawLabel(dl, ImVec2(org.x + x, org.y + CenterY(H, th)), radius, ui::theme.TextDim);
 		}
@@ -1156,18 +1156,18 @@ namespace
 
 			r -= S(138.0f);
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
-			if (ChromeButton("BENCHMARK", ImVec2(S(138.0f), btnH), g.show_bench_marks))
-				g.show_bench_marks = !g.show_bench_marks;
+			if (ChromeButton("BENCHMARK", ImVec2(S(138.0f), btnH), g.showBenchMarks))
+				g.showBenchMarks = !g.showBenchMarks;
 
 			r -= S(8.0f) + S(172.0f);
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
-			if (ChromeButton("CHUNK OVERLAY", ImVec2(S(172.0f), btnH), g.show_active_chunks))
-				g.show_active_chunks = !g.show_active_chunks;
+			if (ChromeButton("CHUNK OVERLAY", ImVec2(S(172.0f), btnH), g.showActiveChunks))
+				g.showActiveChunks = !g.showActiveChunks;
 
 			r -= S(8.0f) + S(92.0f);
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
-			if (ChromeButton("BLOOM", ImVec2(S(92.0f), btnH), g.bloom_enabled))
-				g.bloom_enabled = !g.bloom_enabled;
+			if (ChromeButton("BLOOM", ImVec2(S(92.0f), btnH), g.bloomEnabled))
+				g.bloomEnabled = !g.bloomEnabled;
 
 #if !defined(PLATFORM_WEB)
 			const float canvasW = S(126.0f);
@@ -1175,16 +1175,16 @@ namespace
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
 			if (ChromeButton("LOAD CANVAS", ImVec2(canvasW, btnH))) {
 				const std::string picked = OpenFileDialog("Canvas files\0*.json\0All files\0*.*\0",
-					"Load canvas", g.canvases_path());
-				if (!picked.empty()) g.import_canvas(picked);
+					"Load canvas", g.CanvasesPath());
+				if (!picked.empty()) g.ImportCanvas(picked);
 			}
 
 			r -= S(8.0f) + canvasW;
 			ImGui::SetCursorPos(ImVec2(r, CenterY(H, btnH)));
 			if (ChromeButton("SAVE CANVAS", ImVec2(canvasW, btnH))) {
 				const std::string picked = SaveFileDialog("Canvas files\0*.json\0All files\0*.*\0",
-					"Save canvas", g.canvases_path(), "canvas.json");
-				if (!picked.empty()) g.export_canvas(picked);
+					"Save canvas", g.CanvasesPath(), "canvas.json");
+				if (!picked.empty()) g.ExportCanvas(picked);
 			}
 #endif
 		}
@@ -1214,24 +1214,24 @@ namespace
 		// Anchored to the region between the panels, not the grid, so these sit in the
 		// letterboxing rather than over the simulation's corners. The grid fits the shorter
 		// side, so the other axis leaves a wide band free.
-		const Rectangle& f = g.canvas_region;
+		const Rectangle& f = g.canvasRegion;
 
 		FontScope fs(m::FontSmall);
 
 		float x = f.x + S(10.0f);
 		const float y = f.y + S(10.0f);
 
-		Chip(dl, x, y, g.material_registry.GetName(g.SelectedMaterial).c_str(), ui::theme.Text);
+		Chip(dl, x, y, g.materialRegistry.GetName(g.selectedMaterial).c_str(), ui::theme.Text);
 
 		char brush[24];
-		std::snprintf(brush, sizeof(brush), "r%d", static_cast<int>(g.cursor_radius));
+		std::snprintf(brush, sizeof(brush), "r%d", static_cast<int>(g.cursorRadius));
 		Chip(dl, x, y, brush, ui::theme.TextMute);
 
 		Vector2 mouse = GetMousePosition();
-		const int gx = static_cast<int>((mouse.x - g.Grid_offset.x) / g.TileSize);
-		const int gy = static_cast<int>((mouse.y - g.Grid_offset.y) / g.TileSize);
+		const int gx = static_cast<int>((mouse.x - g.gridOffset.x) / g.tileSize);
+		const int gy = static_cast<int>((mouse.y - g.gridOffset.y) / g.tileSize);
 		char cursor[32];
-		if (g.grid.Is_in_bounds(gx, gy))
+		if (g.grid.IsInBounds(gx, gy))
 			std::snprintf(cursor, sizeof(cursor), "%d,%d", gx, gy);
 		else
 			std::snprintf(cursor, sizeof(cursor), "-,-");
@@ -1239,14 +1239,14 @@ namespace
 
 		// Material under the cursor, only while it is over the grid. Labelled because it is
 		// otherwise a second bare name sitting next to the selected one.
-		if (g.grid.Is_in_bounds(gx, gy))
+		if (g.grid.IsInBounds(gx, gy))
 		{
-			const Block& tile = g.grid.Get_at(static_cast<std::uint16_t>(gx), static_cast<std::uint16_t>(gy));
+			const Block& tile = g.grid.GetAt(static_cast<std::uint16_t>(gx), static_cast<std::uint16_t>(gy));
 			if (tile.id != MaterialRegistry::AIR_ID)
 			{
 				char under[64];
 				std::snprintf(under, sizeof(under), "under %s",
-					g.material_registry.GetName(tile.id).c_str());
+					g.materialRegistry.GetName(tile.id).c_str());
 				Chip(dl, x, y, under, ui::theme.TextDim);
 			}
 		}
@@ -1269,12 +1269,12 @@ namespace
 
 	void BenchmarkPanel(Game& g)
 	{
-		if (!g.show_bench_marks) return;
+		if (!g.showBenchMarks) return;
 
 		const float W = S(306.0f);
 		const float H = S(207.0f);
 		const float x = m::LeftRailW + S(18.0f);
-		const float y = static_cast<float>(g.Window_size.y) - m::BottomBarH - H - S(18.0f);
+		const float y = static_cast<float>(g.windowSize.y) - m::BottomBarH - H - S(18.0f);
 
 		BeginChrome("##bench", ImVec2(x, y), ImVec2(W, H), ui::theme.PanelSunk);
 		ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -1288,10 +1288,10 @@ namespace
 
 		struct Row { const char* key; float ms; };
 		const Row rows[] = {
-			{ "input",  g.input_time * S(1000.0f) },
-			{ "update", g.update_time * S(1000.0f) },
-			{ "render", g.render_time * S(1000.0f) },
-			{ "ui",     g.UI_time * S(1000.0f) },
+			{ "input",  g.inputTime * S(1000.0f) },
+			{ "update", g.updateTime * S(1000.0f) },
+			{ "render", g.renderTime * S(1000.0f) },
+			{ "ui",     g.uiTime * S(1000.0f) },
 		};
 		const float frame = std::max(0.001f, g.delta * S(1000.0f));
 
@@ -1329,7 +1329,7 @@ namespace
 		EndChrome();
 	}
 
-	// -------------------------------------------------------------- new material pannel
+	// -------------------------------------------------------------- new material panel
 
 	// The body of the editor: everything between the fixed title strip and the fixed footer,
 	// laid out inside its own scrolling child so those two never move.
@@ -1377,7 +1377,7 @@ namespace
 			Card card(CardTone::Sunk, S(8.0f));
 
 			std::vector<std::pair<std::string, MaterialID>> tags(
-				g.material_registry.GetTags().begin(), g.material_registry.GetTags().end());
+				g.materialRegistry.GetTags().begin(), g.materialRegistry.GetTags().end());
 			std::sort(tags.begin(), tags.end(),
 				[](const auto& a, const auto& b) { return a.second < b.second; });
 
@@ -1418,12 +1418,12 @@ namespace
 		{
 			Card card(CardTone::Sunk, S(8.0f));
 
-			Uint8Edit("Initial", material.lifespanData.Initial, 0, 255);
-			Uint8Edit("Tick", material.lifespanData.Tick, 0, 255);
+			Uint8Edit("Initial", material.lifespanData.initial, 0, 255);
+			Uint8Edit("Tick", material.lifespanData.tick, 0, 255);
 
-			if (material.lifespanData.Tick)
+			if (material.lifespanData.tick)
 			{
-				Uint8Edit("Tick chance", material.lifespanData.Chance, 0, 100);
+				Uint8Edit("Tick chance", material.lifespanData.chance, 0, 100);
 				Gap();
 				TransitionList("ON DEATH", g.newMaterialTransitions, g, true);
 			}
@@ -1460,23 +1460,23 @@ namespace
 		{
 			Card card(CardTone::Sunk, S(8.0f));
 
-			bool up = (material.movement.Y_direction < 0);
+			bool up = (material.movement.yDirection < 0);
 			if (FormCheck("Rises instead of falling", &up))
-				material.movement.Y_direction = up ? -1 : 1;
+				material.movement.yDirection = up ? -1 : 1;
 
 			Uint8Edit("Density", material.movement.density, 0, 255);
-			Uint8Edit("Scatter chance", material.movement.scatter_chance, 0, 255);
+			Uint8Edit("Scatter chance", material.movement.scatterChance, 0, 255);
 
-			FormCheck("Can fall", &material.movement.can_fall);
-			FormCheck("Can cascade", &material.movement.can_cascade);
-			FormCheck("Is fluid", &material.movement.is_fluid);
-			FormCheck("Is liquid", &material.movement.is_liquid);
+			FormCheck("Can fall", &material.movement.canFall);
+			FormCheck("Can cascade", &material.movement.canCascade);
+			FormCheck("Is fluid", &material.movement.isFluid);
+			FormCheck("Is liquid", &material.movement.isLiquid);
 		}
 
 		ImGui::Dummy(ImVec2(0.0f, S(6.0f)));
 	}
 
-	void NewMaterialPannel(Game& g)
+	void NewMaterialPanel(Game& g)
 	{
 		const ImGuiViewport* vp = ImGui::GetMainViewport();
 		const ImVec2 c = vp->GetCenter();
@@ -1515,15 +1515,15 @@ namespace
 
 			FontScope f(m::FontSmall);
 			const float th = ImGui::GetTextLineHeight();
-			const char* title = g.editing() ? "EDIT MATERIAL" : "NEW MATERIAL";
+			const char* title = g.Editing() ? "EDIT MATERIAL" : "NEW MATERIAL";
 			DrawTracked(dl, ImVec2(sx + ss + S(12.0f), org.y + CenterY(headH, th)), title,
 				m::TrackLabel, ui::theme.Text);
 
 			ImGui::SetCursorPos(ImVec2(size.x - S(16.0f) - S(28.0f), CenterY(headH, S(28.0f))));
 			if (ChromeButton("X", ImVec2(S(28.0f), S(28.0f))))
 			{
-				g.new_material_pannel_open = false;
-				g.begin_new_material();
+				g.newMaterialPanelOpen = false;
+				g.BeginNewMaterial();
 			}
 		}
 
@@ -1544,7 +1544,7 @@ namespace
 			dl->AddLine(ImVec2(org.x, org.y + fy + 0.5f), ImVec2(end.x, org.y + fy + 0.5f),
 				U32(ui::theme.Border));
 
-			const bool nameTaken = !g.editing() && g.material_registry.HasMaterial(g.newMaterialName);
+			const bool nameTaken = !g.Editing() && g.materialRegistry.HasMaterial(g.newMaterialName);
 			const bool canCommit = !g.newMaterialName.empty() && !nameTaken;
 			const float btnH = S(34.0f);
 			const float commitW = S(176.0f);
@@ -1553,8 +1553,8 @@ namespace
 
 			ImGui::SetCursorPos(ImVec2(S(16.0f), fy + CenterY(footH, btnH)));
 			ImGui::BeginDisabled(!canCommit);
-			if (ChromeButton(g.editing() ? "APPLY CHANGES" : "ADD MATERIAL", ImVec2(commitW, btnH)))
-				g.commit_material();
+			if (ChromeButton(g.Editing() ? "APPLY CHANGES" : "ADD MATERIAL", ImVec2(commitW, btnH)))
+				g.CommitMaterial();
 			ImGui::EndDisabled();
 
 			if (!canCommit)
@@ -1565,14 +1565,14 @@ namespace
 					g.newMaterialName.empty() ? "a name is required" : "that name is taken", c::Warn);
 			}
 
-			if (g.editing())
+			if (g.Editing())
 			{
 				const float delW = S(104.0f);
 				ImGui::SetCursorPos(ImVec2(size.x - S(16.0f) - delW, fy + CenterY(footH, btnH)));
 				if (ChromeButton("DELETE", ImVec2(delW, btnH)))
 				{
-					g.pending_delete_id = g.editedMaterialID;
-					g.confirm_delete_open = true;
+					g.pendingDeleteId = g.editedMaterialID;
+					g.confirmDeleteOpen = true;
 				}
 			}
 		}
@@ -1597,19 +1597,19 @@ namespace
 		ImGui::PushStyleColor(ImGuiCol_Text, ui::theme.TextDim);
 		ImGui::PushTextWrapPos(size.x - S(16.0f));
 		ImGui::Text("Every %s block on the grid is cleared and this cannot be undone.",
-			g.material_registry.GetName(g.pending_delete_id).c_str());
+			g.materialRegistry.GetName(g.pendingDeleteId).c_str());
 		ImGui::PopTextWrapPos();
 		ImGui::PopStyleColor();
 
 		ImGui::SetCursorPosY(size.y - S(47.0f));
 		if (ChromeButton("DELETE", ImVec2(S(110.0f), S(31.0f)))) {
-			g.delete_material(g.pending_delete_id);
-			g.confirm_delete_open = false;
-			g.new_material_pannel_open = false;
+			g.DeleteMaterial(g.pendingDeleteId);
+			g.confirmDeleteOpen = false;
+			g.newMaterialPanelOpen = false;
 		}
 		ImGui::SameLine();
 		if (ChromeButton("CANCEL", ImVec2(S(110.0f), S(31.0f))))
-			g.confirm_delete_open = false;
+			g.confirmDeleteOpen = false;
 
 		EndChrome();
 		ImGui::PopStyleVar();
@@ -1637,7 +1637,7 @@ int scree::ui::ActiveTheme = 0;
 // pure yellow, which is indistinguishable from Sand at swatch size.
 scree::RGB scree::ui::SwatchRGB(const MaterialData& data)
 {
-	return RGB::lerp(data.minColor, data.maxColor, 0.5f);
+	return RGB::Lerp(data.minColor, data.maxColor, 0.5f);
 }
 
 namespace
@@ -1887,9 +1887,9 @@ void scree::Game::UI()
 	CanvasOverlays(*this);
 	BenchmarkPanel(*this);
 
-	if (new_material_pannel_open)
-		NewMaterialPannel(*this);
+	if (newMaterialPanelOpen)
+		NewMaterialPanel(*this);
 
-	if (confirm_delete_open)
+	if (confirmDeleteOpen)
 		ConfirmDeletePanel(*this);
 }

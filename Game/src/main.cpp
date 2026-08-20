@@ -10,10 +10,10 @@ int main()
 #if defined(PLATFORM_WEB)
 		// The loop runs in callbacks after main() returns, so the app must outlive
 		// main(); leaked on purpose, reclaimed when the tab closes.
-		(new scree::Game())->run();
+		(new scree::Game())->Run();
 #else
 		scree::Game app;
-		app.run();
+		app.Run();
 #endif
 	}
 	catch (const std::exception& e)

@@ -28,14 +28,14 @@ namespace scree
 	};
 
 	struct Movement {
-		std::int8_t Y_direction = 1;
+		std::int8_t yDirection = 1;
 		// Strict comparison, so equal densities never displace each other.
 		std::uint8_t density = 0;
-		std::uint8_t scatter_chance = 0;
-		bool can_fall = false;
-		bool can_cascade = false;
-		bool is_fluid = false;
-		bool is_liquid = false;
+		std::uint8_t scatterChance = 0;
+		bool canFall = false;
+		bool canCascade = false;
+		bool isFluid = false;
+		bool isLiquid = false;
 	};
 
 	// One weighted outcome. "Nothing happens" is an entry with noTransition set, weighted like any other.
@@ -43,7 +43,7 @@ namespace scree
 		// on_death allows Initial only; ParseTransitionSpan warns on the other two.
 		enum class LifeSpanBase : std::uint8_t {
 			Self,		// old lifespan of the tile being rewritten
-			// Other participant's lifespan, read AFTER it ticks -- so the tick must run before reactions in Update_pixel.
+			// Other participant's lifespan, read AFTER it ticks -- so the tick must run before reactions in UpdatePixel.
 			Reactor,
 			Initial,    // use the default lifespan of the new material it turns into
 		};
@@ -54,13 +54,13 @@ namespace scree
 		LifeSpanBase lifespanBase = LifeSpanBase::Initial;
 	};
 
-	// No lifespan block resolves to Initial 255, Tick 0.
+	// No lifespan block resolves to initial 255, tick 0.
 	struct LifeSpan {
-		std::uint8_t Initial = 255;
+		std::uint8_t initial = 255;
 		// Subtracted once per update; 0 means never dies, so on_death is unused.
-		std::uint8_t Tick = 0;
-		std::uint8_t Chance = 100;
-		TransitionsSpan OnDeathTransitionSpan = { 0, 0, 0};
+		std::uint8_t tick = 0;
+		std::uint8_t chance = 100;
+		TransitionsSpan onDeathTransitionSpan = { 0, 0, 0};
 	};
 
 	struct Reaction {
@@ -75,16 +75,16 @@ namespace scree
 		};
 
 		TargetType targetType = TargetType::Material;
-		MaterialID TargetID = 0;		// material id when Material, tag id when Tag
+		MaterialID targetID = 0;		// material id when Material, tag id when Tag
 		// Percent, Material targets only (default 100). Tag targets use intensity instead.
-		std::uint8_t Chance = 0;
-		TransitionsSpan TargetTransitionsSpan = { 0, 0, 0 };
+		std::uint8_t chance = 0;
+		TransitionsSpan targetTransitionsSpan = { 0, 0, 0 };
 		// Firing one ends the tile's update -- it's a different material now.
-		TransitionsSpan SelfTransitionsSpan = { 0, 0, 0 };
+		TransitionsSpan selfTransitionsSpan = { 0, 0, 0 };
 
 		Sample sample = Sample::FirstToReact;
 		// After firing once, skip this material's remaining reactions. Movement still runs.
-		bool HaltUpdate = false;
+		bool haltUpdate = false;
 	};
 
 	struct MaterialData {

@@ -62,10 +62,10 @@ TEST_CASE("a canvas round-trips ids and lifespans")
 
 	Grid source;
 	source.Create(W, H, &registry);
-	source.Create_at(0, 0, SAND, 255);
-	source.Create_at(5, 3, SAND, 255);
-	source.Create_at(63, 31, FIRE, 137);
-	source.Create_at(20, 10, FIRE, 42);
+	source.CreateAt(0, 0, SAND, 255);
+	source.CreateAt(5, 3, SAND, 255);
+	source.CreateAt(63, 31, FIRE, 137);
+	source.CreateAt(20, 10, FIRE, 42);
 
 	TempFile file("scree_canvas_roundtrip.json");
 	REQUIRE(SaveCanvas(source, registry, file.str()).ok);
@@ -80,8 +80,8 @@ TEST_CASE("a canvas round-trips ids and lifespans")
 
 	for (std::uint16_t y = 0; y < H; y++)
 		for (std::uint16_t x = 0; x < W; x++) {
-			CHECK(loaded.Get_at(x, y).id == source.Get_at(x, y).id);
-			CHECK(loaded.Get_at(x, y).lifespan == source.Get_at(x, y).lifespan);
+			CHECK(loaded.GetAt(x, y).id == source.GetAt(x, y).id);
+			CHECK(loaded.GetAt(x, y).lifespan == source.GetAt(x, y).lifespan);
 		}
 }
 
@@ -112,7 +112,7 @@ TEST_CASE("the palette holds only the materials the grid uses")
 
 	Grid grid;
 	grid.Create(W, H, &registry);
-	grid.Create_at(1, 1, SAND, 255);
+	grid.CreateAt(1, 1, SAND, 255);
 
 	TempFile file("scree_canvas_palette.json");
 	REQUIRE(SaveCanvas(grid, registry, file.str()).ok);
@@ -132,8 +132,8 @@ TEST_CASE("a material the registry does not have loads as air and is reported")
 
 	Grid grid;
 	grid.Create(W, H, &source);
-	grid.Create_at(2, 2, SAND, 255);
-	grid.Create_at(3, 3, FIRE, 100);
+	grid.CreateAt(2, 2, SAND, 255);
+	grid.CreateAt(3, 3, FIRE, 100);
 
 	TempFile file("scree_canvas_missing.json");
 	REQUIRE(SaveCanvas(grid, source, file.str()).ok);
@@ -148,8 +148,8 @@ TEST_CASE("a material the registry does not have loads as air and is reported")
 	REQUIRE(result.ok);
 	REQUIRE(result.missing.size() == 1);
 	CHECK(result.missing[0] == "Fire");
-	CHECK(loaded.Get_at(2, 2).id == SAND);
-	CHECK(loaded.Get_at(3, 3).id == MaterialRegistry::AIR_ID);
+	CHECK(loaded.GetAt(2, 2).id == SAND);
+	CHECK(loaded.GetAt(3, 3).id == MaterialRegistry::AIR_ID);
 }
 
 TEST_CASE("a canvas whose size differs from the grid is rejected untouched")
@@ -159,20 +159,20 @@ TEST_CASE("a canvas whose size differs from the grid is rejected untouched")
 
 	Grid source;
 	source.Create(W, H, &registry);
-	source.Create_at(0, 0, SAND, 255);
+	source.CreateAt(0, 0, SAND, 255);
 
 	TempFile file("scree_canvas_size.json");
 	REQUIRE(SaveCanvas(source, registry, file.str()).ok);
 
 	Grid wider;
 	wider.Create(W * 2, H, &registry);
-	wider.Create_at(4, 4, FIRE, 90);
+	wider.CreateAt(4, 4, FIRE, 90);
 
 	const CanvasResult result = LoadCanvas(wider, registry, file.str());
 
 	CHECK_FALSE(result.ok);
 	CHECK_FALSE(result.message.empty());
-	CHECK(wider.Get_at(4, 4).id == FIRE);
+	CHECK(wider.GetAt(4, 4).id == FIRE);
 }
 
 TEST_CASE("a canvas from a future version is rejected")
@@ -223,9 +223,9 @@ TEST_CASE("a run with an out-of-range palette index is skipped, not indexed")
 	const CanvasResult result = LoadCanvas(grid, registry, file.str());
 
 	REQUIRE(result.ok);
-	CHECK(grid.Get_at(0, 0).id == SAND);
-	CHECK(grid.Get_at(4, 0).id == SAND);
-	CHECK(grid.Get_at(5, 0).id == MaterialRegistry::AIR_ID);
+	CHECK(grid.GetAt(0, 0).id == SAND);
+	CHECK(grid.GetAt(4, 0).id == SAND);
+	CHECK(grid.GetAt(5, 0).id == MaterialRegistry::AIR_ID);
 }
 
 TEST_CASE("runs longer than the grid stop at the last pixel")
@@ -243,6 +243,6 @@ TEST_CASE("runs longer than the grid stop at the last pixel")
 	grid.Create(W, H, &registry);
 
 	REQUIRE(LoadCanvas(grid, registry, file.str()).ok);
-	CHECK(grid.Get_at(0, 0).id == SAND);
-	CHECK(grid.Get_at(W - 1, H - 1).id == SAND);
+	CHECK(grid.GetAt(0, 0).id == SAND);
+	CHECK(grid.GetAt(W - 1, H - 1).id == SAND);
 }

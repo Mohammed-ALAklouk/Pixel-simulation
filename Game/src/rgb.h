@@ -16,7 +16,7 @@ namespace scree {
 
 		RGB(std::uint8_t red, std::uint8_t green, std::uint8_t blue)
 			: r(red), g(green), b(blue) {}
-		 Color toRaylibColor() const {
+		 Color ToRaylibColor() const {
 			return Color{
 				static_cast<std::uint8_t>(r),
 				static_cast<std::uint8_t>(g),
@@ -26,11 +26,11 @@ namespace scree {
 		}
 
 		RGB operator-(const RGB& other) const {
-			return RGB(sub(r, other.r), sub(g, other.g), sub(b, other.b));
+			return RGB(Sub(r, other.r), Sub(g, other.g), Sub(b, other.b));
 		}
 
 		RGB operator+(const RGB& other) const {
-			return RGB(add(r, other.r), add(g, other.g), add(b, other.b));
+			return RGB(Add(r, other.r), Add(g, other.g), Add(b, other.b));
 		}
 
 		RGB operator*(float scalar) const {
@@ -41,7 +41,7 @@ namespace scree {
 
 		// Done in signed int and clamped, not via RGB's operators: those saturate at 0
 		// (flattening a descending channel where min > max) and wrap on overflow.
-		static RGB lerp(const RGB& min, const RGB& max, float t)
+		static RGB Lerp(const RGB& min, const RGB& max, float t)
 		{
 			t = std::clamp(t, 0.0f, 1.0f);
 			int r = int(min.r) + static_cast<int>((int(max.r) - int(min.r)) * t);
@@ -53,11 +53,11 @@ namespace scree {
 		}
 
 	private:
-		static const std::uint8_t add(std::uint8_t a, std::uint8_t b) {
+		static const std::uint8_t Add(std::uint8_t a, std::uint8_t b) {
 			return static_cast<std::uint8_t>(std::min(a + b, 255));
 		}
 
-		static const std::uint8_t sub(std::uint8_t a, std::uint8_t b) {
+		static const std::uint8_t Sub(std::uint8_t a, std::uint8_t b) {
 			return static_cast<std::uint8_t>(std::max(a - b, 0));
 		}
 	};

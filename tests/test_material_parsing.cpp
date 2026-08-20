@@ -192,7 +192,7 @@ TEST_CASE("a y_direction of 0 becomes 1 and warns")
 		"tags": [], "materials": [{ "name": "Sand", "movement": { "y_direction": 0 } }]
 	})"));
 
-	CHECK(registry.Get(FIRST).movement.Y_direction == 1);
+	CHECK(registry.Get(FIRST).movement.yDirection == 1);
 	CHECK(CountOfType(registry, Log::Type::OutOfRange) == 1);
 	CHECK(Log::Worst(registry.GetLogs()) == Log::Severity::Warning);
 }
@@ -206,7 +206,7 @@ TEST_CASE("an out of range value is clamped rather than wrapped")
 	})"));
 
 	// 300 narrowed into the uint8_t unchecked would be 44.
-	CHECK(registry.Get(FIRST).lifespanData.Initial == 255);
+	CHECK(registry.Get(FIRST).lifespanData.initial == 255);
 	CHECK(CountOfType(registry, Log::Type::OutOfRange) == 1);
 }
 
@@ -218,7 +218,7 @@ TEST_CASE("steps of 0 is raised to 1")
 		"tags": [], "materials": [{ "name": "Sand", "steps": 0 }]
 	})"));
 
-	// Random_step takes fast_rand() % numberOfSteps.
+	// RandomStep takes fast_rand() % numberOfSteps.
 	CHECK(registry.Get(FIRST).numberOfSteps == 1);
 	CHECK(CountOfType(registry, Log::Type::OutOfRange) == 1);
 }
@@ -243,9 +243,9 @@ TEST_CASE("an omitted movement block leaves the defaults in place")
 	REQUIRE(registry.LoadMaterialsFromJSON(R"({ "tags": [], "materials": [{ "name": "Sand" }] })"));
 
 	const auto& movement = registry.Get(FIRST).movement;
-	CHECK(movement.Y_direction == 1);
+	CHECK(movement.yDirection == 1);
 	CHECK(movement.density == 0);
-	CHECK_FALSE(movement.can_fall);
+	CHECK_FALSE(movement.canFall);
 	CHECK(registry.GetLogs().empty());
 }
 
@@ -344,7 +344,7 @@ TEST_CASE("an on_death transition is stored and picked")
 	})"));
 
 	REQUIRE(registry.GetLogs().empty());
-	const auto& span = registry.Get(FIRST).lifespanData.OnDeathTransitionSpan;
+	const auto& span = registry.Get(FIRST).lifespanData.onDeathTransitionSpan;
 	CHECK(span.count == 1);
 	CHECK(span.totalWeight == 3);
 
@@ -367,7 +367,7 @@ TEST_CASE("a lifespan_base of self in on_death warns and falls back to initial")
 	CHECK(Log::Worst(registry.GetLogs()) == Log::Severity::Warning);
 	CHECK(CountOfType(registry, Log::Type::WrongType) == 1);
 
-	const Transition* picked = registry.PickTransition(registry.Get(FIRST).lifespanData.OnDeathTransitionSpan);
+	const Transition* picked = registry.PickTransition(registry.Get(FIRST).lifespanData.onDeathTransitionSpan);
 	REQUIRE(picked != nullptr);
 	CHECK(picked->lifespanBase == Transition::LifeSpanBase::Initial);
 }
@@ -382,7 +382,7 @@ TEST_CASE("a span of weight 0 picks nothing instead of reading past itself")
 			"on_death": [{ "material": "Air", "weight": 0 }] } }]
 	})"));
 
-	CHECK(registry.PickTransition(registry.Get(FIRST).lifespanData.OnDeathTransitionSpan) == nullptr);
+	CHECK(registry.PickTransition(registry.Get(FIRST).lifespanData.onDeathTransitionSpan) == nullptr);
 }
 
 // --- reactions --------------------------------------------------------------
@@ -408,9 +408,9 @@ TEST_CASE("a reaction resolves a forward reference to a later material")
 
 	const Reaction* reaction = registry.GetReaction(span.start);
 	CHECK(reaction->targetType == Reaction::TargetType::Material);
-	CHECK(reaction->TargetID == 2);
-	CHECK(reaction->Chance == 50);
-	CHECK(registry.PickTransition(reaction->TargetTransitionsSpan)->nextID == MaterialRegistry::AIR_ID);
+	CHECK(reaction->targetID == 2);
+	CHECK(reaction->chance == 50);
+	CHECK(registry.PickTransition(reaction->targetTransitionsSpan)->nextID == MaterialRegistry::AIR_ID);
 }
 
 // --- limits -----------------------------------------------------------------
@@ -501,7 +501,7 @@ TEST_CASE("every entry in a span is reachable, in proportion to its weight")
 	})"));
 
 	REQUIRE(registry.GetLogs().empty());
-	const auto& span = registry.Get(FIRST).lifespanData.OnDeathTransitionSpan;
+	const auto& span = registry.Get(FIRST).lifespanData.onDeathTransitionSpan;
 	REQUIRE(span.count == 3);
 	REQUIRE(span.totalWeight == 4);
 
@@ -541,8 +541,8 @@ TEST_CASE("a span never picks a transition belonging to another material")
 	})"));
 
 	REQUIRE(registry.GetLogs().empty());
-	const auto& fire = registry.Get(FIRST).lifespanData.OnDeathTransitionSpan;
-	const auto& steam = registry.Get(3).lifespanData.OnDeathTransitionSpan;
+	const auto& fire = registry.Get(FIRST).lifespanData.onDeathTransitionSpan;
+	const auto& steam = registry.Get(3).lifespanData.onDeathTransitionSpan;
 	REQUIRE(fire.start != steam.start);
 
 	for (int i = 0; i < 100; ++i) {
@@ -643,7 +643,7 @@ TEST_CASE("a custom material resolves a transition into a core material")
 	INFO(Log::FormatLogs(registry.GetLogs()));
 	CHECK(CountOfType(registry, Log::Type::UnknownReference) == 0);
 
-	const Transition* transition = registry.PickTransition(registry.Get(3).lifespanData.OnDeathTransitionSpan);
+	const Transition* transition = registry.PickTransition(registry.Get(3).lifespanData.onDeathTransitionSpan);
 	REQUIRE(transition != nullptr);
 	CHECK(transition->nextID == 2);
 }

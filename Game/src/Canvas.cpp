@@ -9,8 +9,8 @@
 
 scree::CanvasResult scree::SaveCanvas(const Grid& grid, const MaterialRegistry& registry, const std::string& path)
 {
-	const int width = grid.Get_width_px();
-	const int height = grid.Get_height_px();
+	const int width = grid.GetWidthPx();
+	const int height = grid.GetHeightPx();
 
 	std::vector<MaterialID> palette;
 	std::vector<int> indexOf(registry.GetMaterialsCount(), -1);
@@ -91,10 +91,10 @@ scree::CanvasResult scree::LoadCanvas(Grid& grid, const MaterialRegistry& regist
 
 	const int width = data.value("width", 0);
 	const int height = data.value("height", 0);
-	if (width != grid.Get_width_px() || height != grid.Get_height_px())
+	if (width != grid.GetWidthPx() || height != grid.GetHeightPx())
 		return { false, "Canvas is " + std::to_string(width) + "x" + std::to_string(height)
-			+ ", but the grid is " + std::to_string(grid.Get_width_px()) + "x"
-			+ std::to_string(grid.Get_height_px()) + ".", {} };
+			+ ", but the grid is " + std::to_string(grid.GetWidthPx()) + "x"
+			+ std::to_string(grid.GetHeightPx()) + ".", {} };
 
 	std::vector<MaterialID> lookup;
 	std::vector<std::string> missing;
@@ -124,7 +124,7 @@ scree::CanvasResult scree::LoadCanvas(Grid& grid, const MaterialRegistry& regist
 		if (index < 0 || index >= static_cast<int>(lookup.size()) || count <= 0) continue;
 
 		for (int i = 0; i < count && cursor < total; i++, cursor++) {
-			grid.Create_at(static_cast<std::uint16_t>(cursor % width),
+			grid.CreateAt(static_cast<std::uint16_t>(cursor % width),
 				static_cast<std::uint16_t>(cursor / width),
 				lookup[index], static_cast<std::uint8_t>(std::clamp(lifespan, 0, 255)));
 		}

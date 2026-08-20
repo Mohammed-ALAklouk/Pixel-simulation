@@ -28,36 +28,36 @@ namespace scree
 	public:
 		Game();
 		
-		void update();
-		void render();
-		void render_bloom();
-		void processInputs();
+		void Update();
+		void Render();
+		void RenderBloom();
+		void ProcessInputs();
 		void UI();
-		void run();
-		void tick();
+		void Run();
+		void Tick();
 #if defined(PLATFORM_WEB)
-		void web_sync_viewport();
-		int web_last_w = 0, web_last_h = 0;
+		void WebSyncViewport();
+		int webLastW = 0, webLastH = 0;
 #endif
 		// Chrome sizes are fixed, so this only has to place the grid in what is left over.
-		void compute_layout();
-		void update_stats();
-		void handle_hotkeys();
-		void draw_stroke(const std::vector<Vector2>& points, const MaterialID material, const float radius);
-		bool load_materials();
-		bool import_canvas(std::string path);
-		bool export_canvas(std::string path);
+		void ComputeLayout();
+		void UpdateStats();
+		void HandleHotkeys();
+		void DrawStroke(const std::vector<Vector2>& points, const MaterialID material, const float radius);
+		bool LoadMaterials();
+		bool ImportCanvas(std::string path);
+		bool ExportCanvas(std::string path);
 		// Resolved against the executable, not the working directory. Shared by the loader and the top bar's link.
-		std::string assets_path() const;
-		std::string canvases_path() const;
-		std::string materials_path() const;
+		std::string AssetsPath() const;
+		std::string CanvasesPath() const;
+		std::string MaterialsPath() const;
 		// Opens a picker and reloads with the chosen file as the custom overlay.
-		void import_materials();
-		void export_materials();
-		void clear_custom_materials();
-		std::vector<MaterialID> get_registry_changes(const MaterialRegistry& new_registry);
+		void ImportMaterials();
+		void ExportMaterials();
+		void ClearCustomMaterials();
+		std::vector<MaterialID> GetRegistryChanges(const MaterialRegistry& new_registry);
 
-		bool in_bound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
+		bool InBound(int x, int y)			const { return (x >= 0 && y >= 0 && x < GridSize && y < GridSize); }
 
 		
 		std::vector<Vector2> GetLine(Vector2 start, Vector2 end);
@@ -66,70 +66,70 @@ namespace scree
 		static constexpr uint32_t BloomSize = GridSize / 2;
 		// Sized so the 640x640 grid still lands at 1:1 once the chrome has taken its share,
 		// including when the loader banner is up.
-		Vec2i Window_size = Vec2i{ 1400, 900 };
-		Vector2 Grid_offset = Vector2{ 0.0f, 0.0f };
-		float TileSize = 1;
+		Vec2i windowSize = Vec2i{ 1400, 900 };
+		Vector2 gridOffset = Vector2{ 0.0f, 0.0f };
+		float tileSize = 1;
 		
 		// Declared before grid and simulation: both bind to it at construction, and
 		// member initialisation follows declaration order.
-		MaterialRegistry material_registry;
+		MaterialRegistry materialRegistry;
 		Grid grid;
 		Simulation simulation;
-		MaterialID SelectedMaterial = 0;
+		MaterialID selectedMaterial = 0;
 
 		std::vector<Color> pixels;
-		std::vector<Color> emissive_pixels;
+		std::vector<Color> emissivePixels;
 		Texture2D tex;
-		Texture2D emissive_tex;
-		RenderTexture2D bloom_target;
-		RenderTexture2D bloom_scratch;
-		Shader blur_shader;
-		Shader composite_shader;
-		int blur_direction_loc = 0;
-		int composite_intensity_loc = 0;
+		Texture2D emissiveTex;
+		RenderTexture2D bloomTarget;
+		RenderTexture2D bloomScratch;
+		Shader blurShader;
+		Shader compositeShader;
+		int blurDirectionLoc = 0;
+		int compositeIntensityLoc = 0;
 
-		bool bloom_enabled = true;
-		float bloom_intensity = 1.4f;
-		float bloom_radius = 2.0f;
-		int bloom_passes = 3;
+		bool bloomEnabled = true;
+		float bloomIntensity = 1.4f;
+		float bloomRadius = 2.0f;
+		int bloomPasses = 3;
 		// Static dither drawn behind the grid, so empty space reads as textured rather
 		// than as a black hole. Built once in the constructor.
 		Rectangle frame;
 
 
-		Vector2 mouse_down_pos;
+		Vector2 mouseDownPos;
 
-		bool is_drawing_cursor = false;
-		Vector2 cursor_start;
-		float cursor_radius = 15;
+		bool isDrawingCursor = false;
+		Vector2 cursorStart;
+		float cursorRadius = 15;
 
-		std::vector<std::pair<int, int>> active_chunks;
+		std::vector<std::pair<int, int>> activeChunks;
 
-		int  updates_per_frame = 3;
+		int  updatesPerFrame = 3;
 
-		float input_time = 0;
-		float UI_time = 0;
-		float update_time = 0;
-		float render_time = 0;
+		float inputTime = 0;
+		float uiTime = 0;
+		float updateTime = 0;
+		float renderTime = 0;
 		float delta = 0;
-		std::chrono::high_resolution_clock::time_point delta_clock;
+		std::chrono::high_resolution_clock::time_point deltaClock;
 
-		bool show_active_chunks = false;
-		bool show_bench_marks = false;
-		bool new_material_pannel_open = false;
+		bool showActiveChunks = false;
+		bool showBenchMarks = false;
+		bool newMaterialPanelOpen = false;
 		bool paused = false;
-		// Set by the STEP button, consumed by the next update. The UI runs inside render(),
-		// after update(), so the step it asks for lands on the following frame.
-		bool step_once = false;
+		// Set by the STEP button, consumed by the next update. The UI runs inside Render(),
+		// after Update(), so the step it asks for lands on the following frame.
+		bool stepOnce = false;
 
-		std::string material_load_error_message;
+		std::string materialLoadErrorMessage;
 		// Failed load vs. only warnings -- all the banner needs to colour itself.
-		bool material_load_failed = false;
+		bool materialLoadFailed = false;
 
 		// 0 when there's nothing to report, so the banner takes up no space in the common case.
-		float layout_banner_h = 0.0f;
+		float layoutBannerH = 0.0f;
 		// The region the grid is centred inside, once the chrome has taken its share.
-		Rectangle canvas_region{};
+		Rectangle canvasRegion{};
 
 		MaterialData newMaterial{};
 		std::string newMaterialName = "";
@@ -138,23 +138,23 @@ namespace scree
 		// Points at newMaterial while creating; at a registry entry while editing one.
 		MaterialData* editedMaterial = &newMaterial;
 		MaterialID editedMaterialID = 0;
-		bool confirm_delete_open = false;
-		MaterialID pending_delete_id = 0;
+		bool confirmDeleteOpen = false;
+		MaterialID pendingDeleteId = 0;
 
-		bool editing() const { return editedMaterial != &newMaterial; }
-		void begin_new_material();
-		void begin_edit_material(MaterialID id);
-		void commit_material();
-		void delete_material(MaterialID id);
+		bool Editing() const { return editedMaterial != &newMaterial; }
+		void BeginNewMaterial();
+		void BeginEditMaterial(MaterialID id);
+		void CommitMaterial();
+		void DeleteMaterial(MaterialID id);
 		// Counting particles means walking all 640x640 blocks, so the readouts refresh on
 		// a slower cadence than the frame does.
 		static constexpr int StatsInterval = 12;
-		int particle_count = 0;
-		int awake_chunk_count = 0;
-		int stats_counter = 0;
-		float stats_delta_accum = 0.0f;
-		float fps_display = 60.0f;
+		int particleCount = 0;
+		int awakeChunkCount = 0;
+		int statsCounter = 0;
+		float statsDeltaAccum = 0.0f;
+		float fpsDisplay = 60.0f;
 
-		std::string custom_file_path = "";
+		std::string customFilePath = "";
 	};
 }
